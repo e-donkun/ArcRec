@@ -267,14 +267,37 @@ class IskApi
         if (($req->type ?? '') !== 'Q') {
             return $this->unknownDevice($req); // 予選以外は未対応
         }
-        $sesTarget = (string)$req->sesstarget;
-        $session = (int)substr($sesTarget, 0, -4);
-        $target = (int)substr($sesTarget, -4);
+        list($session, $target) = self::parseSessionTarget($req->sesstarget);
         if ($session !== self::SESSION) {
             return self::resetDevice($req->device, $target);
         }
         Devices::update($req->device, ['target' => $target, 'setup' => '', 'setup_confirmed' => 0]);
         return $this->buildSetup($req->device, $target);
+    }
+
+    /**
+     * 端末が送る sesstarget(セッション + 的番号を数字でつなげたもの)を [セッション, 的番号] にする。
+     *
+     * 本家は「末尾4桁が的番号」(例 "10001")だが、実機は "1001" のように的番号を3桁で付けて送ってくることがある
+     * (セッション1 + 的001)。末尾4桁と決め打ちすると "1001" 全体を的1001番と読んでしまうので、
+     * このシステムのセッションは 1 だけであることを使って読む:
+     *   先頭が 1 で2桁以上   → 先頭1桁がセッション、残りが的番号("10001"→的1、"1001"→的1、"1012"→的12)
+     *   先頭が 0 か1桁だけ   → 的番号だけ("0012"→的12)
+     *   それ以外の数字       → 先頭1桁を別のセッションとして返す("2001"→セッション2、的1)。呼び出し側で拒否する
+     * 数字以外はセッション 0(= 該当なし)。
+     *
+     * @return int[] [セッション, 的番号]
+     */
+    public static function parseSessionTarget($value)
+    {
+        $s = trim((string)$value);
+        if (!preg_match('/^\d+$/', $s)) {
+            return [0, 0];
+        }
+        if (strlen($s) === 1 || $s[0] === '0') {
+            return [self::SESSION, (int)$s];
+        }
+        return [(int)$s[0], (int)substr($s, 1)];
     }
 
     private function doGetconfig($req)

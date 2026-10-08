@@ -84,6 +84,16 @@ $r = call([['action' => 'manual', 'device' => 'dev-1', 'tocode' => 'KYT26', 'typ
 ok($r['responses'][0]['action'] === 'reset', '選手のいない的は reset');
 call([['action' => 'manual', 'device' => 'dev-1', 'tocode' => 'KYT26', 'type' => 'Q', 'sesstarget' => '10001']]);
 
+// 実機は的番号を3桁で付けた "1001"(セッション1+的001)で送ってきた。どちらの形でも同じ的として扱う
+foreach (['10001', '1001', '11', 1001, '0001'] as $st) {
+    $r = call([['action' => 'manual', 'device' => 'dev-1', 'tocode' => 'KYT26', 'type' => 'Q', 'sesstarget' => $st]]);
+    ok($r['responses'][0]['action'] === 'reconfigure' && $r['responses'][0]['targetAssigned'] === '1', 'manual sesstarget=' . var_export($st, true) . ' -> 的1の reconfigure');
+}
+$r = call([['action' => 'manual', 'device' => 'dev-1', 'tocode' => 'KYT26', 'type' => 'Q', 'sesstarget' => '1002']]);
+ok($r['responses'][0]['action'] === 'reconfigure' && $r['responses'][0]['targetAssigned'] === '2', 'sesstarget=1002 -> 的2');
+ok(IskApi::parseSessionTarget('2001') === [2, 1] && IskApi::parseSessionTarget('abc') === [0, 0] && IskApi::parseSessionTarget('10012') === [1, 12] && IskApi::parseSessionTarget('0012') === [1, 12], 'sesstarget の解釈(別セッション・不正な値)');
+call([['action' => 'manual', 'device' => 'dev-1', 'tocode' => 'KYT26', 'type' => 'Q', 'sesstarget' => '10001']]);
+
 echo "# confirmhash\n";
 $r = call([['action' => 'confirmhash', 'device' => 'dev-1', 'configHash' => $cfg['configHash']]]);
 ok($r['responses'][0]['action'] === 'noop' && Devices::find('dev-1')['setup_confirmed'] == 1, 'confirmhash 一致 -> noop');
