@@ -55,7 +55,7 @@ $r = call([$upd + ['distance' => 2, 'refKey' => '1.1A', 'arrowstring' => str_rep
 ok(strlen(rtrim(Entries::find($a)['arrowstring2'])) === 18 && (Entries::find($a)['signed'] & 4) === 4 && (Entries::find($a)['signed'] & 2) === 0, '距離2の署名は 2^2 のビット(距離1は立たない)');
 $cfg = call([['action' => 'getconfig', 'device' => 'd1']])['responses'][0];
 $sc = $cfg['archers'][0]['scoring'];
-ok($sc[0]['previous'] === 0 && $sc[1]['previous'] === 360 && $sc[1]['previousGold'] === 36 && $sc[1]['previousXnine'] === 0, '距離2の previous = 距離1の合計(360点・10が36本)');
+ok($sc[0]['previous'] === '0' && $sc[1]['previous'] === '360' && $sc[1]['previousGold'] === '36' && $sc[1]['previousXnine'] === '0', '距離2の previous = 距離1の合計(360点・10が36本)。本家と同じ文字列');
 
 $r = call([['action' => 'sendall', 'device' => 'd1', 'tocode' => 'WA2', 'type' => 'Q', 'session' => 1, 'archers' => [
     ['refKey' => '1.1B', 'scoring' => [
@@ -103,7 +103,7 @@ Settings::setMany(['preset' => 'indoor60', 'distance_name' => '', 'distance_name
 ok(Settings::distances() === 2 && Settings::ends() === 10 && Settings::arrowsPerEnd() === 3 && Settings::totalArrows() === 60 && Settings::isIndoor(), '屋内60: 3射 x 10エンド x 2距離');
 ok(Settings::distanceSummary() === '18m x 2' && Settings::targetFace() === 2, '屋内の既定は18m、的面は設定(三つ目)');
 $cfg = call([['action' => 'manual', 'device' => 'd1', 'tocode' => 'WA2', 'type' => 'Q', 'sesstarget' => '10001']])['responses'][0];
-ok($cfg['ctype'] === 'I' && count($cfg['archers'][0]['scoring']) === 2 && $cfg['archers'][0]['scoring'][0]['arrows'] === '3' && $cfg['targetFaces'][0]['code'] === 2, '屋内: ctype=I, 3射, 的面2');
+ok($cfg['ctype'] === 'I' && count($cfg['archers'][0]['scoring']) === 2 && $cfg['archers'][0]['scoring'][0]['arrows'] === '3' && $cfg['targetFaces'][0]['code'] === '2', '屋内: ctype=I, 3射, 的面2');
 ok(strlen($cfg['archers'][0]['scoring'][0]['arrowstring']) === 30, '屋内: 距離ごと30文字');
 ok(substr(Pdf::scorecards(Entries::all(), true), 0, 4) === '%PDF', 'スコアカードPDF 屋内60(1人1ページ)');
 ok(substr(Pdf::results(Results::byCategory()), 0, 4) === '%PDF', '結果PDF 屋内60');

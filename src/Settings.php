@@ -36,6 +36,7 @@ class Settings
         'archers_per_target' => '4',
         'admin_hash' => '',
         'server_url' => '',
+        'api_log' => '0',
     ];
 
     private static $cache;

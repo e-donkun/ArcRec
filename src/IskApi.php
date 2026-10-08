@@ -25,6 +25,10 @@ class IskApi
     /** HTTP エントリポイント */
     public static function serve()
     {
+        // PHP の警告などが JSON の前後に混ざると端末が読めなくなるので、出力は溜めて捨てる
+        ob_start();
+        @ini_set('display_errors', '0');
+
         $raw = file_get_contents('php://input');
         $data = json_decode($raw);
         $json = ['error' => true];
@@ -41,12 +45,17 @@ class IskApi
             $json['errorMsg'] = 'Missing PAYLOAD and REQUESTS';
             self::out($json);
         }
-        self::out((new self())->process($data));
+        $res = (new self())->process($data);
+        ApiLog::write($data, $res);
+        self::out($res);
     }
 
     public static function out(array $json)
     {
-        $body = json_encode($json);
+        $body = json_encode($json, JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
         header('Access-Control-Allow-Headers: Content-Type, AccountKey, x-requested-with, origin, authorization, accept');
@@ -554,9 +563,9 @@ class IskApi
                     'xnine' => Scoring::X_CHARS,
                     'targetface' => $face,
                     'arrowstring' => '',
-                    'previous' => 0,
-                    'previousGold' => 0,
-                    'previousXnine' => 0,
+                    'previous' => '0',
+                    'previousGold' => '0',
+                    'previousXnine' => '0',
                     'endStartNumber' => 1,
                     'scoringEnds' => $ends,
                     'totalTargets' => $totalTargets,
@@ -626,9 +635,10 @@ class IskApi
                 $d = (int)$s['distance'];
                 $arrows = $e ? Entries::arrows($e, $d) : Scoring::pad('', Settings::arrowsPerDistance());
                 $s['arrowstring'] = $arrows;
-                $s['previous'] = $prev[0];
-                $s['previousGold'] = $prev[1];
-                $s['previousXnine'] = $prev[2];
+                // 本家は DB の値をそのまま出すので文字列
+                $s['previous'] = (string)$prev[0];
+                $s['previousGold'] = (string)$prev[1];
+                $s['previousXnine'] = (string)$prev[2];
                 $t = Scoring::total($arrows);
                 $prev = [$prev[0] + $t[0], $prev[1] + $t[1], $prev[2] + $t[2]];
             }

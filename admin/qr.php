@@ -46,4 +46,5 @@ if (!Devices::all()) {
     echo '<tr><td colspan="7" class="muted">まだ端末が接続していません</td></tr>';
 }
 echo '</table></div>';
+echo '<p class="small">端末がつながらない・入力画面に進まないときは <a href="log.php">通信ログ</a> で、端末とのやりとりを確認できます。</p>';
 page_foot();

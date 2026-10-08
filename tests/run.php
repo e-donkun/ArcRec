@@ -71,7 +71,14 @@ $cfg = $r['responses'][0];
 ok($cfg['action'] === 'reconfigure' && count($cfg['archers']) === 2, 'manual: reconfigure に 2 人');
 ok($cfg['archers'][0]['refKey'] === '1.1A' && $cfg['archers'][1]['refKey'] === '1.1B', 'refKey = 1.1A, 1.1B');
 ok($cfg['archers'][0]['scoring'][0]['ends'] === '6' && strlen($cfg['archers'][0]['scoring'][0]['arrowstring']) === 36, 'ends=6, arrowstring 36文字');
-ok(isset($cfg['configHash']) && $cfg['targetFaces'][0]['code'] === 5 && $cfg['targetFaces'][0]['letterPoint'][0]['letter'] === 'K', 'targetFaces と configHash');
+ok(isset($cfg['configHash']) && $cfg['targetFaces'][0]['code'] === '5' && $cfg['targetFaces'][0]['letterPoint'][0]['letter'] === 'K', 'targetFaces と configHash');
+// 端末は scoring.targetface と targetFaces[].code を突き合わせて入力画面の的を決める。型(文字列)まで一致している必要がある
+$codes = array_column($cfg['targetFaces'], 'code');
+ok(in_array($cfg['archers'][0]['scoring'][0]['targetface'], $codes, true), 'scoring.targetface が targetFaces[].code と(型まで)一致');
+foreach ($cfg['archers'][0]['scoring'][0] as $k => $v) {
+    $types[$k] = gettype($v);
+}
+ok($types['previous'] === 'string' && $types['ends'] === 'string' && $types['scoringEnds'] === 'integer' && $types['shootOff'] === 'integer', '数値項目の型が本家と同じ');
 ok(!isset($cfg['targetFaces'][0]['imgGzip']), 'v1.10 は画像を含めない');
 $r = call([['action' => 'manual', 'device' => 'dev-1', 'tocode' => 'KYT26', 'type' => 'Q', 'sesstarget' => '10099']]);
 ok($r['responses'][0]['action'] === 'reset', '選手のいない的は reset');

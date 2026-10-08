@@ -52,12 +52,13 @@ class TargetFaces
         $d = self::data()[$id];
         $n = count($d['letters']);
         $face = [
-            'code' => $id,
+            // 本家は MySQL の値をそのまま出すので文字列。scoring.targetface(文字列)と===で突き合わせても合うようにする
+            'code' => (string)$id,
             'id' => $d['descr'],
             'name' => self::label($id),
             'imgName' => $id . '.svg',
             'cols' => min(3, $n),
-            'rows' => (int)ceil($n / 3),
+            'rows' => ceil($n / 3),   // 本家と同じ(float)
             'gold' => Scoring::GOLD_CHARS,
             'xnine' => Scoring::X_CHARS,
             'goldlbl' => Settings::get('gold_label'),
