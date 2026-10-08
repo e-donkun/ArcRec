@@ -56,8 +56,8 @@ class Pdf extends \TCPDF
     {
         $pdf = new self('スコアカード');
         $pdf->qrBase = $baseUrl;
-        $ends = Settings::ends();
-        $perPage = $ends <= 13 ? 2 : 1;
+        $rows = Settings::ends() * Settings::distances();
+        $perPage = $rows <= 13 ? 2 : 1;
         $cardH = $perPage === 2 ? 136 : 273;
         $i = 0;
         foreach ($entries as $e) {
@@ -91,13 +91,11 @@ class Pdf extends \TCPDF
         // ---- 見出し
         $this->f(12);
         $this->SetXY($x0, $y0);
-        $this->Cell(120, 6, Settings::get('name') ?: Settings::get('code'), 0, 0, 'L');
-        $this->f(8);
-        $this->Cell(60, 6, trim(Settings::get('date') . '  ' . Settings::get('place')), 0, 1, 'R');
+        $this->Cell(120, 6, Settings::get('name') ?: Settings::get('code'), 0, 1, 'L');
 
         $this->f(9);
         $this->SetXY($x0, $y0 + 6);
-        $this->Cell(120, 5, 'スコアカード  ' . $this->categoryLabel($e) . '  ' . Settings::get('distance_name'), 0, 0, 'L');
+        $this->Cell(120, 5, 'スコアカード  ' . $this->categoryLabel($e) . '  ' . Settings::distanceSummary(), 0, 0, 'L');
 
         // 的番号の大きな枠
         $pos = $e['target'] ? $e['target'] . $e['letter'] : '--';
@@ -122,7 +120,8 @@ class Pdf extends \TCPDF
                 $x0 + 128, $y0 + 4.5, 16, 16, ['border' => false, 'padding' => 0, 'fgcolor' => [0, 0, 0], 'bgcolor' => false], 'N');
         }
 
-        // ---- 表
+        // ---- 表(距離ごとにエンドを並べ、2 距離のときは距離ごとの小計の行を入れる)
+        $nd = Settings::distances();
         $units = 6 + 1.2 * $per;
         $u = $W / $units;
         $wEnd = $u;
@@ -134,8 +133,10 @@ class Pdf extends \TCPDF
 
         $yT = $y0 + 24;
         $hHead = 6;
-        $reserved = 7 + 13 + 4; // 合計行 + 署名欄 + 余白
-        $rowH = max(5.5, min(10, ($cardH - 24 - $hHead - $reserved) / $ends));
+        $hDist = 6;
+        $hTotal = 7;
+        $reserved = $hTotal + ($nd > 1 ? $nd * $hDist : 0) + 13 + 4; // 合計行・距離小計・署名欄・余白
+        $rowH = max(5.5, min(10, ($cardH - 24 - $hHead - $reserved) / ($ends * $nd)));
 
         $this->SetFillColor(225, 225, 225);
         $this->f(8);
@@ -154,57 +155,78 @@ class Pdf extends \TCPDF
         $tX = 0;
         $tScore = 0;
         $y = $yT + $hHead;
-        for ($n = 1; $n <= $ends; $n++) {
-            $s = Scoring::endString($e['arrowstring'], $n, $per);
-            $has = $filled && trim($s) !== '';
-            $this->SetXY($x0, $y);
-            $this->f(9);
-            $this->Cell($wEnd, $rowH, (string)$n, 1, 0, 'C');
-            for ($a = 0; $a < $per; $a++) {
-                $ch = $has ? ($s[$a] ?? ' ') : ' ';
-                $txt = trim($ch) === '' ? '' : Scoring::display($ch);
-                $gold = $txt !== '' && strpos(Scoring::GOLD_CHARS, strtoupper($ch)) !== false;
-                if ($gold) {
-                    $this->SetFillColor(250, 232, 120);
+        for ($d = 1; $d <= $nd; $d++) {
+            $arrows = Entries::arrows($e, $d);
+            $dScore = $dGold = $dX = 0;
+            for ($n = 1; $n <= $ends; $n++) {
+                $s = Scoring::endString($arrows, $n, $per);
+                $has = $filled && trim($s) !== '';
+                $this->SetXY($x0, $y);
+                $this->f(9);
+                $this->Cell($wEnd, $rowH, (string)$n, 1, 0, 'C');
+                for ($a = 0; $a < $per; $a++) {
+                    $ch = $has ? ($s[$a] ?? ' ') : ' ';
+                    $txt = trim($ch) === '' ? '' : Scoring::display($ch);
+                    $gold = $txt !== '' && strpos(Scoring::GOLD_CHARS, strtoupper($ch)) !== false;
+                    if ($gold) {
+                        $this->SetFillColor(250, 232, 120);
+                    }
+                    $this->f(12);
+                    $this->Cell($wArrow, $rowH, $txt, 1, 0, 'C', $gold);
+                    $this->SetFillColor(225, 225, 225);
                 }
-                $this->f(12);
-                $this->Cell($wArrow, $rowH, $txt, 1, 0, 'C', $gold);
+                $this->f(11);
+                if ($has) {
+                    list($sc, $g, $x) = Scoring::total($s);
+                    $run += $sc;
+                    $dScore += $sc;
+                    $dGold += $g;
+                    $dX += $x;
+                    $this->Cell($wSub, $rowH, (string)$sc, 1, 0, 'C');
+                    $this->Cell($wRun, $rowH, (string)$run, 1, 0, 'C');
+                    $this->Cell($wGold, $rowH, (string)$g, 1, 0, 'C');
+                    $this->Cell($wX, $rowH, (string)$x, 1, 1, 'C');
+                } else {
+                    $this->Cell($wSub, $rowH, '', 1, 0);
+                    $this->Cell($wRun, $rowH, '', 1, 0);
+                    $this->Cell($wGold, $rowH, '', 1, 0);
+                    $this->Cell($wX, $rowH, '', 1, 1);
+                }
+                $y += $rowH;
+            }
+            $tScore += $dScore;
+            $tGold += $dGold;
+            $tX += $dX;
+            if ($nd > 1) {
+                // 距離ごとの小計
+                $this->SetXY($x0, $y);
+                $this->SetFillColor(240, 240, 240);
+                $this->f(9);
+                $showDist = $filled && trim($arrows) !== '';
+                $this->Cell($wEnd + $wArrow * $per, $hDist, '距離' . $d . ' (' . Settings::distanceName($d) . ') 小計', 1, 0, 'C', true);
+                $this->f(11);
+                $this->Cell($wSub + $wRun, $hDist, $showDist ? (string)$dScore : '', 1, 0, 'C', true);
+                $this->Cell($wGold, $hDist, $showDist ? (string)$dGold : '', 1, 0, 'C', true);
+                $this->Cell($wX, $hDist, $showDist ? (string)$dX : '', 1, 1, 'C', true);
                 $this->SetFillColor(225, 225, 225);
+                $y += $hDist;
             }
-            $this->f(11);
-            if ($has) {
-                list($sc, $g, $x) = Scoring::total($s);
-                $run += $sc;
-                $tScore += $sc;
-                $tGold += $g;
-                $tX += $x;
-                $this->Cell($wSub, $rowH, (string)$sc, 1, 0, 'C');
-                $this->Cell($wRun, $rowH, (string)$run, 1, 0, 'C');
-                $this->Cell($wGold, $rowH, (string)$g, 1, 0, 'C');
-                $this->Cell($wX, $rowH, (string)$x, 1, 1, 'C');
-            } else {
-                $this->Cell($wSub, $rowH, '', 1, 0);
-                $this->Cell($wRun, $rowH, '', 1, 0);
-                $this->Cell($wGold, $rowH, '', 1, 0);
-                $this->Cell($wX, $rowH, '', 1, 1);
-            }
-            $y += $rowH;
         }
 
         // 合計行
         $this->SetXY($x0, $y);
         $this->SetFillColor(240, 240, 240);
         $this->f(10);
-        $this->Cell($wEnd + $wArrow * $per, 7, '合 計', 1, 0, 'C', true);
+        $this->Cell($wEnd + $wArrow * $per, $hTotal, '合 計', 1, 0, 'C', true);
         $this->f(13);
-        $showTotal = $filled && trim($e['arrowstring']) !== '';
-        $this->Cell($wSub + $wRun, 7, $showTotal ? (string)$tScore : '', 1, 0, 'C', true);
+        $showTotal = $filled && trim(Entries::allArrows($e)) !== '';
+        $this->Cell($wSub + $wRun, $hTotal, $showTotal ? (string)$tScore : '', 1, 0, 'C', true);
         $this->f(11);
-        $this->Cell($wGold, 7, $showTotal ? (string)$tGold : '', 1, 0, 'C', true);
-        $this->Cell($wX, 7, $showTotal ? (string)$tX : '', 1, 1, 'C', true);
+        $this->Cell($wGold, $hTotal, $showTotal ? (string)$tGold : '', 1, 0, 'C', true);
+        $this->Cell($wX, $hTotal, $showTotal ? (string)$tX : '', 1, 1, 'C', true);
 
         // 署名欄
-        $y += 9;
+        $y += $hTotal + 2;
         $this->f(8);
         $half = $W / 2 - 2;
         $this->SetXY($x0, $y);
@@ -276,10 +298,8 @@ class Pdf extends \TCPDF
         $this->f(16);
         $this->SetXY(15, 12);
         $this->Cell(180, 8, Settings::get('name') ?: Settings::get('code'), 0, 1, 'C');
-        $this->f(9);
-        $this->Cell(180, 5, trim(Settings::get('date') . '  ' . Settings::get('place') . '  ' . Settings::get('organizer')), 0, 1, 'C');
         $this->f(12);
-        $this->Cell(180, 8, '予選結果 ' . Settings::get('distance_name') . ' ' . Settings::totalArrows() . '射', 0, 1, 'C');
+        $this->Cell(180, 8, '予選結果 ' . Settings::distanceSummary() . ' ' . Settings::totalArrows() . '射', 0, 1, 'C');
         $this->Ln(2);
     }
 
@@ -289,18 +309,14 @@ class Pdf extends \TCPDF
         if (!$rows) {
             return;
         }
-        $ends = Settings::ends();
-        $half = (int)ceil($ends / 2);
-        $hasHalves = $ends >= 2;
+        $nd = Settings::distances();
 
-        $w = ['rank' => 11, 'tgt' => 14, 'name' => 38, 'aff' => 42, 'h1' => 13, 'h2' => 13, 'total' => 17, 'gold' => 16, 'x' => 12];
-        if (!$hasHalves) {
-            $w['name'] += 13;
-            $w['aff'] += 13;
-            unset($w['h1'], $w['h2']);
+        // 2 距離のときは距離ごとの合計の列を足す。余りは所属欄に回して 180mm に揃える
+        $w = ['rank' => 11, 'tgt' => 14, 'name' => 38, 'aff' => 0, 'total' => 17, 'gold' => 16, 'x' => 12];
+        if ($nd > 1) {
+            $w = array_merge(array_slice($w, 0, 4, true), ['d1' => 19, 'd2' => 19], array_slice($w, 4, null, true));
         }
-        // 余りを所属欄に足して 180mm に揃える
-        $w['aff'] += 180 - array_sum($w);
+        $w['aff'] = 180 - array_sum($w);
         $rowH = 6.5;
 
         $needed = 10 + 6 + $rowH * min(count($rows), 4);
@@ -314,7 +330,7 @@ class Pdf extends \TCPDF
         $this->SetX(15);
         $this->Cell(180, 7, $g['category']['name'], 0, 1, 'L', true);
         $this->SetTextColor(0);
-        $this->headRow($w, $half, $ends, $hasHalves);
+        $this->headRow($w, $nd);
 
         foreach ($rows as $r) {
             if ($this->GetY() + $rowH > 285) {
@@ -322,7 +338,7 @@ class Pdf extends \TCPDF
                 $this->f(10);
                 $this->SetX(15);
                 $this->Cell(180, 6, $g['category']['name'] . '(続き)', 0, 1, 'L');
-                $this->headRow($w, $half, $ends, $hasHalves);
+                $this->headRow($w, $nd);
             }
             $this->SetX(15);
             $this->f(9);
@@ -334,20 +350,11 @@ class Pdf extends \TCPDF
             $this->f(8);
             $this->Cell($w['aff'], $rowH, mb_strimwidth($r['affiliation'], 0, 36, '…'), 1, 0, 'L');
             $this->f(10);
-            if ($hasHalves) {
-                $s1 = $s2 = null;
-                foreach ($r['end_scores'] as $i => $sc) {
-                    if ($sc === null) {
-                        continue;
-                    }
-                    if ($i < $half) {
-                        $s1 += $sc;
-                    } else {
-                        $s2 += $sc;
-                    }
+            if ($nd > 1) {
+                foreach ([1, 2] as $d) {
+                    $v = $r['dist_scores'][$d] ?? null;
+                    $this->Cell($w['d' . $d], $rowH, $v === null ? '' : (string)$v, 1, 0, 'C');
                 }
-                $this->Cell($w['h1'], $rowH, $s1 === null ? '' : (string)$s1, 1, 0, 'C');
-                $this->Cell($w['h2'], $rowH, $s2 === null ? '' : (string)$s2, 1, 0, 'C');
             }
             $this->f(11);
             $this->Cell($w['total'], $rowH, $r['hits'] ? (string)$r['score'] : '', 1, 0, 'C');
@@ -358,7 +365,7 @@ class Pdf extends \TCPDF
         $this->Ln(5);
     }
 
-    private function headRow(array $w, $half, $ends, $hasHalves)
+    private function headRow(array $w, $nd)
     {
         $this->SetFillColor(225, 225, 225);
         $this->f(8);
@@ -367,10 +374,11 @@ class Pdf extends \TCPDF
         $this->Cell($w['tgt'], 6, '的', 1, 0, 'C', true);
         $this->Cell($w['name'], 6, '氏名', 1, 0, 'C', true);
         $this->Cell($w['aff'], 6, '所属', 1, 0, 'C', true);
-        if ($hasHalves) {
-            $a = Settings::arrowsPerEnd();
-            $this->Cell($w['h1'], 6, ($half * $a) . '射', 1, 0, 'C', true);
-            $this->Cell($w['h2'], 6, (($ends - $half) * $a) . '射', 1, 0, 'C', true);
+        if ($nd > 1) {
+            $this->f(7);
+            $this->Cell($w['d1'], 6, '距離1 ' . Settings::distanceName(1), 1, 0, 'C', true);
+            $this->Cell($w['d2'], 6, '距離2 ' . Settings::distanceName(2), 1, 0, 'C', true);
+            $this->f(8);
         }
         $this->Cell($w['total'], 6, '合計', 1, 0, 'C', true);
         $this->Cell($w['gold'], 6, Settings::get('gold_label'), 1, 0, 'C', true);

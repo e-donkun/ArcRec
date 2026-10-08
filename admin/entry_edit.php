@@ -30,7 +30,7 @@ $v = function ($k) use ($e) {
 echo '<div class="row"><div><label>姓</label><input type="text" name="family_name" value="' . $v('family_name') . '" required></div>'
     . '<div><label>名</label><input type="text" name="given_name" value="' . $v('given_name') . '"></div>'
     . '<div><label>所属</label><input type="text" name="affiliation" value="' . $v('affiliation') . '"></div></div>'
-    . '<div class="row"><div><label>部門</label><select name="category_id"><option value="">(未設定)</option>';
+    . '<div class="row"><div><label>部門</label><select name="category_id" required>';
 foreach (Categories::all() as $c) {
     echo '<option value="' . $c['id'] . '"' . ((int)$e['category_id'] === (int)$c['id'] ? ' selected' : '') . '>' . h($c['name']) . '</option>';
 }
@@ -39,7 +39,7 @@ echo '</select></div><div><label>的番号 <span class="muted small">(0=未割�
 foreach (['A', 'B', 'C', 'D'] as $l) {
     echo '<option' . ($e['letter'] === $l ? ' selected' : '') . '>' . $l . '</option>';
 }
-echo '</select></div><div><label>ゼッケン</label><input type="text" name="bib" value="' . $v('bib') . '"></div></div>'
+echo '</select></div></div>'
     . '<label style="font-weight:400"><input type="checkbox" name="status" value="1"' . ($e['status'] ? ' checked' : '') . '> 欠場(端末・結果から外す)</label>'
     . '<p><button>保存</button> <a class="btn sub" href="entries.php">戻る</a></p></form>';
 page_foot();

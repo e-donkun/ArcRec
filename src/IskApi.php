@@ -15,7 +15,6 @@ class IskApi
     const MAX_API_VERSION = 1;
     const ISK_NG_LITE_CODE = 11;
     const SESSION = 1;
-    const DISTANCE = 1;
 
     /** 受け付けるアクション */
     const ACTIONS = ['handshake', 'comp', 'manual', 'update', 'sendall', 'confirmhash', 'getconfig',
@@ -230,9 +229,9 @@ class IskApi
             'device' => $req->device,
             'tocode' => Settings::get('code'),
             'toname' => Settings::get('name') ?: Settings::get('code'),
-            'tocategory' => (string)Settings::get('category'),
+            'tocategory' => (string)Settings::category(),
             'id' => '',
-            'numdist' => 1,
+            'numdist' => Settings::distances(),
             'numsession' => 1,
             'sessions' => [[
                 'sessid' => self::SESSION,
@@ -501,7 +500,7 @@ class IskApi
 
     private function applyOne(array $dev, $refKey, $distance, $arrowstring, $signed)
     {
-        if ($distance !== self::DISTANCE) {
+        if ($distance < 1 || $distance > Settings::distances()) {
             return 'Incorrect Distance Setting';
         }
         if (!preg_match('/^(\d+)\.(\d+)([A-Da-d])$/', (string)$refKey, $m) || (int)$m[1] !== self::SESSION) {
@@ -519,7 +518,7 @@ class IskApi
             return 'Invalid arrow data';
         }
         Entries::applyArrows($entry['id'], $arrowstring, $dev['uuid'],
-            $signed === null ? null : (bool)(int)$signed);
+            $signed === null ? null : (bool)(int)$signed, 'device', $distance);
         return 'OK';
     }
 
@@ -533,30 +532,19 @@ class IskApi
         $faces = [];
         $per = Settings::arrowsPerEnd();
         $ends = Settings::ends();
+        $face = (string)Settings::targetFace();
         $totalTargets = max(1, count(Entries::targets()));
         $golds = Settings::get('gold_label');
         $xl = Settings::get('x_label');
 
         foreach (Entries::onTarget($target) as $e) {
             $key = self::SESSION . '.' . $e['target'] . $e['letter'];
-            $face = (string)$e['targetface'];
             $faces[$face] = true;
-            $archers[$key] = [
-                'refKey' => $key,
-                'encode' => $e['bib'],
-                'name' => Entries::fullName($e),
-                'placement' => (string)$e['target'],
-                'noc' => mb_substr($e['affiliation'], 0, 10),
-                'nocname' => $e['affiliation'],
-                'event' => $e['category_code'] ?: (string)$e['category_name'],
-                'eventname' => (string)$e['category_name'],
-                'matchMode' => 0,
-                'goldLbl' => $golds,
-                'xnineLbl' => $xl,
-                'qrCode' => $e['bib'],
-                'scoring' => [[
-                    'distance' => (string)self::DISTANCE,
-                    'distanceName' => (string)Settings::get('distance_name'),
+            $scoring = [];
+            for ($d = 1; $d <= Settings::distances(); $d++) {
+                $scoring[] = [
+                    'distance' => (string)$d,
+                    'distanceName' => Settings::distanceName($d),
                     'ends' => (string)$ends,
                     'arrows' => (string)$per,
                     'shootOff' => 0,
@@ -572,7 +560,22 @@ class IskApi
                     'endStartNumber' => 1,
                     'scoringEnds' => $ends,
                     'totalTargets' => $totalTargets,
-                ]],
+                ];
+            }
+            $archers[$key] = [
+                'refKey' => $key,
+                'encode' => $e['bib'],
+                'name' => Entries::fullName($e),
+                'placement' => (string)$e['target'],
+                'noc' => mb_substr($e['affiliation'], 0, 10),
+                'nocname' => $e['affiliation'],
+                'event' => $e['category_code'] ?: (string)$e['category_name'],
+                'eventname' => (string)$e['category_name'],
+                'matchMode' => 0,
+                'goldLbl' => $golds,
+                'xnineLbl' => $xl,
+                'qrCode' => $e['bib'],
+                'scoring' => $scoring,
             ];
         }
         if (!$archers) {
@@ -594,7 +597,7 @@ class IskApi
             'targetAssigned' => (string)$target,
             'type' => 'Q',
             'ctype' => Settings::isIndoor() ? 'I' : 'O',
-            'schedule' => 'Q1' . self::SESSION,
+            'schedule' => 'Q' . Settings::distances() . self::SESSION,
             'session' => (string)self::SESSION,
             'sessionName' => Settings::sessionName(),
             'archers' => $archers,
@@ -612,14 +615,22 @@ class IskApi
             return self::resetDevice($dev['uuid'], $dev['target']);
         }
         $setup['configHash'] = md5($dev['setup']);
-        $total = Settings::totalArrows();
         foreach ($setup['archers'] as $key => &$a) {
             if (!preg_match('/^\d+\.(\d+)([A-D])$/', $key, $m)) {
                 continue;
             }
             $e = Entries::findByPos((int)$m[1], $m[2]);
+            // 距離ごとの arrowstring と、それより前の距離の合計(previous)を最新にする
+            $prev = [0, 0, 0];
             foreach ($a['scoring'] as &$s) {
-                $s['arrowstring'] = Scoring::pad($e ? $e['arrowstring'] : '', $total);
+                $d = (int)$s['distance'];
+                $arrows = $e ? Entries::arrows($e, $d) : Scoring::pad('', Settings::arrowsPerDistance());
+                $s['arrowstring'] = $arrows;
+                $s['previous'] = $prev[0];
+                $s['previousGold'] = $prev[1];
+                $s['previousXnine'] = $prev[2];
+                $t = Scoring::total($arrows);
+                $prev = [$prev[0] + $t[0], $prev[1] + $t[1], $prev[2] + $t[2]];
             }
             unset($s);
         }

@@ -13,24 +13,31 @@ if (!$e) {
 }
 $per = Settings::arrowsPerEnd();
 $ends = Settings::ends();
+$nd = Settings::distances();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $new = '';
+    // まず全距離を検証して、1つでも不正なら何も保存しない
+    $new = [];
     $bad = [];
-    for ($n = 1; $n <= $ends; $n++) {
-        $txt = trim($_POST['end'][$n] ?? '');
-        $s = Scoring::parseInput($txt);
-        if ($s === null || strlen($s) > $per) {
-            $bad[] = $n;
-            $s = '';
+    for ($d = 1; $d <= $nd; $d++) {
+        $str = '';
+        for ($n = 1; $n <= $ends; $n++) {
+            $s = Scoring::parseInput(trim($_POST['end'][$d][$n] ?? ''));
+            if ($s === null || strlen($s) > $per) {
+                $bad[] = '距離' . $d . ' エンド' . $n;
+                $s = '';
+            }
+            $str .= Scoring::pad($s, $per);
         }
-        $new .= Scoring::pad($s, $per);
+        $new[$d] = $str;
     }
     if ($bad) {
-        flash('エンド ' . implode(', ', $bad) . ' の入力が不正です(例: X 10 9 8 7 M)。何も保存していません。', 'err');
+        flash(implode(', ', $bad) . ' の入力が不正です(例: X 10 9 8 7 M)。何も保存していません。', 'err');
         redirect('score_edit.php?id=' . $e['id']);
     }
-    Entries::replaceArrows($e['id'], $new);
+    foreach ($new as $d => $str) {
+        Entries::replaceArrows($e['id'], $str, 'admin', $d);
+    }
     flash('得点を訂正しました');
     redirect('scores.php');
 }
@@ -41,27 +48,34 @@ if ($e['locked']) {
     echo '<div class="flash warn">このスコアカードは確定済みです(管理画面からは訂正できます)。</div>';
 }
 echo '<p class="muted small">各エンドを <code>X 10 9 8 7 M</code> のように空白かカンマで区切って入力します(X=インナー10、M=ミス)。空欄は未射です。</p>';
-echo '<form method="post" class="card">' . csrf_field() . '<input type="hidden" name="id" value="' . $e['id'] . '"><table style="width:auto"><tr><th>エンド</th><th>' . $per . '射</th><th class="n">小計</th></tr>';
-for ($n = 1; $n <= $ends; $n++) {
-    $s = Scoring::endString($e['arrowstring'], $n, $per);
-    $disp = [];
-    foreach (str_split(rtrim($s)) as $c) {
-        $disp[] = trim($c) === '' ? '' : Scoring::display($c);
+echo '<form method="post" class="card">' . csrf_field() . '<input type="hidden" name="id" value="' . $e['id'] . '"><div class="row">';
+for ($d = 1; $d <= $nd; $d++) {
+    $arrows = Entries::arrows($e, $d);
+    echo '<div style="flex:0 1 auto"><b>' . ($nd > 1 ? '距離' . $d . ' (' . h(Settings::distanceName($d)) . ')' : h(Settings::distanceName(1))) . '</b>'
+        . '<table style="width:auto"><tr><th>エンド</th><th>' . $per . '射</th><th class="n">小計</th></tr>';
+    for ($n = 1; $n <= $ends; $n++) {
+        $s = Scoring::endString($arrows, $n, $per);
+        $disp = [];
+        foreach (str_split(rtrim($s)) as $c) {
+            $disp[] = trim($c) === '' ? '' : Scoring::display($c);
+        }
+        $sub = trim($s) === '' ? '' : Scoring::total($s)[0];
+        echo '<tr><td class="c">' . $n . '</td><td><input type="text" class="endin" name="end[' . $d . '][' . $n . ']" value="' . h(implode(' ', $disp)) . '"></td><td class="n">' . $sub . '</td></tr>';
     }
-    $sub = trim($s) === '' ? '' : Scoring::total($s)[0];
-    echo '<tr><td class="c">' . $n . '</td><td><input type="text" class="endin" name="end[' . $n . ']" value="' . h(implode(' ', $disp)) . '"></td><td class="n">' . $sub . '</td></tr>';
+    echo '</table></div>';
 }
-echo '</table><p><button>保存</button> <a class="btn sub" href="scores.php">戻る</a></p></form>';
+echo '</div><p><button>保存</button> <a class="btn sub" href="scores.php">戻る</a></p></form>';
 
-$log = Entries::log($e['id'], 30);
+$log = Entries::log($e['id'], 40);
 if ($log) {
-    echo '<h2>更新履歴(新しい順)</h2><div class="tablewrap"><table style="width:auto"><tr><th>日時</th><th>エンド</th><th>内容</th><th>送信元</th></tr>';
+    echo '<h2>更新履歴(新しい順)</h2><div class="tablewrap"><table style="width:auto"><tr><th>日時</th>' . ($nd > 1 ? '<th>距離</th>' : '') . '<th>エンド</th><th>内容</th><th>送信元</th></tr>';
     foreach ($log as $l) {
         $disp = [];
         foreach (str_split($l['arrows']) as $c) {
             $disp[] = trim($c) === '' ? '-' : Scoring::display($c);
         }
-        echo '<tr><td class="small">' . h($l['at']) . '</td><td class="c">' . (int)$l['end_no'] . '</td><td>' . h(implode(' ', $disp)) . '</td><td class="small">' . h($l['source'] === 'device' ? '端末 ' . substr($l['device'], 0, 8) : $l['source']) . '</td></tr>';
+        echo '<tr><td class="small">' . h($l['at']) . '</td>' . ($nd > 1 ? '<td class="c">' . (int)$l['distance'] . '</td>' : '')
+            . '<td class="c">' . (int)$l['end_no'] . '</td><td>' . h(implode(' ', $disp)) . '</td><td class="small">' . h($l['source'] === 'device' ? '端末 ' . substr($l['device'], 0, 8) : $l['source']) . '</td></tr>';
     }
     echo '</table></div>';
 }

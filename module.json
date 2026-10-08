@@ -2,12 +2,18 @@
 	"id": "ianseo-lite",
 	"name": "ianseo-lite（簡易記録会システム）",
 	"description": "予選だけ・1セッションだけの記録会向け。SQLite + ScorekeeperNG(Lite)で入力し、スコアカードと結果をPDFで出力する。本体のDBとは独立して動く。",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"author": "e-donkun",
+	"homepage": "https://github.com/e-donkun/ianseo-lite",
 	"license": "GPL-2.0",
 	"testedIanseo": "2026-03-01",
 	"requiresPhp": "7.4",
 	"changelog": [
+		{
+			"version": "0.2.0",
+			"date": "2026-10-08",
+			"notes": "WA形式(1〜2距離、屋外36射/屋内30射)に対応。部門はリカーブ男女のみ。会場・主催・開催日・ゼッケンの入力を廃止し、スコア最終更新を表示"
+		},
 		{
 			"version": "0.1.0",
 			"date": "2026-10-08",

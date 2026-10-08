@@ -68,6 +68,7 @@ echo '<div class="cards">'
     . '<div class="stat"><span class="muted">選手</span><b>' . $p['archers'] . '</b></div>'
     . '<div class="stat"><span class="muted">全射終了</span><b>' . $p['finished'] . ' / ' . $p['archers'] . '</b></div>'
     . '<div class="stat"><span class="muted">入力済みの矢</span><b>' . $pct . '%</b><div class="bar"><i style="width:' . $pct . '%"></i></div></div>'
+    . '<div class="stat"><span class="muted">スコア最終更新</span><b style="font-size:1.1rem">' . h(Results::lastUpdateText()) . '</b></div>'
     . '<div class="stat"><span class="muted">端末(直近2分)</span><b>' . $online . ' / ' . count($devices) . '</b></div>'
     . '</div>';
 echo '<div class="card"><h2 style="margin-top:0">進め方</h2><ol>'

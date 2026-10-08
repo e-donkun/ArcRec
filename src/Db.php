@@ -87,6 +87,7 @@ class Db
             target INTEGER NOT NULL DEFAULT 0,
             letter TEXT NOT NULL DEFAULT \'\',
             arrowstring TEXT NOT NULL DEFAULT \'\',
+            arrowstring2 TEXT NOT NULL DEFAULT \'\',
             signed INTEGER NOT NULL DEFAULT 0,
             locked INTEGER NOT NULL DEFAULT 0,
             status INTEGER NOT NULL DEFAULT 0,
@@ -113,10 +114,31 @@ class Db
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             entry_id INTEGER NOT NULL,
             device TEXT NOT NULL DEFAULT \'\',
+            distance INTEGER NOT NULL DEFAULT 1,
             end_no INTEGER NOT NULL,
             arrows TEXT NOT NULL,
             source TEXT NOT NULL DEFAULT \'device\',
             at TEXT NOT NULL)');
         $pdo->exec('CREATE INDEX IF NOT EXISTS score_log_entry ON score_log(entry_id)');
+
+        // 2 距離対応より前に作った DB に列を足す
+        self::addColumn($pdo, 'entries', 'arrowstring2', 'TEXT NOT NULL DEFAULT \'\'');
+        self::addColumn($pdo, 'score_log', 'distance', 'INTEGER NOT NULL DEFAULT 1');
+
+        // 部門はリカーブ男子・女子だけ(固定)。何も無ければ作る
+        if (!(int)$pdo->query('SELECT COUNT(*) FROM categories')->fetchColumn()) {
+            $pdo->exec("INSERT INTO categories(code, name, targetface, sort) VALUES
+                ('RM', 'リカーブ男子', 5, 10), ('RW', 'リカーブ女子', 5, 20)");
+        }
+    }
+
+    private static function addColumn(PDO $pdo, $table, $column, $def)
+    {
+        foreach ($pdo->query('PRAGMA table_info(' . $table . ')') as $c) {
+            if ($c['name'] === $column) {
+                return;
+            }
+        }
+        $pdo->exec("ALTER TABLE $table ADD COLUMN $column $def");
     }
 }

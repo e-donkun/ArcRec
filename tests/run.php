@@ -23,18 +23,27 @@ function call(array $reqs)
 }
 
 echo "# 大会設定と選手\n";
-Settings::setMany(['code' => 'KYT26', 'name' => '京都テスト大会', 'preset' => 'outdoor36', 'ends' => 6, 'arrows' => 6, 'pin' => '1234']);
-$rm = Categories::save(0, 'RM', 'リカーブ男子', 5);
-$rw = Categories::save(0, 'RW', 'リカーブ女子', 5);
+Settings::setMany(['code' => 'KYT26', 'name' => '京都テスト大会', 'preset' => 'outdoor36', 'pin' => '1234']);
+$rm = (int)Categories::byCode('RM')['id'];
+$rw = (int)Categories::byCode('RW')['id'];
+ok(count(Categories::all()) === 2, '部門はリカーブ男子・女子の2つだけ');
+ok(Categories::resolve('男子') === $rm && Categories::resolve('リカーブ女子') === $rw && Categories::resolve('W') === $rw && Categories::resolve('RM') === $rm && Categories::resolve('コンパウンド') === null && Categories::resolve('コンパウンド男子') === null && Categories::resolve('Recurve Men') === $rm && Categories::resolve('女子リカーブ') === $rw && Categories::resolve('男') === $rm && Categories::resolve('') === null, '部門の表記ゆれを判別(コンパウンドは拒否)');
 $a = Entries::save(['family_name' => '山田', 'given_name' => '太郎', 'affiliation' => '京都大', 'category_id' => $rm, 'target' => 1, 'letter' => 'A']);
 $b = Entries::save(['family_name' => '佐藤', 'given_name' => '花子', 'affiliation' => '同志社', 'category_id' => $rw, 'target' => 1, 'letter' => 'B']);
 $c = Entries::save(['family_name' => '鈴木', 'given_name' => '次郎', 'affiliation' => '立命館', 'category_id' => $rm, 'target' => 2, 'letter' => 'A']);
-ok(Entries::find($a)['bib'] === (string)$a, 'bib は未指定なら ID');
+ok(Entries::find($a)['bib'] === (string)$a, '端末へ渡す選手コード(bib)は ID');
 try {
-    Entries::save(['family_name' => '重複', 'target' => 1, 'letter' => 'A']);
+    Entries::save(['family_name' => '重複', 'category_id' => $rm, 'target' => 1, 'letter' => 'A']);
     ok(false, '同じ的位置は拒否');
 } catch (InvalidArgumentException $e) {
     ok(true, '同じ的位置は拒否');
+}
+
+try {
+    Entries::save(['family_name' => '部門なし']);
+    ok(false, '部門なしは拒否');
+} catch (InvalidArgumentException $e) {
+    ok(true, '部門なしは拒否');
 }
 
 echo "# handshake\n";
@@ -82,7 +91,7 @@ ok(Entries::find($a)['arrowstring'] === 'KLJIHG' . str_repeat(' ', 30), 'DB に�
 $r = call([$upd + ['refKey' => '1.1A', 'arrowstring' => str_repeat(' ', 6) . 'LLLLLL']]);
 ok(rtrim(Entries::find($a)['arrowstring']) === 'KLJIHGLLLLLL', '2エンド目を追加しても 1エンド目は残る');
 $r = call([$upd + ['refKey' => '1.1A', 'arrowstring' => 'KLJIHG' . 'LLLLLL', 'signed' => '1']]);
-ok(Entries::find($a)['signed'] == 1, 'signed を保存');
+ok((Entries::find($a)['signed'] & 2) === 2, 'signed を保存(距離1は 2^1 のビット)');
 $r = call([$upd + ['refKey' => '1.2A', 'arrowstring' => 'LLLLLL']]);
 ok($r['responses'][0]['action'] === 'reset', '他の的の選手には書けない -> reset');
 ok(Entries::find($c)['arrowstring'] === '', '他の的は変更されない');
@@ -136,6 +145,10 @@ ok(Entries::find($b)['target'] == 1 && Entries::find($b)['letter'] === 'B', '得
 ok(Entries::find($c)['target'] == 2 && Entries::find($c)['letter'] === 'A', '未得点の選手は先頭から詰め直す (鈴木=2A)');
 ok(Entries::find($d)['target'] == 2 && Entries::find($d)['letter'] === 'B' && Entries::find($e)['target'] == 3, '田中=2B, 高橋=3A');
 
+echo "# 最終更新\n";
+ok(preg_match('/^\d\d\/\d\d \d\d:\d\d:\d\d\(\d+秒前\)$/', Results::lastUpdateText()) === 1, '最終更新の表示: ' . Results::lastUpdateText());
+ok(strtotime(Results::lastUpdate()) >= time() - 5, '最終更新は直近の更新時刻');
+
 echo "# PDF\n";
 $pdf = Lite\Pdf::scorecards(Entries::all(), true, 'http://192.168.0.10/ianseo-lite/');
 ok(substr($pdf, 0, 4) === '%PDF' && strlen($pdf) > 20000, 'スコアカードPDF(QR付き)');
@@ -151,4 +164,7 @@ echo $fail ? "\nFAILED: $fail\n" : "\nAll OK\n";
 @unlink(getenv('LITE_DB'));
 @unlink(getenv('LITE_DB') . '-wal');
 @unlink(getenv('LITE_DB') . '-shm');
-exit($fail ? 1 : 0);
+
+// 2距離・屋内の組み合わせは別プロセスで確認する
+passthru(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__DIR__ . '/two_distances.php'), $code);
+exit($fail || $code ? 1 : 0);

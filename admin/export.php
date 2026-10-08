@@ -27,16 +27,22 @@ function csv_out($filename, array $rows)
 
 switch ($what) {
     case 'entries':
-        $rows = [['姓', '名', '所属', '部門', '的', 'ゼッケン']];
+        $rows = [['姓', '名', '所属', '部門', '的']];
         foreach (Entries::all() as $e) {
-            $rows[] = [$e['family_name'], $e['given_name'], $e['affiliation'], $e['category_name'], $e['target'] ? $e['target'] . $e['letter'] : '', $e['bib']];
+            $rows[] = [$e['family_name'], $e['given_name'], $e['affiliation'], $e['category_name'], $e['target'] ? $e['target'] . $e['letter'] : ''];
         }
         csv_out('entries.csv', $rows);
     case 'results':
         $ends = Settings::ends();
         $head = ['部門', '順位', '的', '氏名', '所属'];
-        for ($i = 1; $i <= $ends; $i++) {
-            $head[] = $i . 'E';
+        for ($d = 1; $d <= Settings::distances(); $d++) {
+            for ($i = 1; $i <= $ends; $i++) {
+                $head[] = (Settings::distances() > 1 ? 'D' . $d : '') . $i . 'E';
+            }
+        }
+        if (Settings::distances() > 1) {
+            $head[] = '距離1合計';
+            $head[] = '距離2合計';
         }
         $rows = [array_merge($head, ['合計', Settings::get('gold_label'), Settings::get('x_label')])];
         foreach (Results::byCategory() as $g) {
@@ -44,6 +50,7 @@ switch ($what) {
                 $rows[] = array_merge(
                     [$g['category']['name'], $r['rank'], $r['target'] ? $r['target'] . $r['letter'] : '', Entries::fullName($r), $r['affiliation']],
                     $r['end_scores'],
+                    Settings::distances() > 1 ? [$r['dist_scores'][1], $r['dist_scores'][2]] : [],
                     [$r['hits'] ? $r['score'] : '', $r['hits'] ? $r['golds'] : '', $r['hits'] ? $r['xs'] : '']
                 );
             }
@@ -51,18 +58,21 @@ switch ($what) {
         csv_out('results.csv', $rows);
     case 'arrows':
         $per = Settings::arrowsPerEnd();
-        $rows = [['的', '氏名', '所属', '部門', 'エンド', '矢1〜']];
+        $rows = [['的', '氏名', '所属', '部門', '距離', 'エンド', '矢1〜']];
         foreach (Entries::all() as $e) {
-            for ($n = 1; $n <= Settings::ends(); $n++) {
-                $s = Scoring::endString($e['arrowstring'], $n, $per);
-                if (trim($s) === '') {
-                    continue;
+            for ($d = 1; $d <= Settings::distances(); $d++) {
+                $arrows = Entries::arrows($e, $d);
+                for ($n = 1; $n <= Settings::ends(); $n++) {
+                    $s = Scoring::endString($arrows, $n, $per);
+                    if (trim($s) === '') {
+                        continue;
+                    }
+                    $row = [$e['target'] ? $e['target'] . $e['letter'] : '', Entries::fullName($e), $e['affiliation'], $e['category_name'], $d, $n];
+                    foreach (str_split($s) as $c) {
+                        $row[] = trim($c) === '' ? '' : Scoring::display($c);
+                    }
+                    $rows[] = $row;
                 }
-                $row = [$e['target'] ? $e['target'] . $e['letter'] : '', Entries::fullName($e), $e['affiliation'], $e['category_name'], $n];
-                foreach (str_split($s) as $c) {
-                    $row[] = trim($c) === '' ? '' : Scoring::display($c);
-                }
-                $rows[] = $row;
             }
         }
         csv_out('arrows.csv', $rows);
