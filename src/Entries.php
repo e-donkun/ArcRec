@@ -102,7 +102,7 @@ class Entries
                 $st = $pdo->prepare('SELECT id FROM entries WHERE target = ? AND letter = ? AND id != ?');
                 $st->execute([$target, $letter, (int)$id]);
                 if ($st->fetchColumn()) {
-                    throw new \InvalidArgumentException("的 {$target}{$letter} には既に別の選手がいます");
+                    throw new \InvalidArgumentException("立順 {$target}{$letter} には既に別の選手がいます");
                 }
             }
         }
@@ -189,7 +189,7 @@ class Entries
                     }
                 }
                 if ($letter === '') {
-                    return ['ok' => false, 'msg' => "的 {$target} は満員です(A〜D)"];
+                    return ['ok' => false, 'msg' => "{$target}的は満員です(A〜D)"];
                 }
             }
             if ((int)$e['target'] === $target && $e['letter'] === $letter) {
@@ -203,7 +203,7 @@ class Entries
                 $other = null;
             }
             if ($other && self::hasScore($other)) {
-                return ['ok' => false, 'msg' => "的 {$target}{$letter} には点数が入力済みの選手がいるため移せません"];
+                return ['ok' => false, 'msg' => "立順 {$target}{$letter} には点数が入力済みの選手がいるため移せません"];
             }
             $up = $pdo->prepare('UPDATE entries SET target = ?, letter = ? WHERE id = ?');
             $oldT = (int)$e['target'];

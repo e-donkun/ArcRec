@@ -1,5 +1,5 @@
 <?php
-// ホーム: 大会の状況と、メニュー(大会設定・端末接続・印刷・ログアウト)。大会の切り替え・新しい大会は、ログアウトして「大会の選択」(index.php)で
+// ホーム: 大会の状況と、メニュー(大会設定・端末接続・印刷)。ログアウトは上部バーの右上(ホームだけ)。大会の切り替え・新しい大会は、ログアウトして「大会の選択」(index.php)で
 require __DIR__ . '/_layout.php';
 require_admin();
 
@@ -23,7 +23,7 @@ foreach (Entries::all() as $e) {
     }
 }
 $code = Settings::code();
-page_head('ホーム', 'home');
+page_head('ホーム', 'home', ['logout' => true]);
 if (!Settings::get('name')) {
     echo '<div class="sp-flash warn">大会名がまだありません。<a href="setup.php">大会設定</a> で入れてください。</div>';
 }
@@ -42,7 +42,7 @@ $item = function ($href, $icon, $title, $sub = '', $attr = '') {
 echo '<div class="sp-section-title">大会の準備</div><div class="sp-menu">'
     . $item('setup.php', 'gear', '大会設定')
     . $item('entries.php', 'users', '選手登録')
-    . $item('targets.php', 'target', '的番号')
+    . $item('targets.php', 'target', '立順')
     . $item('qr.php', 'qr', '端末接続')
     . '</div>';
 echo '<div class="sp-section-title">印刷・出力</div><div class="sp-menu">'
@@ -55,5 +55,4 @@ echo '<div class="sp-section-title">印刷・出力</div><div class="sp-menu">'
     . '<a class="btn sub sm" href="export.php?what=entries">名簿</a></div></div></div>'
     . '</div>';
 
-echo '<div class="sp-menu" style="margin-top:16px">' . $item('logout.php', 'logout', 'ログアウト', 'この大会を閉じて、大会の選択に戻る') . '</div>';
 page_foot('home');

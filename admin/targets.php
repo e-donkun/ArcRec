@@ -1,5 +1,5 @@
 <?php
-// 的番号の設定(ianseo 本体のスマホモード「的番号設定」と同じ画面構成)。登録した選手を、的番号と位置(A〜D)に割り当てる。
+// 立順(的番号と位置)の設定(ianseo 本体のスマホモード「的番号設定」と同じ画面構成)。登録した選手を、的番号と位置(A〜D)に割り当てる。
 // 表示は「一覧」と「割り当て表」を切り替えられる(どちらも同じ処理 Entries::place を呼ぶ):
 //   ・一覧: 選手のカードごとのプルダウンで、的番号と位置を選ぶ
 //   ・割り当て表: 下の未割当の選手(または枠の選手)をタップしてから、空いている枠をタップする。選手のいる枠なら入れ替え
@@ -68,7 +68,7 @@ $cats = [];
 foreach (Categories::all() as $c) {
     $cats[] = ['id' => (int)$c['id'], 'name' => $c['name']];
 }
-page_head('的番号設定', 'targets', ['js' => ['LiteState' => $state, 'LiteCats' => $cats]]);
+page_head('立順', 'targets', ['js' => ['LiteState' => $state, 'LiteCats' => $cats]]);
 if (!$state['entries']) {
     echo '<div class="sp-empty">選手がいません。先に <a href="entries.php">選手登録</a> をしてください。</div>';
 }
@@ -87,25 +87,25 @@ if (!$state['entries']) {
 	<div class="sp-count" id="SpCount"></div>
 	<div class="sp-list" id="SpList"></div>
 	<p class="sp-note">的番号と位置をプルダウンで選ぶと保存されます。位置を選ばないときは、その的の空いている最初の位置に入ります。選手のいる位置を選ぶと入れ替えます。<br>点数が入っている選手(🔒)は動かせません。点数が入っている選手のいる位置へも移せません。</p>
+	<details class="card noprint">
+		<summary>自動で割り当てる</summary>
+		<form method="post" class="inline-form" style="margin-top:8px" onsubmit="return confirm('点数のない選手の的番号を、部門順・登録順に付け直します。よろしいですか?')">
+			<?php echo csrf_field(); ?><input type="hidden" name="do" value="auto">
+			<label class="inline-label">1的あたり <input type="number" name="per_target" min="1" max="4" value="<?php echo (int)$state['per']; ?>" style="width:4.5rem"> 人</label>
+			<label class="inline-label">開始の的 <input type="number" name="first" min="1" value="1" style="width:5rem"></label>
+			<button class="sp-btn sub">自動で割り当てる</button>
+		</form>
+		<form method="post" class="inline-form" onsubmit="return confirm('点数のない選手を、すべて未割当に戻します。よろしいですか?')">
+			<?php echo csrf_field(); ?><input type="hidden" name="do" value="clear"><button class="sp-btn sub">割り当てをすべて外す</button>
+		</form>
+		<p class="sp-note">点数のある選手は動かしません。</p>
+	</details>
 </div>
 <div id="SpGridView" class="sp-hide">
 	<div id="SpGrid"></div>
 	<p><button type="button" class="sp-btn sub" id="SpAddTarget"><?php echo icon('plus'); ?>的を追加</button></p>
 	<p class="sp-note">下の未割当の選手をタップしてから、空いている枠をタップすると割り当てます。枠の選手をタップすると、別の空き枠へ移したり、割り当てを外したりできます(選手のいる枠をタップすると入れ替え)。🔒の選手(点数が入っている)は動かせません。</p>
 </div>
-<details class="card noprint">
-	<summary>自動で割り当てる</summary>
-	<form method="post" class="inline-form" style="margin-top:8px" onsubmit="return confirm('点数のない選手の的番号を、部門順・登録順に付け直します。よろしいですか?')">
-		<?php echo csrf_field(); ?><input type="hidden" name="do" value="auto">
-		<label class="inline-label">1的あたり <input type="number" name="per_target" min="1" max="4" value="<?php echo (int)$state['per']; ?>" style="width:4.5rem"> 人</label>
-		<label class="inline-label">開始の的 <input type="number" name="first" min="1" value="1" style="width:5rem"></label>
-		<button class="sp-btn sub">自動で割り当てる</button>
-	</form>
-	<form method="post" class="inline-form" onsubmit="return confirm('点数のない選手を、すべて未割当に戻します。よろしいですか?')">
-		<?php echo csrf_field(); ?><input type="hidden" name="do" value="clear"><button class="sp-btn sub">割り当てをすべて外す</button>
-	</form>
-	<p class="sp-note">点数のある選手は動かしません。</p>
-</details>
 <div id="SpTray" class="sp-tray sp-hide">
 	<div class="sp-tray-head">
 		<span id="SpTrayInfo"></span>
@@ -159,8 +159,8 @@ async function spPlace(id, t, l) {
 /* ---- 一覧(カードごとのプルダウン) ---- */
 function spTgtCard(e) {
 	const n = spBoardCount();
-	let to = '<option value="0"' + (e.t ? '' : ' selected') + '>的 --</option>';
-	for (let t = 1; t <= Math.max(n, e.t) + 2; t++) to += '<option value="' + t + '"' + (e.t === t ? ' selected' : '') + '>的 ' + t + '</option>';
+	let to = '<option value="0"' + (e.t ? '' : ' selected') + '>-- 的</option>';
+	for (let t = 1; t <= Math.max(n, e.t) + 2; t++) to += '<option value="' + t + '"' + (e.t === t ? ' selected' : '') + '>' + t + '的</option>';
 	let lo = e.t ? '' : '<option value="">位置 --</option>';
 	LETTERS.forEach(l => {
 		const o = e.t ? spOwner(e.t, l) : null;
@@ -198,7 +198,7 @@ function spGridRender() {
 	const sel = SpGrid.sel ? spRow(SpGrid.sel) : null;
 	let html = '';
 	for (let t = 1; t <= spBoardCount(); t++) {
-		html += '<div class="sp-grid-row"><div class="sp-grid-no">' + t + '</div><div class="sp-grid-cells" style="--cols:4">';
+		html += '<div class="sp-grid-row"><div class="sp-grid-no">' + t + '的</div><div class="sp-grid-cells" style="--cols:4">';
 		LETTERS.forEach(l => {
 			const r = spOwner(t, l);
 			if (!r) {

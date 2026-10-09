@@ -268,7 +268,7 @@ class Pdf extends \TCPDF
             $pdf->write2DBarcode(Connect::targetPayload($baseUrl, $t), 'QRCODE,M', $x + 8, $y + 4, 44, 44, ['border' => false, 'padding' => 0], 'N');
             $pdf->f(22);
             $pdf->SetXY($x, $y + 49);
-            $pdf->Cell($cw, 12, '的 ' . $t, 0, 0, 'C');
+            $pdf->Cell($cw, 12, $t . '的', 0, 0, 'C');
             $i++;
         }
         if (!$i) {

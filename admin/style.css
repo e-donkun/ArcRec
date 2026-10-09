@@ -309,7 +309,7 @@ body.sp-has-keypad .sp-main { padding-bottom: calc(var(--sp-tabbar-h) + 190px + 
 
 /* 的番号の割り当て表 */
 .sp-grid-row { display: flex; gap: 6px; margin-bottom: 6px; align-items: stretch; }
-.sp-grid-no { width: 30px; flex: none; display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--sp-primary-dark); background: var(--sp-primary-light); border-radius: 8px; }
+.sp-grid-no { width: 42px; flex: none; font-size: 14px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--sp-primary-dark); background: var(--sp-primary-light); border-radius: 8px; }
 .sp-grid-cells { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(var(--cols, 4), 1fr); gap: 4px; }
 .sp-slot { min-height: 56px; min-width: 0; padding: 4px; border: 1px solid var(--sp-border); border-radius: 8px; background: #fff; color: var(--sp-text); text-align: left; display: flex; flex-direction: column; font-size: 12px; line-height: 1.25; overflow: hidden; }
 .sp-slot small { font-size: 11px; color: var(--sp-muted); font-weight: bold; }

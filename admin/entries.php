@@ -1,7 +1,7 @@
 <?php
 // 選手登録(ianseo 本体のスマホモード「参加者リスト」と同じ画面構成)
 //   検索と部門のチップ → 選手のカード → タップで編集シート、「＋ 追加」で追加シート(新しく入力 / 過去の大会から)
-// 的番号と位置は「的番号」の画面で設定する。
+// 的番号と位置は「立順」の画面で設定する。
 require __DIR__ . '/_layout.php';
 require_admin();
 
@@ -159,7 +159,7 @@ page_head('選手登録', 'entries', ['js' => ['LiteRows' => entry_rows(), 'Lite
 	<button type="button" class="sp-btn sub" style="flex:none" id="SpAddBtn"><?php echo icon('plus'); ?>追加</button>
 </div>
 <div class="sp-list" id="SpList"></div>
-<p class="sp-note">カードをタップすると、名前・所属・部門を変更できます。点数のない選手は削除もできます。的番号と位置は <a href="targets.php">的番号</a> の画面で設定します。</p>
+<p class="sp-note">カードをタップすると、名前・所属・部門を変更できます。点数のない選手は削除もできます。的番号と位置は <a href="targets.php">立順</a> の画面で設定します。</p>
 <details class="card"><summary>CSVでまとめて登録</summary>
 	<form method="post" enctype="multipart/form-data"><?php echo csrf_field(); ?><input type="hidden" name="do" value="import">
 	<p class="sp-note">列: <code>姓,名,所属,部門</code>(部門は 男子 / 女子)。カンマかタブ区切り、UTF-8 か Shift_JIS(Excel保存)。1行目が見出しなら飛ばします。</p>
@@ -227,7 +227,7 @@ async function spEntSave(params) {
 /* ---- 編集(カードをタップ) ---- */
 function spOpenEdit(r) {
 	const html = '<h2>' + spEsc(r.family + ' ' + r.given) + '</h2>'
-		+ '<div class="sp-sub">' + (r.tgt ? '的 ' + spEsc(r.tgt) : '的は未割当') + '(的番号の画面で変更)' + (r.hits ? ' / ' + r.hits + '射入力済み' : '') + '</div>'
+		+ '<div class="sp-sub">' + (r.tgt ? '立順 ' + spEsc(r.tgt) : '立順は未割当') + '(立順の画面で変更)' + (r.hits ? ' / ' + r.hits + '射入力済み' : '') + '</div>'
 		+ spNameFields(r)
 		+ '<label class="sp-switch" style="margin:4px 0 8px"><input type="checkbox" data-f="status"' + (r.status ? ' checked' : '') + '> 欠場(端末・結果から外す)</label>'
 		+ (r.scored ? '<p class="sp-note">点数が入っているため削除できません。</p>' : '<button type="button" class="sp-btn danger block" id="SpDelBtn">この選手を削除</button>')

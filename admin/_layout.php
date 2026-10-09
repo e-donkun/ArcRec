@@ -119,7 +119,7 @@ function tabs()
     return [
         'home' => ['home.php', 'ホーム', 'home'],
         'entries' => ['entries.php', '選手', 'users'],
-        'targets' => ['targets.php', '的番号', 'target'],
+        'targets' => ['targets.php', '立順', 'target'],
         'scores' => ['scores.php', '入力', 'edit'],
         'results' => ['results.php', '結果', 'chart'],
     ];
@@ -127,7 +127,7 @@ function tabs()
 
 /**
  * 画面の上部(スマホモードと同じ: 上部バーに大会名と画面名)。
- * $opts: 'public' => 参加者向けの公開ページ(管理用のリンク・タブを出さない), 'base' => style.css などの場所(トップのページから使うとき 'admin/'),
+ * $opts: 'public' => 参加者向けの公開ページ(管理用のリンク・タブを出さない), 'logout' => 右上にログアウトボタン(ホームだけ), 'base' => style.css などの場所(トップのページから使うとき 'admin/'),
  *        'wide' => 表の多い画面で横幅を広げる, 'js' => JavaScript に渡す変数, 'body' => body の class
  */
 function page_head($title, $tab = '', array $opts = [])
@@ -148,12 +148,12 @@ function page_head($title, $tab = '', array $opts = [])
     }
     echo '</script><script src="' . $base . 'app.js' . $ver . '"></script></head>'
         . '<body class="' . h($opts['body'] ?? '') . '"><header class="sp-appbar"><div class="sp-appbar-title">';
-    if ($admin) {
-        echo '<a class="sp-tour" href="index.php" title="大会の選択(切り替え)">' . h($name) . ' ▸</a>';
-    } else {
-        echo '<span class="sp-tour">' . h($name) . '</span>';
-    }
+    // 大会名は表示だけ(ここから大会は切り替えない。切り替えはログアウトして大会の選択で)
+    echo '<span class="sp-tour">' . h($name) . '</span>';
     echo '<h1>' . h($title) . '</h1></div>';
+    if ($admin && !empty($opts['logout'])) {
+        echo '<a class="sp-appbar-btn" href="logout.php" title="この大会を閉じて、大会の選択に戻る">' . icon('logout') . '<span>ログアウト</span></a>';
+    }
     echo '</header><main class="sp-main' . (!empty($opts['wide']) ? ' wide' : '') . '">';
     foreach ((array)flash() as $f) {
         echo '<div class="sp-flash ' . h($f[0]) . '">' . h($f[1]) . '</div>';
