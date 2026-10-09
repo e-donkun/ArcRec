@@ -2,13 +2,18 @@
 	"id": "ianseo-lite",
 	"name": "ianseo-lite（簡易記録会システム）",
 	"description": "予選だけ・1セッションだけの記録会向け。SQLite + ScorekeeperNG(Lite)で入力し、スコアカードと結果をPDFで出力する。本体のDBとは独立して動く。",
-	"version": "0.7.0",
+	"version": "0.8.0",
 	"author": "e-donkun",
 	"homepage": "https://github.com/e-donkun/ianseo-lite",
 	"license": "GPL-2.0",
 	"testedIanseo": "2026-03-01",
 	"requiresPhp": "7.4",
 	"changelog": [
+		{
+			"version": "0.8.0",
+			"date": "2026-10-10",
+			"notes": "GitHub の Webhook で main への push をサーバーに自動反映する deploy.php を追加(署名を確認して git pull。config.local.php に deploy_secret を設定したときだけ動く)"
+		},
 		{
 			"version": "0.7.0",
 			"date": "2026-10-09",

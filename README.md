@@ -116,6 +116,51 @@ LAN 上のアドレス(例 `http://192.168.0.10:8080/admin/`)で管理画面を�
 - 端末の登録には大会コード(ランダムな8桁の16進数)が必要で、これが合言葉になります。PIN はありません。登録済みの端末だけが API を使えます。
 - 結果ページ・結果 PDF/CSV は、大会設定で公開にした大会だけ誰でも見られます。それ以外は管理者のみです。インターネットに直接公開する場合は HTTPS のリバースプロキシ配下に置いてください。
 
+## サーバーへの自動反映(GitHub の main に push → さくらで git pull)
+
+`deploy.php` が GitHub の Webhook を受けて、サーバーのこのフォルダで `git pull --ff-only origin main` を実行します。
+Webhook の署名(Secret)を確かめてから動くので、ほかの人がこの URL を叩いても何も起きません。Secret を設定していなければ 404 を返して何もしません。
+`data/`(大会の DB)と `config.local.php` は Git の管理外なので、pull しても消えません。
+
+リポジトリは非公開なので、サーバーには**読み取り専用の鍵(Deploy key)**を置きます。以下は さくらのレンタルサーバ の例です
+(`<ユーザー名>` はサーバーのアカウント名、`~/www/ianseo-lite` は置き場所。ianseo の `Modules/Custom/ianseo-lite` に置くならそのパス)。
+
+1. **SSH でサーバーに入り、鍵を作る**
+   ```sh
+   ssh-keygen -t ed25519 -N "" -f ~/.ssh/ianseo-lite_deploy
+   cat ~/.ssh/ianseo-lite_deploy.pub
+   ```
+2. **GitHub に鍵を登録**: リポジトリの Settings → Deploy keys → Add deploy key に、表示された公開鍵を貼る(「Allow write access」は付けない)。
+3. **サーバーに clone**(すでに置いてあるフォルダは、`data/` と `config.local.php` を退避してから置き換える)
+   ```sh
+   GIT_SSH_COMMAND="ssh -i ~/.ssh/ianseo-lite_deploy -o IdentitiesOnly=yes" \
+     git clone git@github.com:e-donkun/ianseo-lite.git ~/www/ianseo-lite
+   ```
+4. **Secret を決めて `config.local.php` に書く**(`openssl rand -hex 20` などでランダムな文字列を作る)
+   ```php
+   <?php
+   return [
+       'deploy_secret' => 'ここにランダムな文字列',
+       'deploy_ssh_key' => '/home/<ユーザー名>/.ssh/ianseo-lite_deploy',   // 絶対パスで
+       // 'deploy_branch' => 'main',   // 省略時 main
+   ];
+   ```
+5. **GitHub に Webhook を登録**: Settings → Webhooks → Add webhook
+   - Payload URL: `https://<ユーザー名>.sakura.ne.jp/ianseo-lite/deploy.php`(置き場所に合わせる)
+   - Content type: `application/json`
+   - Secret: 4. と同じ文字列
+   - Which events: **Just the push event**
+6. 登録すると GitHub が ping を送ります。Webhook の「Recent Deliveries」が 200(`pong`)なら設定は完了です。
+   以後 main に push すると自動で pull され、結果は「Recent Deliveries」の応答と `data/deploy.log` に残ります。
+
+うまくいかないとき:
+- 403 `Bad signature` … GitHub と `config.local.php` の Secret が違う。
+- 500 で `Permission denied (publickey)` … Deploy key の登録漏れか、`deploy_ssh_key` のパス違い(鍵のパーミッションは 600)。
+- 500 で `Not possible to fast-forward` … サーバー側のファイルを直接編集している。`git status` で確かめ、`git checkout -- <ファイル>` で戻す。
+- 500 `Cannot run git` … PHP から外部コマンドを実行できない環境。その場合は、さくらのコントロールパネルの「CRON設定」で
+  `cd ~/www/ianseo-lite && GIT_SSH_COMMAND="ssh -i ~/.ssh/ianseo-lite_deploy -o IdentitiesOnly=yes" git pull --ff-only -q origin main`
+  を数分おきに実行する方法に切り替えてください(Webhook は不要)。
+
 ## テスト
 
 ```sh
@@ -130,6 +175,7 @@ Modules/Custom/ianseo-lite/
 ├─ menu.php               ianseo のメニュー「モジュール」にリンクを追加
 ├─ index.php              入口(端末のPOSTはAPI、ブラウザは管理画面へ)
 ├─ results.php            参加者向けの結果ページ(公開にした大会だけ。ログイン不要)
+├─ deploy.php             GitHub の Webhook を受けて git pull(サーバーへの自動反映。Secret を設定したときだけ動く)
 ├─ Api/ISK-NG/index.php   ScorekeeperNG の接続先
 ├─ admin/                 管理画面(大会の選択/ホーム/大会設定/選手登録/的番号/入力状況/結果/端末接続/PDF/CSV)
 ├─ src/                   ロジック(Db, Settings, Entries, Scoring, Results, IskApi, Pdf ...)
