@@ -1,4 +1,5 @@
 <?php
+// 入力状況(端末から届いた得点の確認・訂正・確定)。スマホモードのカード一覧と同じ作り
 require __DIR__ . '/_layout.php';
 require_admin();
 
@@ -24,52 +25,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $total = Settings::totalArrows();
 $per = Settings::arrowsPerEnd();
 $nd = Settings::distances();
-$rows = Entries::all();
-$onlyTarget = isset($_GET['t']) ? (int)$_GET['t'] : 0;
+$ends = Settings::ends() * $nd;
+$cats = Lite\Categories::all();
 
 page_head('入力状況', 'scores');
-echo '<h1>入力状況</h1>';
-echo '<p>スコア最終更新: <b>' . h(Results::lastUpdateText()) . '</b> <span class="muted small">— 端末から送られた得点です。この画面は自動更新されません(再読み込みしてください)。</span></p>';
-echo '<div class="actions noprint"><a class="btn sub" href="pdf.php?type=scorecard_filled">スコアカード(得点入り)PDF</a>'
-    . '<a class="btn sub" href="export.php?what=arrows">全矢CSV</a>'
-    . '<form method="post" class="inline" onsubmit="return confirm(\'全員のスコアカードを確定します。以後、端末からの更新は拒否されます。\')">' . csrf_field() . '<input type="hidden" name="do" value="lock_all"><input type="hidden" name="value" value="1"><button class="sub">全員を確定</button></form>'
-    . '<form method="post" class="inline">' . csrf_field() . '<input type="hidden" name="do" value="lock_all"><input type="hidden" name="value" value="0"><button class="sub">全員の確定を解除</button></form></div>';
-
-echo '<div class="tablewrap"><table><tr><th class="c">的</th><th>氏名</th><th>部門</th><th>進行</th><th class="n">射数</th>' . ($nd > 1 ? '<th class="n">' . h(Settings::distanceName(1) ?: '距離1') . '</th><th class="n">' . h(Settings::distanceName(2) ?: '距離2') . '</th>' : '') . '<th class="n">合計</th><th class="n">' . h(Settings::get('gold_label')) . '</th><th class="n">' . h(Settings::get('x_label')) . '</th><th>最終更新</th><th class="noprint"></th></tr>';
-$shown = 0;
-foreach ($rows as $e) {
-    if ($e['status'] || ($onlyTarget && (int)$e['target'] !== $onlyTarget)) {
+echo '<p class="sp-note">スコア最終更新: <b>' . h(Results::lastUpdateText()) . '</b>(端末から届いた得点。再読み込みで最新になります)</p>';
+?>
+<div class="sp-toolbar">
+	<label class="sp-search"><?php echo icon('search'); ?><input type="search" id="SpSearch" placeholder="名前・所属・的番号で検索"></label>
+	<div class="sp-chips" id="SpCatChips">
+		<button type="button" class="sp-chip active" data-cat="">すべて</button>
+<?php foreach ($cats as $c) { ?>
+		<button type="button" class="sp-chip" data-cat="<?php echo (int)$c['id']; ?>"><?php echo h($c['name']); ?></button>
+<?php } ?>
+	</div>
+	<label class="sp-switch"><input type="checkbox" id="SpOnlyOpen"> 終わっていない人だけ</label>
+</div>
+<div class="sp-count" id="SpCount"></div>
+<div class="sp-list" id="SpList">
+<?php
+foreach (Entries::all() as $e) {
+    if ($e['status']) {
         continue;
     }
-    $shown++;
     list($score, $g, $x, $hits) = Scoring::total(Entries::allArrows($e));
     $pct = $total ? round($hits * 100 / $total) : 0;
-    $endsDone = (int)floor($hits / $per); // 全距離を通したエンド数
-    echo '<tr><td class="c">' . ($e['target'] ? h($e['target'] . $e['letter']) : '-') . '</td>'
-        . '<td>' . h(Entries::fullName($e)) . '</td><td>' . h($e['category_name'] ?? '') . '</td>'
-        . '<td style="min-width:8rem"><div class="bar"><i style="width:' . $pct . '%"></i></div><span class="small muted">' . $endsDone . '/' . (Settings::ends() * $nd) . ' エンド</span></td>'
-        . '<td class="n">' . $hits . '/' . $total . '</td>' . distCells($e, $nd) . '<td class="n"><b>' . ($hits ? $score : '') . '</b></td>'
-        . '<td class="n">' . ($hits ? $g : '') . '</td><td class="n">' . ($hits ? $x : '') . '</td>'
-        . '<td class="small">' . h($e['updated_at']) . ($e['signed'] ? ' 署名済' : '') . ($e['locked'] ? ' <span class="lock">確定</span>' : '') . '</td>'
-        . '<td class="noprint"><a class="btn sub sm" href="score_edit.php?id=' . $e['id'] . '">訂正</a> '
-        . '<form method="post" class="inline">' . csrf_field() . '<input type="hidden" name="do" value="lock"><input type="hidden" name="id" value="' . $e['id'] . '"><input type="hidden" name="value" value="' . ($e['locked'] ? 0 : 1) . '"><button class="sm sub">' . ($e['locked'] ? '確定解除' : '確定') . '</button></form></td></tr>';
-}
-if (!$shown) {
-    echo '<tr><td colspan="12" class="muted">対象の選手がいません</td></tr>';
-}
-echo '</table></div>';
-page_foot();
-
-/** 距離ごとの合計の列(2距離のときだけ) */
-function distCells(array $e, $nd)
-{
-    if ($nd < 2) {
-        return '';
+    $dist = [];
+    if ($nd > 1) {
+        for ($d = 1; $d <= $nd; $d++) {
+            $t = Scoring::total(Entries::arrows($e, $d));
+            $dist[] = '<span>' . h(Settings::distanceName($d) ?: '距離' . $d) . ' ' . ($t[3] ? $t[0] : '-') . '</span>';
+        }
     }
-    $o = '';
-    for ($d = 1; $d <= $nd; $d++) {
-        $t = Scoring::total(Entries::arrows($e, $d));
-        $o .= '<td class="n">' . ($t[3] ? $t[0] : '') . '</td>';
-    }
-    return $o;
+    $pos = $e['target'] ? $e['target'] . $e['letter'] : '';
+    $search = mb_strtolower(implode(' ', [Entries::fullName($e), $e['family_name'] . $e['given_name'], $e['affiliation'], $e['category_name'], $pos]));
+    echo '<div class="sp-card" data-cat="' . (int)$e['category_id'] . '" data-done="' . ($hits >= $total ? 1 : 0) . '" data-search="' . h($search) . '">'
+        . '<div class="sp-card-head"><span class="sp-badge' . ($pos ? '' : ' none') . '">' . h($pos ?: '-') . '</span><div class="sp-card-main">'
+        . '<div class="sp-name">' . h(Entries::fullName($e)) . '<span class="sp-tag">' . h($e['category_name']) . '</span></div>'
+        . '<div class="sp-sub">' . h($e['affiliation']) . '</div></div>'
+        . '<div class="sp-score">' . ($hits ? '<b>' . $score . '</b><div class="sp-sub">' . h(Settings::get('gold_label')) . ':' . $g . ' ' . h(Settings::get('x_label')) . ':' . $x . '</div>' : '') . '</div></div>'
+        . '<div class="bar" style="margin-top:8px"><i style="width:' . $pct . '%"></i></div>'
+        . '<div class="sp-dists">' . implode('', $dist) . '<span>' . (int)floor($hits / $per) . '/' . $ends . 'エンド</span><span>' . $hits . '/' . $total . '射</span></div>'
+        . '<div class="sp-row" style="margin-top:8px;align-items:center"><div class="sp-sub" style="white-space:normal">'
+        . ($e['updated_at'] ? '更新 ' . h(substr($e['updated_at'], 5, 11)) : '未入力')
+        . ($e['signed'] ? ' <span class="sp-tag ok">署名済</span>' : '') . ($e['locked'] ? ' <span class="sp-tag warn">確定</span>' : '') . '</div>'
+        . '<a class="sp-btn sub" style="flex:none;padding:6px 12px" href="score_edit.php?id=' . $e['id'] . '">訂正</a>'
+        . '<form method="post" style="flex:none">' . csrf_field() . '<input type="hidden" name="do" value="lock"><input type="hidden" name="id" value="' . $e['id'] . '"><input type="hidden" name="value" value="' . ($e['locked'] ? 0 : 1) . '">'
+        . '<button class="sp-btn sub" style="padding:6px 12px">' . ($e['locked'] ? '確定解除' : '確定') . '</button></form>'
+        . '</div></div>';
 }
+?>
+</div>
+<p class="sp-note">「確定」したスコアカードは、端末からの更新を受け付けません(管理画面からの訂正はできます)。</p>
+<div class="actions noprint">
+	<a class="sp-btn sub" href="pdf.php?type=scorecard_filled" target="_blank"><?php echo icon('print'); ?>スコアカード(得点入り)PDF</a>
+	<a class="sp-btn sub" href="export.php?what=arrows">全矢CSV</a>
+	<form method="post" class="inline" onsubmit="return confirm('全員のスコアカードを確定します。以後、端末からの更新は拒否されます。')"><?php echo csrf_field(); ?><input type="hidden" name="do" value="lock_all"><input type="hidden" name="value" value="1"><button class="sp-btn sub">全員を確定</button></form>
+	<form method="post" class="inline"><?php echo csrf_field(); ?><input type="hidden" name="do" value="lock_all"><input type="hidden" name="value" value="0"><button class="sp-btn sub">全員の確定を解除</button></form>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+	let cat = '';
+	const only = document.getElementById('SpOnlyOpen');
+	function filter() {
+		const n = spFilterCards(document.getElementById('SpList'), document.getElementById('SpSearch').value,
+			c => (!cat || c.dataset.cat === cat) && (!only.checked || c.dataset.done === '0'));
+		document.getElementById('SpCount').textContent = n + ' 人';
+	}
+	document.getElementById('SpSearch').addEventListener('input', filter);
+	only.addEventListener('change', filter);
+	document.getElementById('SpCatChips').addEventListener('click', ev => {
+		const b = ev.target.closest('[data-cat]');
+		if (!b) return;
+		cat = b.dataset.cat;
+		document.querySelectorAll('#SpCatChips [data-cat]').forEach(x => x.classList.toggle('active', x === b));
+		filter();
+	});
+	filter();
+});
+</script>
+<?php
+page_foot('scores');

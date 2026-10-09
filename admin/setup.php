@@ -69,8 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $s = Settings::all();
 $cat = Settings::category();
 $nd = Settings::distances();
-page_head('競技設定', 'setup');
-echo '<h1>競技設定</h1>';
+page_head('競技設定', 'home');
 echo '<form method="post" class="card wideform">' . csrf_field() . '<input type="hidden" name="do" value="settings">';
 echo '<label>大会名</label><input type="text" name="name" value="' . h($s['name']) . '">';
 
@@ -101,7 +100,7 @@ echo '<p><button>保存</button></p></form>';
 
 // ---- 管理
 echo '<h2>管理</h2><div class="row"><form method="post" class="card" style="flex:1 1 20rem">' . csrf_field() . '<input type="hidden" name="do" value="password">'
-    . '<b>管理パスワードの変更</b><label>新しいパスワード</label><input type="password" name="password" required><label>確認</label><input type="password" name="password2" required><p><button class="sub">変更</button></p></form>';
+    . '<b>この大会のパスワードの変更</b><p class="sp-note">パスワードはこの大会の DB に保存します。</p><label>新しいパスワード</label><input type="password" name="password" required><label>確認</label><input type="password" name="password2" required><p><button class="sub">変更</button></p></form>';
 echo '<form method="post" class="card" style="flex:1 1 20rem" onsubmit="return confirm(\'全員の得点を消します。よろしいですか?\')">' . csrf_field() . '<input type="hidden" name="do" value="clear_scores">'
     . '<b>得点の全消去</b><p class="muted small">リハーサル後などに、選手名簿はそのままで得点だけを消します。</p>'
     . '<label style="font-weight:400"><input type="checkbox" name="confirm" value="yes"> 本当に消す</label><p><button class="danger">得点を全消去</button></p></form></div>';
@@ -126,4 +125,4 @@ echo '<script>(function(){'
     . 'last=n}'
     . 'p.onchange=u;document.getElementById("dist2").style.display=' . ($nd === 2 ? '""' : '"none"') . ';'
     . '})()</script>';
-page_foot();
+page_foot('home');

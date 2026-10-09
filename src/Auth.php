@@ -4,7 +4,8 @@ namespace Lite;
 /**
  * 管理画面の認証(大会ごとのパスワード)と CSRF 対策。
  * パスワードは大会の DB の中(settings.admin_hash)にあり、大会ごとに別々。
- * セッションには「パスワードで開いた大会」を覚えておき、大会を切り替えるときにまた聞かない。
+ * セッションには「いまパスワードで開いている大会」1つだけを覚える。別の大会に切り替えるときは、その都度パスワードを入れる
+ * (前に開いた大会のパスワードは覚えない)。
  * config.local.php の admin_password を設定していれば、それはどの大会も開ける共通のパスワード(マスター)になる。
  * 端末(ScorekeeperNG)の API とは別物で、API は大会コード(ランダムな16進数8桁)で守る。
  */
@@ -66,7 +67,7 @@ class Auth
 
     // ------------------------------------------------------------ ログイン状態(セッション)
 
-    /** パスワードを確かめて、合っていればその大会を開いた状態にする */
+    /** パスワードを確かめて、合っていればその大会を開く(それまで開いていた大会は閉じる) */
     public static function login($code, $password)
     {
         self::start();
@@ -75,40 +76,8 @@ class Auth
             return false;
         }
         session_regenerate_id(true);
-        $_SESSION['auth'][$f['code']] = true;
-        if (($m = self::master()) !== null && hash_equals($m, (string)$password)) {
-            $_SESSION['master'] = true;
-        }
         $_SESSION['comp'] = $f['code'];
-        return true;
-    }
-
-    public static function authorized($code)
-    {
-        self::start();
-        $f = Competitions::find($code);
-        return $f && !empty($_SESSION['auth'][$f['code']]);
-    }
-
-    /** 開いたことのある(パスワードを通った)大会のコード一覧 */
-    public static function authorizedCodes()
-    {
-        self::start();
-        return array_keys(array_filter($_SESSION['auth'] ?? []));
-    }
-
-    public static function anyAuthorized()
-    {
-        return !empty(self::authorizedCodes());
-    }
-
-    /** 大会を切り替える(パスワードを通った大会だけ) */
-    public static function switchTo($code)
-    {
-        if (!self::authorized($code)) {
-            return false;
-        }
-        $_SESSION['comp'] = Competitions::find($code)['code'];
+        unset($_SESSION['auth']);   // 以前の版で覚えていた「開いた大会の一覧」は使わない
         return true;
     }
 
@@ -117,7 +86,11 @@ class Auth
     {
         self::start();
         $c = $_SESSION['comp'] ?? null;
-        return ($c && self::authorized($c)) ? $c : null;
+        if (!$c) {
+            return null;
+        }
+        $f = Competitions::find($c);
+        return $f ? $f['code'] : null;
     }
 
     public static function check()
@@ -125,11 +98,17 @@ class Auth
         return self::current() !== null;
     }
 
-    /** 大会を新しく作ってよいか(まだ大会が無い、パスワードを通った大会がある、またはマスターパスワードで入った) */
+    /** いま開いている大会か */
+    public static function isCurrent($code)
+    {
+        $cur = self::current();
+        return $cur !== null && strcasecmp($cur, (string)$code) === 0;
+    }
+
+    /** 大会を新しく作ってよいか(どれかの大会を開いている、またはまだ大会が1つも無い) */
     public static function canCreate()
     {
-        self::start();
-        return !Competitions::files() || self::anyAuthorized() || !empty($_SESSION['master']);
+        return self::check() || !Competitions::files();
     }
 
     public static function logout()

@@ -4,37 +4,54 @@ namespace Lite;
 use PDO;
 
 /**
- * 過去の大会のデータ(選手・所属)から、入力の候補を出す。
- * 読むのは、このセッションでパスワードを通した大会(と、いま開いている大会)だけ。
- * パスワードを知らない大会の名簿は読まない。
+ * 過去の大会のデータ(選手・所属)から、選手登録の候補を出す。
+ * このサーバーにある、いま開いている大会以外のすべての大会の名簿を読む(読むのは姓名・所属・部門だけ)。
+ * ianseo 本体のスマホモードの「参加者を追加(過去の参加者から: チーム → 選手)」と同じ流れで使う。
  */
 class Past
 {
-    /** @return PDO[] 候補を探す DB(いま開いている大会を先頭に) */
-    private static function dbs(array $codes = null)
+    /** @return array[] [['code' => 大会コード, 'name' => 大会名, 'pdo' => PDO], ...] いま開いている大会以外。新しい大会から */
+    private static function others()
     {
-        $out = [Db::pdo()];
-        $codes = $codes ?? (session_status() === PHP_SESSION_ACTIVE ? Auth::authorizedCodes() : []);
-        $cur = Db::path();
-        foreach ($codes as $code) {
-            $f = Competitions::find($code);
-            if ($f && realpath($f['path']) !== realpath($cur)) {
-                try {
-                    $out[] = Db::connect($f['path']);
-                } catch (\Throwable $e) {
-                    // 読めない大会は飛ばす
-                }
+        $cur = Db::hasSelection() ? realpath(Db::path()) : null;
+        $out = [];
+        foreach (Competitions::files() as $code => $path) {
+            if ($cur && realpath($path) === $cur) {
+                continue;
+            }
+            try {
+                $pdo = Db::connect($path);
+                $st = $pdo->query("SELECT v FROM settings WHERE k = 'name'");
+                $name = (string)$st->fetchColumn();
+                $st->closeCursor();
+                $out[] = ['code' => $code, 'name' => $name ?: $code, 'pdo' => $pdo, 'mtime' => (int)@filemtime($path)];
+            } catch (\Throwable $e) {
+                // 読めない大会は飛ばす
             }
         }
+        usort($out, function ($a, $b) {
+            return $b['mtime'] <=> $a['mtime'];
+        });
         return $out;
     }
 
-    /** 所属の候補(重複なし、よく使われる順) */
-    public static function affiliations(array $codes = null, $limit = 300)
+    /** いまの大会にいる選手(姓|名)の一覧 */
+    private static function registered()
+    {
+        $have = [];
+        foreach (Db::pdo()->query('SELECT family_name, given_name FROM entries') as $r) {
+            $have[$r['family_name'] . '|' . $r['given_name']] = true;
+        }
+        return $have;
+    }
+
+    /** 所属の入力候補(すべての大会。よく使われる順) */
+    public static function affiliations($limit = 300)
     {
         $count = [];
-        foreach (self::dbs($codes) as $pdo) {
-            foreach ($pdo->query("SELECT affiliation, COUNT(*) n FROM entries WHERE affiliation != '' GROUP BY affiliation") as $r) {
+        $dbs = array_merge([['pdo' => Db::pdo()]], self::others());
+        foreach ($dbs as $d) {
+            foreach ($d['pdo']->query("SELECT affiliation, COUNT(*) n FROM entries WHERE affiliation != '' GROUP BY affiliation") as $r) {
                 $count[$r['affiliation']] = ($count[$r['affiliation']] ?? 0) + (int)$r['n'];
             }
         }
@@ -43,39 +60,95 @@ class Past
     }
 
     /**
-     * 過去の選手の候補。姓・名・所属のどれかに $q が含まれるもの。いまの大会に同じ姓名の選手がいれば除く。
-     * @return array[] ['family','given','affiliation','category_code']
+     * 過去の大会の所属(チーム)と人数。
+     * @return array[] [['name' => 所属, 'count' => 人数], ...] 所属名の順
      */
-    public static function athletes($q, array $codes = null, $limit = 8)
+    public static function teams()
     {
-        $q = trim((string)$q);
-        if ($q === '') {
-            return [];
+        $people = [];
+        foreach (self::others() as $d) {
+            foreach ($d['pdo']->query("SELECT affiliation, family_name, given_name FROM entries WHERE affiliation != ''") as $r) {
+                $people[$r['affiliation']][$r['family_name'] . '|' . $r['given_name']] = true;
+            }
         }
-        $have = [];
-        foreach (Db::pdo()->query('SELECT family_name, given_name FROM entries') as $r) {
-            $have[$r['family_name'] . '|' . $r['given_name']] = true;
-        }
-        $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $q) . '%';
+        ksort($people);
         $out = [];
-        foreach (self::dbs($codes) as $i => $pdo) {
-            $st = $pdo->prepare("SELECT e.family_name, e.given_name, e.affiliation, c.code AS category_code
+        foreach ($people as $aff => $set) {
+            $out[] = ['name' => $aff, 'count' => count($set)];
+        }
+        return $out;
+    }
+
+    /**
+     * 過去の大会で、その所属だった選手(同じ姓名は新しい大会の1人だけ)。
+     * @return array[] ['src' => '大会コード:選手ID', 'family','given','affiliation','category_code','category_name','last' => 大会名,'registered' => いまの大会にいるか]
+     */
+    public static function archers($team)
+    {
+        $have = self::registered();
+        $out = [];
+        foreach (self::others() as $d) {
+            $st = $d['pdo']->prepare('SELECT e.id, e.family_name, e.given_name, e.affiliation, c.code AS category_code, c.name AS category_name
                 FROM entries e LEFT JOIN categories c ON c.id = e.category_id
-                WHERE e.family_name LIKE :q ESCAPE '\\' OR e.given_name LIKE :q ESCAPE '\\' OR e.affiliation LIKE :q ESCAPE '\\'
-                    OR (e.family_name || e.given_name) LIKE :q ESCAPE '\\'
-                ORDER BY e.id DESC LIMIT 50");
-            $st->execute([':q' => $like]);
+                WHERE e.affiliation = ? ORDER BY e.family_name, e.given_name');
+            $st->execute([(string)$team]);
             foreach ($st as $r) {
                 $key = $r['family_name'] . '|' . $r['given_name'];
-                if (isset($have[$key]) || isset($out[$key])) {
-                    continue;
+                if (isset($out[$key])) {
+                    continue;   // 新しい大会のほうを残す
                 }
                 $out[$key] = [
-                    'family' => $r['family_name'], 'given' => $r['given_name'],
-                    'affiliation' => $r['affiliation'], 'category_code' => (string)$r['category_code'],
+                    'src' => $d['code'] . ':' . $r['id'],
+                    'family' => $r['family_name'], 'given' => $r['given_name'], 'affiliation' => $r['affiliation'],
+                    'category_code' => (string)$r['category_code'], 'category_name' => (string)$r['category_name'],
+                    'last' => $d['name'], 'registered' => isset($have[$key]),
                 ];
             }
         }
-        return array_slice(array_values($out), 0, $limit);
+        $list = array_values($out);
+        usort($list, function ($a, $b) {
+            return [$a['family'], $a['given']] <=> [$b['family'], $b['given']];
+        });
+        return $list;
+    }
+
+    /** '大会コード:選手ID' から、過去の大会の選手を読む。無ければ null */
+    public static function find($src)
+    {
+        if (!preg_match('/^([A-Za-z0-9_-]{1,32}):(\d+)$/', (string)$src, $m)) {
+            return null;
+        }
+        $f = Competitions::find($m[1]);
+        if (!$f || (Db::hasSelection() && realpath($f['path']) === realpath(Db::path()))) {
+            return null;
+        }
+        $st = Db::connect($f['path'])->prepare('SELECT e.family_name, e.given_name, e.affiliation, c.code AS category_code
+            FROM entries e LEFT JOIN categories c ON c.id = e.category_id WHERE e.id = ?');
+        $st->execute([(int)$m[2]]);
+        $r = $st->fetch();
+        return $r ?: null;
+    }
+
+    /**
+     * 過去の大会の選手を、いまの大会に登録する(同じ姓名の選手がいれば飛ばす)。
+     * @return array ['added' => 人数, 'skipped' => 人数]
+     */
+    public static function add(array $srcs)
+    {
+        $have = self::registered();
+        $added = $skipped = 0;
+        foreach ($srcs as $src) {
+            $r = self::find($src);
+            $cat = $r ? Categories::byCode($r['category_code']) : null;
+            if (!$r || !$cat || isset($have[$r['family_name'] . '|' . $r['given_name']])) {
+                $skipped++;
+                continue;
+            }
+            Entries::save(['family_name' => $r['family_name'], 'given_name' => $r['given_name'],
+                'affiliation' => $r['affiliation'], 'category_id' => $cat['id']]);
+            $have[$r['family_name'] . '|' . $r['given_name']] = true;
+            $added++;
+        }
+        return ['added' => $added, 'skipped' => $skipped];
     }
 }

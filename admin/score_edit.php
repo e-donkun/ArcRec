@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 page_head('得点の訂正', 'scores');
-echo '<h1>得点の訂正 <span class="muted small">' . h(($e['target'] ? $e['target'] . $e['letter'] . ' ' : '') . Entries::fullName($e)) . '</span></h1>';
+echo '<div class="sp-section-title">' . h(($e['target'] ? $e['target'] . $e['letter'] . ' ' : '') . Entries::fullName($e)) . '</div>';
 if ($e['locked']) {
     echo '<div class="flash warn">このスコアカードは確定済みです(管理画面からは訂正できます)。</div>';
 }
@@ -79,4 +79,4 @@ if ($log) {
     }
     echo '</table></div>';
 }
-page_foot();
+page_foot('scores');

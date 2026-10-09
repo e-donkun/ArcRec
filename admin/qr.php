@@ -15,10 +15,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['do'] ?? '') === 'forget') 
 
 $base = server_base_url();
 $host = parse_url($base, PHP_URL_HOST);
-page_head('端末接続', 'qr');
-echo '<h1>端末接続</h1>';
+page_head('端末接続', 'home');
 if (in_array($host, ['localhost', '127.0.0.1', '::1'], true)) {
-    echo '<div class="flash warn">今開いている URL は <code>' . h($host) . '</code> です。タブレットからは届きません。'
+    echo '<div class="sp-flash warn">今開いている URL は <code>' . h($host) . '</code> です。タブレットからは届きません。'
         . 'このサーバーのLAN上のアドレス(例 <code>http://192.168.0.10:8080/</code>)で管理画面を開き直すと、そのアドレスのQRになります。</div>';
 }
 echo '<div class="row"><div class="card"><h2 style="margin-top:0">1. 接続設定のQR</h2>'
@@ -46,4 +45,4 @@ if (!Devices::all()) {
 }
 echo '</table></div>';
 echo '<p class="small">端末がつながらない・入力画面に進まないときは <a href="log.php">通信ログ</a> で、端末とのやりとりを確認できます。</p>';
-page_foot();
+page_foot('home');

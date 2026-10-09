@@ -1,4 +1,5 @@
 <?php
+// ホーム: 大会の状況と、メニュー(競技設定・端末接続・印刷・大会の切り替え・ログアウト)
 require __DIR__ . '/_layout.php';
 require_admin();
 
@@ -21,24 +22,40 @@ foreach (Entries::all() as $e) {
         $placed++;
     }
 }
+$code = Settings::code();
 page_head('ホーム', 'home');
-echo '<h1>ホーム</h1>';
 if (!Settings::get('name')) {
-    echo '<div class="flash warn">大会名がまだありません。<a href="setup.php">競技設定</a> で入れてください。</div>';
+    echo '<div class="sp-flash warn">大会名がまだありません。<a href="setup.php">競技設定</a> で入れてください。</div>';
 }
-echo '<div class="cards">'
-    . '<div class="stat"><span class="muted">選手</span><b>' . $p['archers'] . '</b><span class="small muted">的に配置 ' . $placed . '</span></div>'
-    . '<div class="stat"><span class="muted">全射終了</span><b>' . $p['finished'] . ' / ' . $p['archers'] . '</b></div>'
-    . '<div class="stat"><span class="muted">入力済みの矢</span><b>' . $pct . '%</b><div class="bar"><i style="width:' . $pct . '%"></i></div></div>'
-    . '<div class="stat"><span class="muted">スコア最終更新</span><b style="font-size:1.1rem">' . h(Results::lastUpdateText()) . '</b></div>'
-    . '<div class="stat"><span class="muted">端末(直近2分)</span><b>' . $online . ' / ' . count($devices) . '</b></div>'
+echo '<div class="sp-stats">'
+    . '<div><small>選手(的に配置)</small><b>' . $p['archers'] . '</b> <span class="sp-sub">(' . $placed . ')</span></div>'
+    . '<div><small>全射終了</small><b>' . $p['finished'] . '</b> / ' . $p['archers'] . '</div>'
+    . '<div><small>入力済みの矢</small><b>' . $pct . '%</b><div class="bar"><i style="width:' . $pct . '%"></i></div></div>'
+    . '<div><small>端末(直近2分)</small><b>' . $online . '</b> / ' . count($devices) . '</div>'
     . '</div>';
-echo '<div class="card"><h2 style="margin-top:0">進め方</h2><ol>'
-    . '<li><a href="setup.php">競技設定</a> — 大会名・競技形式・距離ごとの的面を決める</li>'
-    . '<li><a href="entries.php">選手登録</a> — 名簿を登録する(CSV取込・過去の大会から追加も可)</li>'
-    . '<li><a href="targets.php">的番号</a> — 的番号と位置を設定する(タップで移動 / 一覧のプルダウン)</li>'
-    . '<li><a href="pdf.php?type=scorecard_blank">スコアカード(白紙)PDF</a> を印刷して配る</li>'
-    . '<li><a href="qr.php">端末接続</a> — ScorekeeperNG にサーバー設定のQRを読ませる</li>'
-    . '<li><a href="scores.php">入力状況</a> で進行を確認 — 終わったら <a href="results.php?c=' . h(Settings::code()) . '">結果</a> を PDF 出力</li>'
-    . '</ol></div>';
-page_foot();
+echo '<p class="sp-note">スコア最終更新: <b>' . h(Results::lastUpdateText()) . '</b></p>';
+
+$item = function ($href, $icon, $title, $sub, $attr = '') {
+    return '<a class="sp-card tap" href="' . $href . '"' . $attr . '>' . icon($icon) . '<div class="sp-card-main"><div class="sp-name">' . $title . '</div><div class="sp-sub">' . $sub . '</div></div></a>';
+};
+echo '<div class="sp-section-title">大会の準備</div><div class="sp-menu">'
+    . $item('setup.php', 'gear', '競技設定', h(Settings::preset()['label']) . ' / 大会名・距離・的面・パスワード')
+    . $item('entries.php', 'users', '選手登録', '名簿の登録(過去の大会から追加・CSV)')
+    . $item('targets.php', 'target', '的番号', '割り当て表(タップで移動)・一覧(プルダウン)')
+    . $item('qr.php', 'qr', '端末接続', 'ScorekeeperNG の接続QR・登録された端末・通信ログ')
+    . '</div>';
+echo '<div class="sp-section-title">印刷・出力</div><div class="sp-menu">'
+    . $item('pdf.php?type=scorecard_blank', 'print', 'スコアカード(白紙)PDF', '記入用。各カードに的のQR付き', ' target="_blank"')
+    . $item('pdf.php?type=scorecard_filled', 'print', 'スコアカード(得点入り)PDF', '入力済みの得点を印字', ' target="_blank"')
+    . $item('pdf.php?type=results&c=' . h($code), 'print', '結果PDF', '部門別の順位', ' target="_blank"')
+    . $item('pdf.php?type=qr', 'qr', '的QR一覧PDF', '的に貼って端末で読み取る', ' target="_blank"')
+    . '<div class="sp-card">' . icon('list') . '<div class="sp-card-main"><div class="sp-name">CSV</div><div class="actions" style="margin:4px 0 0">'
+    . '<a class="btn sub sm" href="export.php?what=results&c=' . h($code) . '">結果</a><a class="btn sub sm" href="export.php?what=arrows">全矢</a>'
+    . '<a class="btn sub sm" href="export.php?what=entries">名簿</a></div></div></div>'
+    . '</div>';
+
+echo '<div class="sp-section-title" id="comps">大会の切り替え</div>';
+echo '<p class="sp-note">別の大会を開くときは、その大会のパスワードを入れてください。</p>';
+render_competitions('home.php');
+echo '<div class="sp-menu" style="margin-top:12px">' . $item('logout.php', 'logout', 'ログアウト', 'この大会を閉じて、大会の選択に戻る') . '</div>';
+page_foot('home');

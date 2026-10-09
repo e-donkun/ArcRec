@@ -1,4 +1,7 @@
 <?php
+// 選手登録(ianseo 本体のスマホモード「参加者リスト」と同じ画面構成)
+//   検索と部門のチップ → 選手のカード → タップで編集シート、「＋ 追加」で追加シート(新しく入力 / 過去の大会から)
+// 的番号と位置は「的番号」の画面で設定する。
 require __DIR__ . '/_layout.php';
 require_admin();
 
@@ -59,95 +62,298 @@ function import_entries($text)
     return [$added, $errors];
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+/** 画面に渡す選手の一覧 */
+function entry_rows()
+{
+    $total = Settings::totalArrows();
+    $rows = [];
+    foreach (Entries::all(false) as $e) {
+        $rows[] = [
+            'id' => (int)$e['id'],
+            'family' => $e['family_name'],
+            'given' => $e['given_name'],
+            'aff' => $e['affiliation'],
+            'catId' => (int)$e['category_id'],
+            'cat' => (string)$e['category_name'],
+            'tgt' => $e['target'] ? $e['target'] . $e['letter'] : '',
+            'status' => (int)$e['status'],
+            'hits' => Scoring::total(Entries::allArrows($e))[3],
+            'total' => $total,
+            'locked' => (int)$e['locked'],
+            'scored' => Entries::hasScore($e),
+        ];
+    }
+    return $rows;
+}
+
+// ---- Ajax
+$act = $_REQUEST['act'] ?? '';
+if ($act !== '') {
+    if (in_array($act, ['save', 'delete', 'pastadd'], true) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+        json_out(['ok' => false, 'msg' => 'POST で送ってください']);   // データを変える操作は POST(CSRF 確認あり)だけ
+    }
     try {
-        switch ($_POST['do'] ?? '') {
-            case 'add':
-                Entries::save($_POST);   // 的番号は的番号の画面で設定する
-                flash(trim(($_POST['family_name'] ?? '') . ' ' . ($_POST['given_name'] ?? '')) . ' を追加しました');
-                break;
+        switch ($act) {
+            case 'save':      // 追加(id=0)・編集
+                $id = (int)($_POST['id'] ?? 0);
+                $d = [
+                    'family_name' => $_POST['family'] ?? '', 'given_name' => $_POST['given'] ?? '',
+                    'affiliation' => $_POST['aff'] ?? '', 'category_id' => (int)($_POST['catId'] ?? 0),
+                    'status' => !empty($_POST['status']),
+                ];
+                if ($id && !Entries::find($id)) {
+                    throw new InvalidArgumentException('選手が見つかりません');
+                }
+                $id = Entries::save($d, $id);
+                json_out(['ok' => true, 'id' => $id, 'msg' => trim($d['family_name'] . ' ' . $d['given_name']) . ' を' . ((int)($_POST['id'] ?? 0) ? '保存' : '追加') . 'しました', 'rows' => entry_rows()]);
             case 'delete':
-                $e = Entries::find((int)$_POST['id']);
-                if ($e && Entries::hasScore($e) && ($_POST['force'] ?? '') !== '1') {
-                    throw new InvalidArgumentException('得点が入っている選手は削除できません(欠場にするか、先に得点を消してください)');
+                $e = Entries::find((int)($_POST['id'] ?? 0));
+                if (!$e) {
+                    throw new InvalidArgumentException('選手が見つかりません');
                 }
-                Entries::delete((int)$_POST['id']);
-                flash('削除しました');
-                break;
-            case 'import':
-                $text = $_POST['csv'] ?? '';
-                if (!empty($_FILES['file']['tmp_name']) && is_uploaded_file($_FILES['file']['tmp_name'])) {
-                    $text = file_get_contents($_FILES['file']['tmp_name']);
+                if (Entries::hasScore($e)) {
+                    throw new InvalidArgumentException('点数が入っている選手は削除できません(欠場にしてください)');
                 }
-                list($added, $errors) = import_entries($text);
-                flash($added . ' 人を取り込みました', $added ? 'ok' : 'warn');
-                foreach (array_slice($errors, 0, 10) as $er) {
-                    flash($er, 'err');
-                }
-                break;
+                Entries::delete($e['id']);
+                json_out(['ok' => true, 'msg' => Entries::fullName($e) . ' を削除しました', 'rows' => entry_rows()]);
+            case 'teams':     // 過去の大会の所属(チーム)
+                json_out(['ok' => true, 'teams' => Past::teams()]);
+            case 'archers':   // 過去の大会の、その所属の選手
+                json_out(['ok' => true, 'archers' => Past::archers($_GET['team'] ?? '')]);
+            case 'pastadd':   // 過去の大会の選手を登録
+                $r = Past::add((array)($_POST['src'] ?? []));
+                json_out(['ok' => true, 'msg' => $r['added'] . '人を追加しました' . ($r['skipped'] ? '(登録済みなど ' . $r['skipped'] . '人は飛ばしました)' : ''), 'rows' => entry_rows()]);
         }
+        json_out(['ok' => false, 'msg' => '不明な操作です']);
     } catch (InvalidArgumentException $e) {
-        flash($e->getMessage(), 'err');
+        json_out(['ok' => false, 'msg' => $e->getMessage()]);
+    }
+}
+
+// ---- CSV の取り込み(フォーム)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['do'] ?? '') === 'import') {
+    $text = $_POST['csv'] ?? '';
+    if (!empty($_FILES['file']['tmp_name']) && is_uploaded_file($_FILES['file']['tmp_name'])) {
+        $text = file_get_contents($_FILES['file']['tmp_name']);
+    }
+    list($added, $errors) = import_entries($text);
+    flash($added . ' 人を取り込みました', $added ? 'ok' : 'warn');
+    foreach (array_slice($errors, 0, 10) as $er) {
+        flash($er, 'err');
     }
     redirect('entries.php');
 }
 
-$rows = Entries::all(false);
-$cats = Categories::all();
-page_head('選手登録', 'entries');
-echo '<h1>選手登録 <span class="muted small">' . count($rows) . ' 人</span></h1>';
-echo '<p class="muted small">名簿を登録します。的番号と位置は <a href="targets.php">的番号</a> の画面で設定します。</p>';
-
-// ---- 追加(姓・名は横に並べる。過去の大会の選手から選んで入れることもできる)
-echo '<form method="post" class="card wideform" autocomplete="off">' . csrf_field() . '<input type="hidden" name="do" value="add">'
-    . '<div class="row nowrap wide"><div><label>姓</label><input type="text" name="family_name" id="fam" required placeholder="山田"></div>'
-    . '<div><label>名</label><input type="text" name="given_name" id="giv" placeholder="太郎"></div></div>'
-    . '<div id="sug" class="chips"></div>'
-    . '<label>所属</label><input type="text" name="affiliation" id="aff" list="affs">'
-    . '<label>部門</label><select name="category_id" id="cat" required>';
-foreach ($cats as $c) {
-    echo '<option value="' . $c['id'] . '" data-code="' . h($c['code']) . '">' . h($c['name']) . '</option>';
+$cats = [];
+foreach (Categories::all() as $c) {
+    $cats[] = ['id' => (int)$c['id'], 'name' => $c['name']];
 }
-echo '</select><p><button>追加</button></p>'
-    . '<p class="muted small">姓を入力すると、開いたことのある過去の大会の選手が候補に出ます。選ぶと姓・名・所属・部門が入ります。</p></form>';
-echo '<datalist id="affs">';
-foreach (Past::affiliations() as $a) {
-    echo '<option value="' . h($a) . '">';
-}
-echo '</datalist>';
+page_head('選手登録', 'entries', ['js' => ['LiteRows' => entry_rows(), 'LiteCats' => $cats, 'LiteAffs' => Past::affiliations()]]);
+?>
+<div class="sp-toolbar">
+	<label class="sp-search"><?php echo icon('search'); ?><input type="search" id="SpSearch" placeholder="名前・所属で検索"></label>
+	<div class="sp-chips" id="SpCatChips"></div>
+</div>
+<div class="sp-row" style="margin-bottom:8px;align-items:center">
+	<div class="sp-count" id="SpCount"></div>
+	<button type="button" class="sp-btn sub" style="flex:none" id="SpAddBtn"><?php echo icon('plus'); ?>追加</button>
+</div>
+<div class="sp-list" id="SpList"></div>
+<p class="sp-note">カードをタップすると、名前・所属・部門を変更できます。点数のない選手は削除もできます。的番号と位置は <a href="targets.php">的番号</a> の画面で設定します。</p>
+<details class="card"><summary>CSVでまとめて登録</summary>
+	<form method="post" enctype="multipart/form-data"><?php echo csrf_field(); ?><input type="hidden" name="do" value="import">
+	<p class="sp-note">列: <code>姓,名,所属,部門</code>(部門は 男子 / 女子)。カンマかタブ区切り、UTF-8 か Shift_JIS(Excel保存)。1行目が見出しなら飛ばします。</p>
+	<label class="sp-field"><span>ファイルから</span><input type="file" name="file" accept=".csv,.tsv,.txt"></label>
+	<label class="sp-field"><span>または貼り付け</span><textarea name="csv" rows="5" style="width:100%" placeholder="山田,太郎,京都大学,男子&#10;佐藤,花子,同志社大学,女子"></textarea></label>
+	<button class="sp-btn">取り込む</button></form>
+</details>
+<datalist id="SpAffs"></datalist>
 
-// ---- 登録済みの選手
-echo '<div class="actions noprint"><a class="btn sub" href="targets.php">的番号を設定する</a>'
-    . '<a class="btn sub" href="pdf.php?type=scorecard_blank">スコアカード(白紙)PDF</a>'
-    . '<a class="btn sub" href="export.php?what=entries">名簿CSV</a></div>';
-echo '<div class="tablewrap"><table><tr><th>氏名</th><th>所属</th><th>部門</th><th class="c">的</th><th>状態</th><th class="noprint"></th></tr>';
-foreach ($rows as $e) {
-    $h = Scoring::total(Entries::allArrows($e))[3];
-    $state = $e['status'] ? '<span class="muted">欠場</span>' : ($h ? $h . '射' . ($e['locked'] ? ' <span class="lock">確定</span>' : '') : '<span class="muted">未射</span>');
-    echo '<tr><td>' . h(Entries::fullName($e)) . '</td><td>' . h($e['affiliation']) . '</td>'
-        . '<td>' . h($e['category_name'] ?? '') . '</td>'
-        . '<td class="c">' . ($e['target'] ? h($e['target'] . $e['letter']) : '<span class="muted">-</span>') . '</td><td>' . $state . '</td>'
-        . '<td class="noprint"><a class="btn sub sm" href="entry_edit.php?id=' . $e['id'] . '">編集</a> '
-        . '<form method="post" class="inline" onsubmit="return confirm(\'削除しますか?\')">' . csrf_field()
-        . '<input type="hidden" name="do" value="delete"><input type="hidden" name="id" value="' . $e['id'] . '"><button class="sm danger">削除</button></form></td></tr>';
-}
-if (!$rows) {
-    echo '<tr><td colspan="6" class="muted">まだ選手がいません。上のフォームかCSVで登録してください。</td></tr>';
-}
-echo '</table></div>';
+<script>
+const SpFilter = {cat: spStore('ent_cat') || ''};
 
-echo '<details class="card"><summary><b>CSVで一括登録</b></summary><form method="post" enctype="multipart/form-data">' . csrf_field() . '<input type="hidden" name="do" value="import">'
-    . '<p class="muted small">列: <code>姓,名,所属,部門</code> — カンマ/タブ区切り、UTF-8 または Shift_JIS(Excel保存)。1行目が見出しなら自動で飛ばします。部門は <b>男子 / 女子</b>(リカーブ男子・RM・M、リカーブ女子・RW・W なども可)で書きます。</p>'
-    . '<label>ファイルから</label><input type="file" name="file" accept=".csv,.tsv,.txt">'
-    . '<label>または貼り付け</label><textarea name="csv" rows="6" placeholder="山田,太郎,京都大学,男子&#10;佐藤,花子,同志社大学,女子"></textarea>'
-    . '<p><button>取り込む</button></p></form></details>';
+function spEntCard(r) {
+	const state = r.status ? '<span class="sp-tag warn">欠場</span>'
+		: (r.hits ? '<span class="sp-tag' + (r.hits >= r.total ? ' ok' : '') + '">' + r.hits + '/' + r.total + '射</span>' : '');
+	return '<div class="sp-card tap' + (r.status ? ' status-noshoot' : '') + '" data-id="' + r.id + '" data-cat="' + r.catId + '" data-search="' + spEsc(spNorm([r.family, r.given, r.family + r.given, r.aff, r.cat, r.tgt].join(' '))) + '">'
+		+ '<div class="sp-card-head">'
+		+ '<span class="sp-badge' + (r.tgt ? '' : ' none') + '">' + spEsc(r.tgt || '-') + '</span>'
+		+ '<div class="sp-card-main">'
+		+ '<div class="sp-name">' + spEsc(r.family + ' ' + r.given) + '<span class="sp-tag">' + spEsc(r.cat) + '</span></div>'
+		+ '<div class="sp-sub">' + spEsc(r.aff || '(所属なし)') + '</div>'
+		+ '</div>'
+		+ '<div class="sp-score">' + state + (r.locked ? '<span class="sp-tag">確定</span>' : '') + '</div>'
+		+ '</div></div>';
+}
 
-echo '<script>(function(){'
-    . 'var fam=document.getElementById("fam"),giv=document.getElementById("giv"),aff=document.getElementById("aff"),cat=document.getElementById("cat"),box=document.getElementById("sug"),t;'
-    . 'function pick(a){fam.value=a.family;giv.value=a.given;aff.value=a.affiliation;for(var i=0;i<cat.options.length;i++){if(cat.options[i].dataset.code===a.category_code){cat.selectedIndex=i}}box.innerHTML="";giv.focus()}'
-    . 'fam.addEventListener("input",function(){clearTimeout(t);var v=fam.value.trim();if(!v){box.innerHTML="";return}'
-    . 't=setTimeout(function(){fetch("past.php?q="+encodeURIComponent(v),{credentials:"same-origin"}).then(function(r){return r.json()}).then(function(list){'
-    . 'box.innerHTML="";list.forEach(function(a){var b=document.createElement("button");b.type="button";b.className="chip";'
-    . 'b.textContent=a.family+" "+a.given+(a.affiliation?" / "+a.affiliation:"");b.onclick=function(){pick(a)};box.appendChild(b)})}).catch(function(){})},200)});'
-    . '})()</script>';
-page_foot();
+function spEntRender() {
+	document.getElementById('SpList').innerHTML = LiteRows.length ? LiteRows.map(spEntCard).join('') : '<div class="sp-empty">選手がいません。「＋ 追加」から登録してください</div>';
+	document.getElementById('SpCatChips').innerHTML = '<button type="button" class="sp-chip' + (SpFilter.cat ? '' : ' active') + '" data-cat="">すべて</button>'
+		+ LiteCats.map(c => '<button type="button" class="sp-chip' + (String(c.id) === SpFilter.cat ? ' active' : '') + '" data-cat="' + c.id + '">' + spEsc(c.name) + '</button>').join('');
+	spEntFilter();
+}
+
+function spEntFilter() {
+	const n = spFilterCards(document.getElementById('SpList'), document.getElementById('SpSearch').value,
+		card => !SpFilter.cat || card.dataset.cat === SpFilter.cat);
+	document.getElementById('SpCount').textContent = n + ' 人' + (n !== LiteRows.length ? '(全 ' + LiteRows.length + ' 人)' : '');
+}
+
+function spCatOptions(sel) {
+	return LiteCats.map(c => '<option value="' + c.id + '"' + (c.id == sel ? ' selected' : '') + '>' + spEsc(c.name) + '</option>').join('');
+}
+
+function spNameFields(r) {
+	return '<div class="sp-row">'
+		+ '<label class="sp-field"><span>姓</span><input type="text" data-f="family" value="' + spEsc(r.family) + '" autocomplete="off"></label>'
+		+ '<label class="sp-field"><span>名</span><input type="text" data-f="given" value="' + spEsc(r.given) + '" autocomplete="off"></label></div>'
+		+ '<label class="sp-field"><span>所属</span><input type="text" data-f="aff" list="SpAffs" value="' + spEsc(r.aff) + '" autocomplete="off"></label>'
+		+ '<label class="sp-field"><span>部門</span><select data-f="catId">' + spCatOptions(r.catId) + '</select></label>';
+}
+
+function spFormValues(el) {
+	const v = {};
+	el.querySelectorAll('[data-f]').forEach(i => v[i.dataset.f] = i.type === 'checkbox' ? (i.checked ? '1' : '') : i.value.trim());
+	return v;
+}
+
+async function spEntSave(params) {
+	const res = await spPostJson('entries.php', Object.assign({act: 'save'}, params));
+	spToast(res.msg, !res.ok);
+	if (res.ok) { LiteRows = res.rows; spEntRender(); }
+	return res.ok;
+}
+
+/* ---- 編集(カードをタップ) ---- */
+function spOpenEdit(r) {
+	const html = '<h2>' + spEsc(r.family + ' ' + r.given) + '</h2>'
+		+ '<div class="sp-sub">' + (r.tgt ? '的 ' + spEsc(r.tgt) : '的は未割当') + '(的番号の画面で変更)' + (r.hits ? ' / ' + r.hits + '射入力済み' : '') + '</div>'
+		+ spNameFields(r)
+		+ '<label class="sp-switch" style="margin:4px 0 8px"><input type="checkbox" data-f="status"' + (r.status ? ' checked' : '') + '> 欠場(端末・結果から外す)</label>'
+		+ (r.scored ? '<p class="sp-note">点数が入っているため削除できません。</p>' : '<button type="button" class="sp-btn danger block" id="SpDelBtn">この選手を削除</button>')
+		+ '<div class="sp-sheet-actions"><button type="button" class="sp-btn sub" onclick="spSheet.close()">閉じる</button><button type="button" class="sp-btn" id="SpSaveBtn">保存</button></div>';
+	const el = spSheet.open(html);
+	el.querySelector('#SpSaveBtn').addEventListener('click', async () => {
+		if (await spEntSave(Object.assign({id: r.id}, spFormValues(el)))) spSheet.close();
+	});
+	const del = el.querySelector('#SpDelBtn');
+	if (del) del.addEventListener('click', async () => {
+		if (!confirm(r.family + ' ' + r.given + ' さんを削除します。よろしいですか？')) return;
+		const res = await spPostJson('entries.php', {act: 'delete', id: r.id});
+		spToast(res.msg, !res.ok);
+		if (res.ok) { LiteRows = res.rows; spEntRender(); spSheet.close(); }
+	});
+}
+
+/* ---- 追加(新しく入力 / 過去の大会から) ---- */
+function spOpenAdd() {
+	const blank = {family: '', given: '', aff: '', catId: SpFilter.cat || (LiteCats[0] || {}).id};
+	const html = '<h2>選手を追加</h2>'
+		+ '<div class="sp-seg"><button type="button" data-tab="new" class="active">新しく入力</button><button type="button" data-tab="past">過去の大会から</button></div>'
+		+ '<div data-pane="new">' + spNameFields(blank)
+		+ '<div class="sp-sheet-actions"><button type="button" class="sp-btn sub" onclick="spSheet.close()">閉じる</button><button type="button" class="sp-btn" id="SpAddGo1">追加</button></div>'
+		+ '<p class="sp-note">追加したあとも、続けて入力できます。</p></div>'
+		+ '<div data-pane="past" class="sp-hide">'
+		+ '<div class="sp-sub">このサーバーにある、ほかの大会の選手から選びます。</div>'
+		+ '<label class="sp-field"><span>1. 所属</span><select id="SpPastTeam"><option value="">読み込み中…</option></select></label>'
+		+ '<div class="sp-hide" id="SpPastField"><div class="sp-field"><span>2. 追加する選手</span></div>'
+		+ '<label class="sp-switch" style="margin-bottom:6px"><input type="checkbox" id="SpPastAll"> すべて選ぶ</label>'
+		+ '<div class="sp-check-list" id="SpPastList"></div></div>'
+		+ '<div class="sp-sheet-actions"><button type="button" class="sp-btn sub" onclick="spSheet.close()">閉じる</button><button type="button" class="sp-btn" id="SpAddGo2" disabled>追加する</button></div></div>';
+	const el = spSheet.open(html);
+	el.querySelectorAll('.sp-seg [data-tab]').forEach(b => b.addEventListener('click', () => {
+		el.querySelectorAll('.sp-seg [data-tab]').forEach(x => x.classList.toggle('active', x === b));
+		el.querySelectorAll('[data-pane]').forEach(p => p.classList.toggle('sp-hide', p.dataset.pane !== b.dataset.tab));
+		if (b.dataset.tab === 'past') spPastTeams(el);
+	}));
+	el.querySelector('#SpAddGo1').addEventListener('click', async () => {
+		const v = spFormValues(el.querySelector('[data-pane=new]'));
+		if (!v.family && !v.given) { spToast('姓か名を入れてください', true); return; }
+		if (await spEntSave(Object.assign({id: 0}, v))) {
+			el.querySelector('[data-f=family]').value = '';
+			el.querySelector('[data-f=given]').value = '';
+			el.querySelector('[data-f=family]').focus();
+		}
+	});
+	el.querySelector('#SpPastTeam').addEventListener('change', () => spPastArchers(el));
+	el.querySelector('#SpPastAll').addEventListener('change', ev => {
+		el.querySelectorAll('#SpPastList input:not(:disabled)').forEach(c => c.checked = ev.target.checked);
+		spPastCount(el);
+	});
+	el.querySelector('#SpPastList').addEventListener('change', () => spPastCount(el));
+	el.querySelector('#SpAddGo2').addEventListener('click', async () => {
+		const src = [...el.querySelectorAll('#SpPastList input:checked')].map(c => c.value);
+		if (!src.length) return;
+		const res = await spPostJson('entries.php', {act: 'pastadd', 'src[]': src});
+		spToast(res.msg, !res.ok);
+		if (res.ok) { LiteRows = res.rows; spEntRender(); spPastArchers(el); }
+	});
+	setTimeout(() => el.querySelector('[data-f=family]').focus(), 250);
+}
+
+async function spPastTeams(el) {
+	const sel = el.querySelector('#SpPastTeam');
+	if (sel.dataset.loaded) return;
+	try {
+		const res = await spGetJson('entries.php', {act: 'teams'});
+		sel.dataset.loaded = '1';
+		const last = spStore('ent_past_team') || '';
+		sel.innerHTML = res.teams.length
+			? '<option value="">-- 選んでください --</option>' + res.teams.map(t => '<option value="' + spEsc(t.name) + '"' + (t.name === last ? ' selected' : '') + '>' + spEsc(t.name + '(' + t.count + '人)') + '</option>').join('')
+			: '<option value="">ほかの大会に選手がいません</option>';
+		if (sel.value) spPastArchers(el);
+	} catch (e) {
+		spToast('読み込めませんでした: ' + e.message, true);
+	}
+}
+
+async function spPastArchers(el) {
+	const team = el.querySelector('#SpPastTeam').value;
+	const field = el.querySelector('#SpPastField'), list = el.querySelector('#SpPastList');
+	el.querySelector('#SpPastAll').checked = false;
+	if (!team) { field.classList.add('sp-hide'); list.innerHTML = ''; spPastCount(el); return; }
+	spStore('ent_past_team', team);
+	field.classList.remove('sp-hide');
+	list.innerHTML = '<div class="sp-sub">読み込み中…</div>';
+	try {
+		const res = await spGetJson('entries.php', {act: 'archers', team: team});
+		list.innerHTML = res.archers.length ? res.archers.map(a =>
+			'<label class="sp-check' + (a.registered ? ' done' : '') + '"><input type="checkbox" value="' + spEsc(a.src) + '"' + (a.registered ? ' disabled' : '') + '>'
+			+ '<span><b>' + spEsc(a.family + ' ' + a.given) + '</b>' + (a.registered ? ' <span class="sp-tag">登録済み</span>' : '')
+			+ '<small>' + spEsc([a.category_name, '前回 ' + a.last].filter(x => x).join(' / ')) + '</small></span></label>').join('')
+			: '<div class="sp-sub">選べる選手がいません</div>';
+	} catch (e) {
+		spToast('読み込めませんでした: ' + e.message, true);
+	}
+	spPastCount(el);
+}
+
+function spPastCount(el) {
+	const n = el.querySelectorAll('#SpPastList input:checked').length;
+	const go = el.querySelector('#SpAddGo2');
+	go.disabled = n === 0;
+	go.textContent = n ? n + '人を追加する' : '追加する';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+	document.getElementById('SpAffs').innerHTML = LiteAffs.map(a => '<option value="' + spEsc(a) + '">').join('');
+	spEntRender();
+	document.getElementById('SpSearch').addEventListener('input', spEntFilter);
+	document.getElementById('SpCatChips').addEventListener('click', ev => {
+		const b = ev.target.closest('[data-cat]');
+		if (!b) return;
+		SpFilter.cat = b.dataset.cat;
+		spStore('ent_cat', SpFilter.cat);
+		spEntRender();
+	});
+	document.getElementById('SpList').addEventListener('click', ev => {
+		const card = ev.target.closest('.sp-card[data-id]');
+		if (!card) return;
+		const r = LiteRows.find(x => x.id == card.dataset.id);
+		if (r) spOpenEdit(r);
+	});
+	document.getElementById('SpAddBtn').addEventListener('click', spOpenAdd);
+});
+</script>
+<?php
+page_foot('entries');

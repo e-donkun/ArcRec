@@ -176,16 +176,23 @@ ok(count(ApiLog::recent()) === 1, '大会Aのログ画面には大会Aの分だ�
 ApiLog::clear();
 ok(!is_file($fa), '大会Aのログを消せる');
 
-echo "# 過去の大会からの候補\n";
+echo "# 過去の大会から選手を追加(このサーバーの、ほかの大会の名簿)\n";
 Competitions::open($a);
-$affs = Past::affiliations([$a, '5A4D0001']);
-ok(in_array('A大 (変更)', $affs, true) && in_array('京都大学', $affs, true), '所属の候補: 開いた大会(A)とサンプルから');
-$aths = Past::athletes('山', [$a, '5A4D0001']);
-$yamada = array_values(array_filter($aths, function ($x) { return $x['family'] === '山田'; }));
-ok($yamada && $yamada[0]['given'] === '太郎' && $yamada[0]['affiliation'] === '京都大学' && $yamada[0]['category_code'] === 'RM', '過去の選手の候補(サンプルの 山田 太郎 / 京都大学 / RM)');
-ok(Past::athletes('山', [$a]) === [], 'パスワードを通していない大会(サンプル)の選手は出さない');
+$affs = Past::affiliations();
+ok(in_array('A大 (変更)', $affs, true) && in_array('京都大学', $affs, true), '所属の候補: いまの大会とほかの大会(サンプル)から');
+$teams = array_column(Past::teams(), 'count', 'name');
+ok(($teams['京都大学'] ?? 0) === 2 && !isset($teams['A大 (変更)']), '過去の大会の所属と人数(いまの大会は含めない): 京都大学 2人');
+$list = Past::archers('京都大学');
+ok(count($list) === 2 && $list[0]['family'] === '小林' && $list[1]['family'] === '山田' && $list[1]['category_code'] === 'RM' && strpos($list[1]['src'], '5A4D0001:') === 0, 'その所属の選手(姓名順、どの大会のどの選手か)');
 Entries::save(['family_name' => '山田', 'given_name' => '太郎', 'category_id' => $rm]);
-ok(array_filter(Past::athletes('山田', [$a, '5A4D0001']), function ($x) { return $x['given'] === '太郎'; }) === [], 'いまの大会にいる選手は候補から外す');
+$list = Past::archers('京都大学');
+ok($list[1]['registered'] === true && $list[0]['registered'] === false, 'いまの大会にいる選手は「登録済み」');
+$n0 = count(Entries::all());
+$r = Past::add([$list[0]['src'], $list[1]['src'], 'FFFFFFFF:1', 'bad']);
+ok($r['added'] === 1 && $r['skipped'] === 3 && count(Entries::all()) === $n0 + 1, '過去の大会の選手を追加(登録済み・不正は飛ばす)');
+$kob = array_values(array_filter(Entries::all(), function ($e) { return $e['family_name'] === '小林'; }))[0];
+ok($kob['affiliation'] === '京都大学' && $kob['category_code'] === 'RW' && (int)$kob['target'] === 0, '姓名・所属・部門が入り、的は未割当');
+ok(Past::find($a . ':' . $a1) === null, 'いまの大会の選手は「過去」として読まない');
 
 echo "# 旧データ(大会が1つだけだった頃の data/lite.sqlite)の移行\n";
 $legacyDir = sys_get_temp_dir() . '/lite-legacy-' . getmypid();
