@@ -97,8 +97,8 @@ class Pdf extends \TCPDF
         $this->SetXY($x0, $y0 + 6);
         $this->Cell(120, 5, trim('スコアカード  ' . $this->categoryLabel($e) . '  ' . Settings::distanceSummary()), 0, 0, 'L');
 
-        // 的番号の大きな枠(「1的 A」の形で)
-        $pos = $e['target'] ? self::targetLabel($e['target'], $e['letter'], ' ') : '--';
+        // 的番号の大きな枠(「1A」の形で)
+        $pos = $e['target'] ? $e['target'] . $e['letter'] : '--';
         $this->SetFillColor(235, 235, 235);
         $this->Rect($x0 + $W - 34, $y0 + 6, 34, 15, 'DF');
         $this->f(8);
@@ -235,10 +235,10 @@ class Pdf extends \TCPDF
         $this->Cell($half, 11, '記録員署名', 1, 0, 'L');
     }
 
-    /** 的の表記: 1的、位置付きは 1的A(PDF は「1的」の形にそろえる) */
-    private static function targetLabel($target, $letter = '', $sep = '')
+    /** 的QRの表記: 1的 */
+    private static function targetLabel($target)
     {
-        return (int)$target . '的' . ($letter !== '' ? $sep . $letter : '');
+        return (int)$target . '的';
     }
 
     private function categoryLabel(array $e)
@@ -322,7 +322,7 @@ class Pdf extends \TCPDF
         $nd = Settings::distances();
 
         // 2 距離のときは距離ごとの合計の列を足す。余りは所属欄に回して 180mm に揃える
-        $w = ['rank' => 11, 'tgt' => 16, 'name' => 38, 'aff' => 0, 'total' => 17, 'gold' => 16, 'x' => 12];
+        $w = ['rank' => 11, 'tgt' => 14, 'name' => 38, 'aff' => 0, 'total' => 17, 'gold' => 16, 'x' => 12];
         if ($nd > 1) {
             $w = array_merge(array_slice($w, 0, 4, true), ['d1' => 19, 'd2' => 19], array_slice($w, 4, null, true));
         }
@@ -354,7 +354,7 @@ class Pdf extends \TCPDF
             $this->f(9);
             $rank = $r['rank'] === null ? '' : $r['rank'] . ($r['tie'] ? '*' : '');
             $this->Cell($w['rank'], $rowH, $rank, 1, 0, 'C');
-            $this->Cell($w['tgt'], $rowH, $r['target'] ? self::targetLabel($r['target'], $r['letter']) : '', 1, 0, 'C');
+            $this->Cell($w['tgt'], $rowH, $r['target'] ? $r['target'] . $r['letter'] : '', 1, 0, 'C');
             $this->f(10);
             $this->Cell($w['name'], $rowH, Entries::fullName($r), 1, 0, 'L');
             $this->f(8);
@@ -381,7 +381,7 @@ class Pdf extends \TCPDF
         $this->f(8);
         $this->SetX(15);
         $this->Cell($w['rank'], 6, '順位', 1, 0, 'C', true);
-        $this->Cell($w['tgt'], 6, '的', 1, 0, 'C', true);
+        $this->Cell($w['tgt'], 6, '立順', 1, 0, 'C', true);
         $this->Cell($w['name'], 6, '氏名', 1, 0, 'C', true);
         $this->Cell($w['aff'], 6, '所属', 1, 0, 'C', true);
         if ($nd > 1) {
