@@ -4,11 +4,14 @@ namespace Lite;
 use PDO;
 
 /**
- * SQLite への接続とスキーマ。1 つの DB ファイル = 1 つの大会。
+ * SQLite への接続とスキーマ。1 つの DB ファイル = 1 つの大会(パスワードも DB の中の settings に持つ)。
+ * 大会の DB は data/competitions/<大会コード>.sqlite。いま使う大会は select() で切り替える。
  */
 class Db
 {
     private static $pdo;
+    /** いま使っている大会 DB のパス */
+    private static $selected;
 
     public static function dataDir()
     {
@@ -19,25 +22,63 @@ class Db
         return rtrim($dir, '/');
     }
 
+    /** 大会の DB を置くフォルダ */
+    public static function competitionsDir()
+    {
+        $dir = self::dataDir() . '/competitions';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+        return $dir;
+    }
+
+    /** いま使っている DB のパス(環境変数 LITE_DB があればそれ。テスト用) */
     public static function path()
     {
-        return getenv('LITE_DB') ?: self::dataDir() . '/lite.sqlite';
+        if ($p = getenv('LITE_DB')) {
+            return $p;
+        }
+        if (!self::$selected) {
+            throw new \RuntimeException('大会が選ばれていません');
+        }
+        return self::$selected;
+    }
+
+    public static function hasSelection()
+    {
+        return (bool)(getenv('LITE_DB') ?: self::$selected);
+    }
+
+    /** 使う大会の DB を切り替える */
+    public static function select($path)
+    {
+        if ($path !== self::$selected) {
+            self::$pdo = null;
+            self::$selected = $path;
+            Settings::reset();
+        }
     }
 
     public static function pdo()
     {
         if (!self::$pdo) {
-            $pdo = new PDO('sqlite:' . self::path());
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-            $pdo->exec('PRAGMA busy_timeout=8000');
-            $pdo->exec('PRAGMA journal_mode=WAL');
-            $pdo->exec('PRAGMA synchronous=NORMAL');
-            $pdo->exec('PRAGMA foreign_keys=ON');
-            self::$pdo = $pdo;
-            self::migrate($pdo);
+            self::$pdo = self::connect(self::path());
         }
         return self::$pdo;
+    }
+
+    /** 指定の DB に接続する(スキーマが無ければ作り、古ければ足す)。いま使っている DB とは別の接続 */
+    public static function connect($path)
+    {
+        $pdo = new PDO('sqlite:' . $path);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $pdo->exec('PRAGMA busy_timeout=8000');
+        $pdo->exec('PRAGMA journal_mode=WAL');
+        $pdo->exec('PRAGMA synchronous=NORMAL');
+        $pdo->exec('PRAGMA foreign_keys=ON');
+        self::migrate($pdo);
+        return $pdo;
     }
 
     /**
@@ -58,10 +99,18 @@ class Db
         }
     }
 
-    /** テスト用: 接続を閉じる */
+    /** 接続を閉じる(テスト用。選択は変えない) */
     public static function reset()
     {
         self::$pdo = null;
+    }
+
+    /** 選択も解除する */
+    public static function unselect()
+    {
+        self::$pdo = null;
+        self::$selected = null;
+        Settings::reset();
     }
 
     private static function migrate(PDO $pdo)

@@ -45,8 +45,9 @@ class IskApi
             $json['errorMsg'] = 'Missing PAYLOAD and REQUESTS';
             self::out($json);
         }
-        $res = (new self())->process($data);
-        ApiLog::write($data, $res);
+        $api = new self();
+        $res = $api->process($data);
+        ApiLog::write($data, $res, $api->usedCodes());
         self::out($res);
     }
 
@@ -119,9 +120,15 @@ class IskApi
         } elseif (!in_array($req->action, self::ACTIONS, true)) {
             $this->fail('Incorrect action or API version: ' . $req->action . ', ' . $req->apiVersion);
         } else {
-            $res = $this->{'do' . ucfirst($req->action)}($req);
-            if ($dev = ($req->device ?? $req->uuid ?? '')) {
-                Devices::touch($dev);
+            // 端末が指定した大会(旧大会でも)の DB を使う
+            $bound = $this->bind($req);
+            if ($bound === true) {
+                $res = $this->{'do' . ucfirst($req->action)}($req);
+                if ($req->action !== 'ping' && ($dev = ($req->device ?? $req->uuid ?? ''))) {
+                    Devices::touch($dev);
+                }
+            } else {
+                $res = $bound;   // 該当する大会が無い・端末がどの大会にも登録されていない、の返事(または null)
             }
         }
 
@@ -135,6 +142,57 @@ class IskApi
                 'resetMessage' => $this->json['errorMsg'] ?? '', 'resetSubMsg' => '', 'resetTarget' => '',
             ];
         }
+    }
+
+    // ------------------------------------------------------------------ 大会(DB)の選択
+
+    /** このリクエストで使った大会のコード */
+    private $codes = [];
+
+    public function usedCodes()
+    {
+        return array_keys($this->codes);
+    }
+
+    /**
+     * リクエストを処理する大会の DB を選ぶ。
+     *   大会コード(tocode / handshake の tournament)があれば、その大会。端末が古い大会のコードで来たら、その大会の DB を読む。
+     *   コードが無いリクエスト(info, getconfig, lang ...)は、その端末が登録されている大会のうち、最後に通信した大会。
+     *
+     * @return true|array|null true: 選んだ / 配列: そのまま返す返事 / null: エラー(errorMsg 設定済み)
+     */
+    private function bind($req)
+    {
+        if ($req->action === 'ping' || getenv('LITE_DB')) {
+            return true;   // ping は DB を使わない。LITE_DB はテスト用の固定 DB
+        }
+        $code = trim((string)($req->tocode ?? $req->tournament ?? ''));
+        if ($code !== '') {
+            $c = Competitions::open($code);
+            if ($c === false) {
+                if ($req->action === 'handshake') {
+                    return $this->handshakeDenied($req);
+                }
+                if ($req->action === 'comp') {
+                    return ['action' => $req->action, 'device' => $req->device ?? '', 'tocode' => $code, 'errorcode' => 1];
+                }
+                return $this->fail('Competition missing');
+            }
+        } else {
+            $dev = (string)($req->device ?? $req->uuid ?? '');
+            $c = $dev !== '' ? Competitions::byDevice($dev) : null;
+            if ($c === null || Competitions::open($c) === false) {
+                return $this->unknownDevice($req);
+            }
+        }
+        $this->codes[$c] = true;
+        return true;
+    }
+
+    private function handshakeDenied($req)
+    {
+        return ['action' => 'handshake', 'device' => $req->uuid ?? '', 'devCode' => '', 'error' => 1,
+            'socketid' => '', 'key' => '', 'ianseoVersion' => '20260101'];
     }
 
     // ------------------------------------------------------------------ 共通

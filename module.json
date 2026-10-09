@@ -2,13 +2,18 @@
 	"id": "ianseo-lite",
 	"name": "ianseo-lite（簡易記録会システム）",
 	"description": "予選だけ・1セッションだけの記録会向け。SQLite + ScorekeeperNG(Lite)で入力し、スコアカードと結果をPDFで出力する。本体のDBとは独立して動く。",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"author": "e-donkun",
 	"homepage": "https://github.com/e-donkun/ianseo-lite",
 	"license": "GPL-2.0",
 	"testedIanseo": "2026-03-01",
 	"requiresPhp": "7.4",
 	"changelog": [
+		{
+			"version": "0.4.0",
+			"date": "2026-10-09",
+			"notes": "大会ごとに SQLite ファイルとパスワードを持ち、大会を切り替えられるように。端末は指した大会のDBを読む。選手登録と的番号の画面を分け、的番号はタップ移動とプルダウンで設定。サンプル大会を同梱"
+		},
 		{
 			"version": "0.3.0",
 			"date": "2026-10-09",

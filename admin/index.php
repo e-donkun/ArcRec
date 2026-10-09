@@ -1,81 +1,85 @@
 <?php
+// 大会の一覧(切り替え・パスワード入力・新規作成)。大会ごとに DB とパスワードがある。
 require __DIR__ . '/_layout.php';
 
 use Lite\Auth;
-use Lite\Entries;
-use Lite\Results;
+use Lite\Competitions;
+use Lite\Db;
 use Lite\Settings;
 
-// ---- 初回: 管理パスワードの設定 / ログイン
-if (!Auth::check()) {
-    $error = '';
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        Auth::verifyCsrf();
-        try {
-            if (Auth::needsSetup()) {
+$next = basename($_GET['next'] ?? '');
+$next = preg_match('/^[a-z_]+\.php$/', $next) ? $next : 'home.php';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    Auth::verifyCsrf();
+    try {
+        switch ($_POST['do'] ?? '') {
+            case 'open':
+                $code = (string)($_POST['code'] ?? '');
+                if (Auth::authorized($code)) {
+                    Auth::switchTo($code);
+                } elseif (!Auth::login($code, (string)($_POST['password'] ?? ''))) {
+                    throw new InvalidArgumentException('パスワードが違います');
+                }
+                redirect($next);
+            case 'create':
+                if (!Auth::canCreate()) {
+                    throw new InvalidArgumentException('大会を作るには、先にどれかの大会をパスワードで開いてください');
+                }
                 if (($_POST['password'] ?? '') !== ($_POST['password2'] ?? '')) {
                     throw new InvalidArgumentException('確認用パスワードが一致しません');
                 }
-                Auth::setPassword($_POST['password'] ?? '');
-                Auth::attempt($_POST['password']);
+                $code = Competitions::create($_POST['name'] ?? '', $_POST['preset'] ?? '', (string)($_POST['password'] ?? ''));
+                Auth::login($code, (string)$_POST['password']);
+                flash('大会を作りました。競技設定を確認してください');
                 redirect('setup.php');
-            } elseif (Auth::attempt($_POST['password'] ?? '')) {
-                $next = basename($_GET['next'] ?? 'index.php');
-                redirect(preg_match('/^[a-z_]+\.php$/', $next) ? $next : './');
-            } else {
-                $error = 'パスワードが違います';
-            }
-        } catch (InvalidArgumentException $e) {
-            $error = $e->getMessage();
         }
+    } catch (InvalidArgumentException $e) {
+        flash($e->getMessage(), 'err');
+        redirect('index.php' . (isset($_GET['next']) ? '?next=' . rawurlencode($next) : ''));
     }
-    page_head('ログイン', '', true);
-    $first = Auth::needsSetup();
-    echo '<h1>' . ($first ? '最初の設定: 管理パスワード' : '管理者ログイン') . '</h1><div class="card">';
-    if ($first) {
-        echo '<p>この大会の管理画面のパスワードを決めてください。(選手・得点の編集に必要です)</p>';
-    }
-    if ($error) {
-        echo '<div class="flash err">' . h($error) . '</div>';
-    }
-    echo '<form method="post">' . csrf_field()
-        . '<label>パスワード</label><input type="password" name="password" autofocus required>';
-    if ($first) {
-        echo '<label>パスワード(確認)</label><input type="password" name="password2" required>';
-    }
-    echo '<p><button>' . ($first ? '設定して始める' : 'ログイン') . '</button></p></form></div>';
-    echo '<p class="muted">結果の閲覧だけなら <a href="results.php">結果ページ</a> を開いてください。</p>';
-    page_foot();
-    exit;
 }
 
-// ---- ダッシュボード
-$p = Results::progress();
-$pct = $p['all_arrows'] ? round($p['hits'] * 100 / $p['all_arrows']) : 0;
-$devices = Lite\Devices::all();
-$online = 0;
-foreach ($devices as $d) {
-    if (strtotime($d['last_seen']) > time() - 120) {
-        $online++;
+// 管理中の大会があれば、そのメニューを出せるように DB を開いておく
+if ($cur = Auth::current()) {
+    Competitions::open($cur);
+} else {
+    Db::unselect();
+}
+page_head('大会の一覧', 'comps', true);
+echo '<h1>大会の一覧</h1>';
+echo '<p class="muted small">大会ごとにデータ(SQLite)とパスワードが別になっています。開いたことのある大会は、パスワードなしで切り替えられます。</p>';
+
+$list = Competitions::all();
+echo '<div class="tablewrap"><table><tr><th>大会</th><th>競技形式</th><th class="n">選手</th><th>最終更新</th><th></th></tr>';
+foreach ($list as $c) {
+    $isCur = $cur && strcasecmp($cur, $c['code']) === 0;
+    $authed = Auth::authorized($c['code']);
+    echo '<tr><td><b>' . h($c['name'] ?: '(大会名未設定)') . '</b>'
+        . ($c['sample'] ? ' <span class="badge">サンプル</span>' : '')
+        . ($isCur ? ' <span class="badge on">管理中</span>' : '')
+        . '<br><code class="small">' . h($c['code']) . '</code>'
+        . ($c['sample'] ? ' <span class="small muted">パスワード: <code>' . h(Competitions::SAMPLE_PASSWORD) . '</code></span>' : '') . '</td>'
+        . '<td>' . h($c['preset_label']) . '</td><td class="n">' . (int)$c['entries'] . '</td>'
+        . '<td class="small">' . h($c['last_score'] ?: ($c['updated'] ? date('Y-m-d H:i', $c['updated']) : '')) . '</td>'
+        . '<td><form method="post" class="inline-form">' . csrf_field() . '<input type="hidden" name="do" value="open"><input type="hidden" name="code" value="' . h($c['code']) . '">'
+        . ($authed ? '' : '<input type="password" name="password" placeholder="パスワード" required style="width:9rem"> ')
+        . '<button class="sm">' . ($isCur ? '開く' : ($authed ? '切り替え' : '開く')) . '</button></form></td></tr>';
+}
+echo '</table></div>';
+
+if (Auth::canCreate()) {
+    echo '<h2>新しい大会を作る</h2><form method="post" class="card wideform">' . csrf_field() . '<input type="hidden" name="do" value="create">'
+        . '<label>大会名</label><input type="text" name="name">'
+        . '<label>競技形式</label><select name="preset">';
+    foreach (Settings::PRESETS as $k => $p) {
+        echo '<option value="' . $k . '"' . ($k === Settings::DEFAULTS['preset'] ? ' selected' : '') . '>' . h($p['label']) . '</option>';
     }
+    echo '</select><div class="row nowrap wide"><div><label>この大会のパスワード</label><input type="password" name="password" required minlength="4"></div>'
+        . '<div><label>パスワード(確認)</label><input type="password" name="password2" required minlength="4"></div></div>'
+        . '<p class="muted small">大会コード(8桁の16進数)は自動で付きます。パスワードはこの大会だけのものです。</p>'
+        . '<p><button>作成</button></p></form>';
+} else {
+    echo '<p class="muted small">新しい大会を作るには、どれかの大会をパスワードで開いてください。</p>';
 }
-page_head('ホーム', 'index');
-echo '<h1>ホーム</h1>';
-if (!Settings::get('name')) {
-    echo '<div class="flash warn">まだ大会が設定されていません。<a href="setup.php">競技設定</a> から始めてください。</div>';
-}
-echo '<div class="cards">'
-    . '<div class="stat"><span class="muted">選手</span><b>' . $p['archers'] . '</b></div>'
-    . '<div class="stat"><span class="muted">全射終了</span><b>' . $p['finished'] . ' / ' . $p['archers'] . '</b></div>'
-    . '<div class="stat"><span class="muted">入力済みの矢</span><b>' . $pct . '%</b><div class="bar"><i style="width:' . $pct . '%"></i></div></div>'
-    . '<div class="stat"><span class="muted">スコア最終更新</span><b style="font-size:1.1rem">' . h(Results::lastUpdateText()) . '</b></div>'
-    . '<div class="stat"><span class="muted">端末(直近2分)</span><b>' . $online . ' / ' . count($devices) . '</b></div>'
-    . '</div>';
-echo '<div class="card"><h2 style="margin-top:0">進め方</h2><ol>'
-    . '<li><a href="setup.php">競技設定</a> — 大会名・射数(36/72、屋内30/60)・部門を決める</li>'
-    . '<li><a href="entries.php">選手</a> — 名簿を登録(CSV取込可)し、的番号を割り当てる</li>'
-    . '<li><a href="pdf.php?type=scorecard_blank">スコアカード(白紙)PDF</a> を印刷して配る</li>'
-    . '<li><a href="qr.php">端末接続</a> — ScorekeeperNG にサーバー設定のQRを読ませる</li>'
-    . '<li><a href="scores.php">入力状況</a> で進行を確認 — 終わったら <a href="results.php">結果</a> を PDF 出力</li>'
-    . '</ol></div>';
 page_foot();

@@ -12,9 +12,10 @@ class ApiLog
         return Settings::get('api_log') === '1';
     }
 
-    public static function file($day = null)
+    /** 大会ごとのログファイル */
+    public static function file($code, $day = null)
     {
-        return Db::dataDir() . '/api-' . ($day ?: date('Y-m-d')) . '.jsonl';
+        return Db::dataDir() . '/api-' . preg_replace('/[^A-Za-z0-9_-]/', '', $code) . '-' . ($day ?: date('Y-m-d')) . '.jsonl';
     }
 
     /** 画像など大きい値は短くして記録する */
@@ -33,29 +34,39 @@ class ApiLog
         return $v;
     }
 
-    public static function write($requests, array $response)
+    /** @param string[] $codes このやりとりで使った大会のコード。ログをオンにしている大会のファイルにだけ書く */
+    public static function write($requests, array $response, array $codes = [])
     {
         try {
-            if (!self::enabled()) {
-                return;
+            if (getenv('LITE_DB')) {
+                $codes = [Settings::code()];
             }
-            $line = json_encode([
-                'time' => date('Y-m-d H:i:s'),
-                'ip' => $_SERVER['REMOTE_ADDR'] ?? '',
-                'request' => self::shrink($requests),
-                'response' => self::shrink($response),
-            ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
-            @file_put_contents(self::file(), $line . "\n", FILE_APPEND | LOCK_EX);
-            @chmod(self::file(), 0660);
+            foreach ($codes as $code) {
+                if (!getenv('LITE_DB') && Competitions::open($code) === false) {
+                    continue;
+                }
+                if (!self::enabled()) {
+                    continue;
+                }
+                $line = json_encode([
+                    'time' => date('Y-m-d H:i:s'),
+                    'ip' => $_SERVER['REMOTE_ADDR'] ?? '',
+                    'request' => self::shrink($requests),
+                    'response' => self::shrink($response),
+                ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
+                $f = self::file($code);
+                @file_put_contents($f, $line . "\n", FILE_APPEND | LOCK_EX);
+                @chmod($f, 0660);
+            }
         } catch (\Throwable $e) {
             // ログの失敗で端末の通信を止めない
         }
     }
 
-    /** 新しい順に最大 $limit 件(今日のファイルから) */
+    /** いま使っている大会の、新しい順に最大 $limit 件(今日のファイルから) */
     public static function recent($limit = 40)
     {
-        $f = self::file();
+        $f = self::file(Settings::code());
         if (!is_file($f)) {
             return [];
         }
@@ -69,9 +80,11 @@ class ApiLog
         return $out;
     }
 
+    /** いま使っている大会のログを消す */
     public static function clear()
     {
-        foreach (glob(Db::dataDir() . '/api-*.jsonl') ?: [] as $f) {
+        $code = preg_replace('/[^A-Za-z0-9_-]/', '', Settings::code());
+        foreach (glob(Db::dataDir() . '/api-' . $code . '-*.jsonl') ?: [] as $f) {
             @unlink($f);
         }
     }

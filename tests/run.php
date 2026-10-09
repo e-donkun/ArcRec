@@ -184,5 +184,9 @@ echo $fail ? "\nFAILED: $fail\n" : "\nAll OK\n";
 @unlink(getenv('LITE_DB') . '-shm');
 
 // 2距離・屋内の組み合わせは別プロセスで確認する
-passthru(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__DIR__ . '/two_distances.php'), $code);
+$code = 0;
+foreach (['two_distances.php', 'multi.php'] as $f) {
+    passthru(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__DIR__ . '/' . $f), $c);
+    $code |= $c;
+}
 exit($fail || $code ? 1 : 0);

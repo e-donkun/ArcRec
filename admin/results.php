@@ -6,7 +6,8 @@ use Lite\Results;
 use Lite\Settings;
 
 // 結果は参加者にも見せられるよう、ログイン不要で閲覧できる。
-$public = !Lite\Auth::check();
+$code = public_comp();   // ?c=大会コード(なければ管理中の大会、それも無ければ最新の大会)
+$public = strcasecmp((string)Lite\Auth::current(), $code) !== 0;
 $groups = Results::byCategory();
 $p = Results::progress();
 $ends = Settings::ends();
@@ -19,8 +20,8 @@ if ($public) {
 page_head('結果', 'results', true);
 echo '<h1>予選結果 <span class="muted small">' . h(Settings::roundLabel()) . ' / 進行 ' . $p['finished'] . '/' . $p['archers'] . ' 人終了</span></h1>';
 echo '<p class="small">スコア最終更新: <b>' . h(Results::lastUpdateText()) . '</b></p>';
-echo '<div class="actions noprint"><a class="btn" href="pdf.php?type=results">結果PDF</a>'
-    . '<a class="btn sub" href="export.php?what=results">結果CSV</a><a class="btn sub" href="results.php">更新</a></div>';
+echo '<div class="actions noprint"><a class="btn" href="pdf.php?type=results&c=' . h($code) . '">結果PDF</a>'
+    . '<a class="btn sub" href="export.php?what=results&c=' . h($code) . '">結果CSV</a><a class="btn sub" href="results.php?c=' . h($code) . '">更新</a></div>';
 if (!$public) {
     echo '<p class="muted small noprint">この画面は自動更新されません。ログインしていない人にも結果の閲覧は公開されます(30秒ごとに自動更新)。</p>';
 }

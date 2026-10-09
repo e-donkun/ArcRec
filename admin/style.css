@@ -41,3 +41,42 @@ button.sm,.btn.sm{padding:.1rem .5rem;font-size:.85rem}
 .wideform input[type=text],.wideform select{max-width:none;width:100%}
 .wideform select{margin-top:0}
 .row.wide select{margin-top:.4rem}
+
+/* 大会の一覧 */
+.badge{display:inline-block;padding:0 .5rem;border-radius:999px;border:1px solid var(--line);font-size:.75rem;color:var(--mute);vertical-align:middle}
+.badge.on{background:var(--pri);border-color:var(--pri);color:var(--pri-fg)}
+.inline-form{display:inline-flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin:0 .5rem .3rem 0}
+.inline-label{display:inline-flex;align-items:center;gap:.3rem;margin:0;font-weight:400}
+
+/* 候補・絞り込みのチップ */
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.4rem 0}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:999px;padding:.3rem .8rem;font:inherit;font-size:.9rem;cursor:pointer}
+.chip.on{background:var(--pri);border-color:var(--pri);color:var(--pri-fg)}
+.chip small{margin-left:.4rem;opacity:.7}
+
+/* 的番号の画面(ianseo スマホモードの割り当て表に合わせた作り: タップして選び、枠をタップして移す) */
+.tg-hide{display:none!important}
+.tg-toolbar{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;align-items:center;margin:.4rem 0 .8rem}
+.tg-chips{display:flex;flex-wrap:wrap;gap:.4rem}
+.tg-board{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:.8rem}
+.tg-card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tg-card h3{margin:0;padding:.45rem .8rem;background:var(--bg);font-size:.95rem;display:flex;justify-content:space-between;align-items:center}
+.tg-card h3 small{color:var(--mute);font-weight:400}
+.tg-slot{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-top:1px solid var(--line);min-height:3.4rem;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.tg-slot .l{font-weight:700;width:1.3rem;color:var(--pri);flex:none}
+.tg-slot.empty{color:var(--mute)}
+.tg-slot.drop{background:rgba(47,93,138,.12);outline:2px dashed var(--pri);outline-offset:-3px}
+.tg-slot.sel{background:var(--pri);color:var(--pri-fg)}
+.tg-slot.sel .l,.tg-slot.sel small{color:var(--pri-fg)}
+.tg-slot.dim{opacity:.35}
+.tg-who{flex:1;min-width:0}
+.tg-who b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tg-who small{color:var(--mute)}
+.tg-tray{position:sticky;bottom:0;background:var(--card);border-top:1px solid var(--line);margin:1rem -1rem -1rem;padding:.6rem 1rem calc(.6rem + env(safe-area-inset-bottom));max-height:40vh;overflow:auto;box-shadow:0 -3px 10px rgba(0,0,0,.1);z-index:5}
+.tg-tray-head{font-size:.85rem;color:var(--mute);margin-bottom:.3rem}
+.tg-tray-list{display:flex;flex-wrap:wrap;gap:.4rem}
+.tg-sel{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;padding:.4rem .6rem;margin-bottom:.5rem;border-radius:8px;background:rgba(47,93,138,.12)}
+.tg-sel span{flex:1 1 12rem;font-weight:600}
+.tg-toast{position:fixed;left:50%;transform:translateX(-50%);bottom:5.5rem;z-index:20;background:#1f2933;color:#fff;padding:.55rem 1rem;border-radius:999px;max-width:90vw;font-size:.9rem}
+.tg-toast.bad{background:var(--err)}
+.tg-auto{margin-top:1rem}

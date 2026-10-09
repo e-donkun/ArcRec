@@ -7,7 +7,9 @@ use Lite\Scoring;
 use Lite\Settings;
 
 $what = $_GET['what'] ?? '';
-if ($what !== 'results') {
+if ($what === 'results') {
+    public_comp();   // 結果は公開(?c=大会コード)
+} else {
     require_admin();
 }
 

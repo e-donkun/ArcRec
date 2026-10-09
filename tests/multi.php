@@ -1,0 +1,218 @@
+<?php
+// php tests/multi.php -- 大会ごとの DB・パスワード・切り替え・端末の振り分け・的番号の移動・サンプル大会
+$dataDir = sys_get_temp_dir() . '/lite-multi-' . getmypid();
+mkdir($dataDir, 0775, true);
+putenv('LITE_DATA_DIR=' . $dataDir);
+putenv('LITE_DB');                       // 固定 DB を使わない(大会ごとの DB を使う)
+require dirname(__DIR__) . '/src/bootstrap.php';
+
+use Lite\{ApiLog, Auth, Categories, Competitions, Db, Devices, Entries, IskApi, Past, Settings};
+
+$fail = 0;
+function ok($cond, $msg)
+{
+    global $fail;
+    echo ($cond ? "  ok   " : "  FAIL ") . $msg . "\n";
+    if (!$cond) {
+        $fail++;
+    }
+}
+function call(array $reqs)
+{
+    foreach ($reqs as &$r) {
+        $r['apiVersion'] = 1;
+    }
+    $api = new IskApi();
+    $res = $api->process(json_decode(json_encode($reqs)));
+    ApiLog::write($reqs, $res, $api->usedCodes());
+    return $res;
+}
+function rrmdir($d)
+{
+    foreach (glob($d . '/{,.}*', GLOB_BRACE) ?: [] as $f) {
+        if (in_array(basename($f), ['.', '..'])) {
+            continue;
+        }
+        is_dir($f) ? rrmdir($f) : @unlink($f);
+    }
+    @rmdir($d);
+}
+
+echo "# サンプル大会\n";
+$list = Competitions::all();
+$sample = null;
+foreach ($list as $c) {
+    if ($c['sample']) {
+        $sample = $c;
+    }
+}
+ok($sample && $sample['code'] === '5A4D0001' && $sample['entries'] === 16, 'サンプル大会が大会フォルダに入っている(選手16人): ' . ($sample['name'] ?? '-'));
+ok(Auth::verify('5A4D0001', 'sample') && !Auth::verify('5A4D0001', 'wrong'), 'サンプルのパスワードは sample');
+Competitions::open('5A4D0001');
+$g = Lite\Results::byCategory();
+ok($g[0]['category']['name'] === 'リカーブ男子' && count($g[0]['rows']) === 8 && $g[0]['rows'][0]['rank'] === 1 && $g[0]['rows'][0]['hits'] === 72, 'サンプルの結果: 男子8人、1位は72射終了');
+ok($g[1]['rows'][4]['hits'] === 0 || $g[1]['rows'][7]['hits'] === 0, 'サンプル: 的4の女子はまだ射っていない');
+$pdf = Lite\Pdf::results($g);
+ok(substr($pdf, 0, 4) === '%PDF', 'サンプルの結果PDF');
+$st = Db::pdo()->query('SELECT COUNT(*) FROM entries WHERE locked = 1');
+ok((int)$st->fetchColumn() === 1, 'サンプル: 確定済みが1人');
+
+echo "# 大会の作成とパスワード\n";
+$a = Competitions::create('大会A', 'outdoor72', 'passA1');
+$b = Competitions::create('大会B', 'indoor30', 'passB1');
+ok(preg_match('/^[0-9A-F]{8}$/', $a) && preg_match('/^[0-9A-F]{8}$/', $b) && $a !== $b, '大会コードは8桁の16進数(自動): ' . $a . ', ' . $b);
+ok(is_file("$dataDir/competitions/$a.sqlite") && is_file("$dataDir/competitions/$b.sqlite"), '大会ごとに SQLite ファイル');
+ok(Auth::verify($a, 'passA1') && !Auth::verify($a, 'passB1') && Auth::verify($b, 'passB1') && !Auth::verify($b, 'passA1'), 'パスワードは大会ごと');
+ok(strlen((string)Competitions::readSetting($a, 'admin_hash')) > 20 && Competitions::readSetting($a, 'admin_hash') !== Competitions::readSetting($b, 'admin_hash'), 'パスワードのハッシュは各 DB の中にある');
+try {
+    Competitions::create('短い', 'outdoor72', 'abc');
+    ok(false, 'パスワードが短いと作れない');
+} catch (InvalidArgumentException $e) {
+    ok(true, 'パスワードが短いと作れない');
+}
+Competitions::open($a);
+$rm = (int)Categories::byCode('RM')['id'];
+$rw = (int)Categories::byCode('RW')['id'];
+$a1 = Entries::save(['family_name' => '甲', 'given_name' => '一', 'affiliation' => 'A大', 'category_id' => $rm]);
+$a2 = Entries::save(['family_name' => '乙', 'given_name' => '二', 'affiliation' => 'B大', 'category_id' => $rw]);
+$a3 = Entries::save(['family_name' => '丙', 'given_name' => '三', 'affiliation' => 'A大', 'category_id' => $rm]);
+Competitions::open($b);
+Entries::save(['family_name' => '丁', 'given_name' => '四', 'category_id' => $rm, 'target' => 1, 'letter' => 'A']);
+Competitions::open($a);
+ok(count(Entries::all()) === 3, '大会Aの選手は3人(大会Bの選手は混ざらない)');
+Competitions::open($b);
+ok(count(Entries::all()) === 1 && Settings::get('name') === '大会B' && Settings::category() === 2, '大会Bは1人、屋内30射');
+ok(Settings::code() === $b, 'DB の中の大会コードは大会のコード');
+
+echo "# 的番号の移動(タップ移動/プルダウン共通の Entries::place)\n";
+Competitions::open($a);
+$r = Entries::place($a1, 1, 'A');
+ok($r['ok'] && Entries::find($a1)['target'] == 1 && Entries::find($a1)['letter'] === 'A', '未割当を 1A に置く');
+$r = Entries::place($a2, 1, '');
+ok($r['ok'] && Entries::find($a2)['letter'] === 'B', '位置を指定しないと、その的の空いている最初の位置(1B)');
+$r = Entries::place($a3, 1, 'A');
+ok($r['ok'] && strpos($r['msg'], '入れ替え') !== false && Entries::find($a3)['letter'] === 'A' && Entries::find($a1)['target'] == 0, '選手のいる枠に置くと入れ替え(元が未割当なら未割当へ)');
+Entries::place($a1, 2, 'C');
+$r = Entries::place($a3, 2, 'C');
+ok($r['ok'] && Entries::find($a3)['target'] == 2 && Entries::find($a1)['target'] == 1 && Entries::find($a1)['letter'] === 'A', '配置済み同士は位置を入れ替える');
+Entries::applyArrows($a1, 'LLLLLL', 't', null, 'admin', 1);
+$r = Entries::place($a1, 3, 'A');
+ok(!$r['ok'] && Entries::find($a1)['target'] == 1, '点数のある選手は動かせない');
+$r = Entries::place($a2, 1, 'A');
+ok(!$r['ok'] && Entries::find($a2)['letter'] === 'B', '点数のある選手のいる枠へは移せない');
+$r = Entries::place($a2, 0);
+ok($r['ok'] && Entries::find($a2)['target'] == 0, '未割当に戻す');
+foreach (['A', 'B', 'C', 'D'] as $l) {
+    Entries::save(['family_name' => "満$l", 'category_id' => $rm, 'target' => 9, 'letter' => $l]);
+}
+$r = Entries::place($a2, 9, '');
+ok(!$r['ok'] && strpos($r['msg'], '満員') !== false, '満員の的には置けない');
+ok(!Entries::place($a2, 10000, 'A')['ok'] && !Entries::place($a2, 1, 'E')['ok'], '範囲外・不正な位置は拒否');
+Entries::save(['family_name' => '乙', 'given_name' => '二', 'category_id' => $rw, 'status' => 1], $a2);
+ok(!Entries::place($a2, 5, 'A')['ok'], '欠場の選手は置けない');
+$e = Entries::find($a2);
+ok($e['target'] == 0, '欠場にしても、登録画面では的番号を変えない(未割当のまま)');
+Entries::save(['family_name' => '乙', 'given_name' => '二', 'category_id' => $rw, 'status' => 0], $a2);
+Entries::place($a2, 5, 'B');
+Entries::save(['family_name' => '乙', 'given_name' => '二', 'category_id' => $rw, 'status' => 1], $a2);
+ok(Entries::find($a2)['target'] == 0, '得点のない選手を欠場にすると、的からも外れる');
+Entries::save(['family_name' => '甲', 'given_name' => '一', 'affiliation' => 'A大 (変更)', 'category_id' => $rm], $a1);
+ok(Entries::find($a1)['target'] == 1 && Entries::find($a1)['letter'] === 'A' && Entries::find($a1)['affiliation'] === 'A大 (変更)', '選手の編集では的番号を変えない');
+
+echo "# 端末(ScorekeeperNG)が指す大会のDBを読む\n";
+Competitions::open($b);
+Entries::place(Entries::all()[0]['id'], 1, 'A');
+Competitions::open($a);
+$r = call([['action' => 'handshake', 'uuid' => 'tab1', 'version' => '1.10.0', 'iskType' => 11, 'tournament' => $a]]);
+ok($r['responses'][0]['error'] === 0 && Devices::find('tab1') !== null, '大会Aに端末を登録');
+Competitions::open($b);
+ok(Devices::find('tab1') === null, '大会Bには登録されない(端末は大会ごとのDBに登録される)');
+sleep(1);
+$r = call([['action' => 'handshake', 'uuid' => 'tab1', 'version' => '1.10.0', 'iskType' => 11, 'tournament' => strtolower($b)]]);
+ok($r['responses'][0]['error'] === 0 && Devices::find('tab1') !== null, '同じ端末が大会Bにも登録(コードは小文字でもよい)');
+ok(Competitions::byDevice('tab1') === $b, '大会コードが無いリクエストは、最後に通信した大会(B)へ');
+$r = call([['action' => 'comp', 'device' => 'tab1', 'tocode' => $a]]);
+ok($r['responses'][0]['toname'] === '大会A' && $r['responses'][0]['numdist'] === 2, '端末が古い大会(A)のコードで来たら、Aの内容を返す');
+$r = call([['action' => 'comp', 'device' => 'tab1', 'tocode' => $b]]);
+ok($r['responses'][0]['toname'] === '大会B' && $r['responses'][0]['numdist'] === 1, 'Bのコードで来たらBの内容');
+sleep(1);   // 最終通信は秒単位なので、次にAと通信した時刻がBより後になるようにする
+$r = call([['action' => 'manual', 'device' => 'tab1', 'tocode' => $a, 'type' => 'Q', 'sesstarget' => '1001']]);
+$cfg = $r['responses'][0];
+ok($cfg['action'] === 'reconfigure' && $cfg['toCode'] === $a && $cfg['archers'][0]['name'] === '甲 一' && count($cfg['archers'][0]['scoring']) === 2, '古い大会A: 的1の選手と2距離を返す');
+$r = call([['action' => 'update', 'device' => 'tab1', 'tocode' => $a, 'type' => 'Q', 'session' => 1, 'distance' => 2, 'refKey' => '1.1B', 'arrowstring' => 'JJJJJJ']]);
+$r2 = call([['action' => 'update', 'device' => 'tab1', 'tocode' => $a, 'type' => 'Q', 'session' => 1, 'distance' => 1, 'refKey' => '1.1A', 'arrowstring' => 'KKKKKK']]);
+Competitions::open($a);
+$e1 = Entries::find($a1);
+ok(rtrim($e1['arrowstring']) === 'KKKKKK', '端末の更新は、tocode の大会(A)のDBに書かれた');
+Competitions::open($b);
+ok(Entries::all()[0]['arrowstring'] === '', '大会Bの点数は変わらない');
+$r = call([['action' => 'info', 'device' => 'tab1', 'data' => ['battery' => ['charging' => false, 'charge' => 0.42]]]]);
+Competitions::open($a);
+ok(Devices::find('tab1')['battery'] == 42, 'コード無しの info は、その端末が最後に通信した大会(いまは A)に記録');
+$r = call([['action' => 'handshake', 'uuid' => 'tab2', 'version' => '1.10.0', 'iskType' => 11, 'tournament' => 'FFFFFFFF']]);
+ok($r['error'] === true && $r['responses'][0]['error'] === 1, '存在しない大会コードは登録できない');
+$r = call([['action' => 'comp', 'device' => 'tab1', 'tocode' => 'FFFFFFFF']]);
+ok($r['responses'][0]['errorcode'] === 1, '存在しない大会コードの comp は errorcode 1');
+$r = call([['action' => 'info', 'device' => 'nobody', 'data' => ['battery' => ['charging' => false, 'charge' => 1]]]]);
+ok($r['responses'][0]['action'] === 'handshake' && $r['responses'][0]['error'] === 2, 'どの大会にも登録されていない端末は handshake error 2');
+$r = call([['action' => 'ping', 'device' => 'tab1']]);
+ok($r['responses'][0] === 'pong', 'ping は大会を選ばなくても返る');
+$r = call([
+    ['action' => 'comp', 'device' => 'tab1', 'tocode' => $a],
+    ['action' => 'comp', 'device' => 'tab1', 'tocode' => $b],
+]);
+ok($r['responses'][0]['toname'] === '大会A' && $r['responses'][1]['toname'] === '大会B', '1回の通信で別々の大会を指しても、それぞれの大会を返す');
+
+echo "# 通信ログは大会ごと\n";
+Competitions::open($a);
+Settings::set('api_log', '1');
+call([['action' => 'comp', 'device' => 'tab1', 'tocode' => $a]]);
+call([['action' => 'comp', 'device' => 'tab1', 'tocode' => $b]]);
+$fa = ApiLog::file($a);
+$fb = ApiLog::file($b);
+ok(is_file($fa) && !is_file($fb), 'ログをオンにした大会Aにだけ記録される');
+Competitions::open($a);
+ok(count(ApiLog::recent()) === 1, '大会Aのログ画面には大会Aの分だけ');
+ApiLog::clear();
+ok(!is_file($fa), '大会Aのログを消せる');
+
+echo "# 過去の大会からの候補\n";
+Competitions::open($a);
+$affs = Past::affiliations([$a, '5A4D0001']);
+ok(in_array('A大 (変更)', $affs, true) && in_array('京都大学', $affs, true), '所属の候補: 開いた大会(A)とサンプルから');
+$aths = Past::athletes('山', [$a, '5A4D0001']);
+$yamada = array_values(array_filter($aths, function ($x) { return $x['family'] === '山田'; }));
+ok($yamada && $yamada[0]['given'] === '太郎' && $yamada[0]['affiliation'] === '京都大学' && $yamada[0]['category_code'] === 'RM', '過去の選手の候補(サンプルの 山田 太郎 / 京都大学 / RM)');
+ok(Past::athletes('山', [$a]) === [], 'パスワードを通していない大会(サンプル)の選手は出さない');
+Entries::save(['family_name' => '山田', 'given_name' => '太郎', 'category_id' => $rm]);
+ok(array_filter(Past::athletes('山田', [$a, '5A4D0001']), function ($x) { return $x['given'] === '太郎'; }) === [], 'いまの大会にいる選手は候補から外す');
+
+echo "# 旧データ(大会が1つだけだった頃の data/lite.sqlite)の移行\n";
+$legacyDir = sys_get_temp_dir() . '/lite-legacy-' . getmypid();
+mkdir($legacyDir, 0775, true);
+$pdo = Db::connect($legacyDir . '/lite.sqlite');
+$ins = $pdo->prepare('INSERT INTO settings(k, v) VALUES(?, ?)');
+$ins->execute(['code', 'LITE']);
+$ins->execute(['name', '旧データの大会']);
+$ins->execute(['admin_hash', Auth::hashPassword('oldpass')]);
+unset($pdo, $ins);
+putenv('LITE_DATA_DIR=' . $legacyDir);
+Db::unselect();
+Competitions::bootstrap(true);
+$files = Competitions::files();
+$found = null;
+foreach ($files as $c => $path) {
+    if ($c !== '5A4D0001') {
+        $found = $c;
+    }
+}
+ok(!is_file($legacyDir . '/lite.sqlite') && $found && preg_match('/^[0-9A-F]{8}$/', $found), '旧DBは大会フォルダへ移り、コードは LITE → 16進数8桁に: ' . $found);
+ok(Auth::verify($found, 'oldpass'), '旧DBのパスワードはそのまま使える');
+ok(Competitions::readSetting($found, 'name') === '旧データの大会' && Competitions::readSetting($found, 'code') === $found, '内容と大会コードが一致');
+ok(is_file($legacyDir . '/competitions/5A4D0001.sqlite'), '移行した環境にもサンプルが入る');
+
+foreach ([$dataDir, $legacyDir] as $d) {
+    rrmdir($d);
+}
+echo $fail ? "\nFAILED(複数大会): $fail\n" : "\nAll OK(複数大会)\n";
+exit($fail ? 1 : 0);

@@ -2,8 +2,11 @@
 namespace Lite;
 
 /**
- * 管理画面の簡易認証(パスワード 1 つ)とCSRF対策。
- * 端末(ScorekeeperNG)の API とは別物で、API は大会コード + PIN で守る。
+ * 管理画面の認証(大会ごとのパスワード)と CSRF 対策。
+ * パスワードは大会の DB の中(settings.admin_hash)にあり、大会ごとに別々。
+ * セッションには「パスワードで開いた大会」を覚えておき、大会を切り替えるときにまた聞かない。
+ * config.local.php の admin_password を設定していれば、それはどの大会も開ける共通のパスワード(マスター)になる。
+ * 端末(ScorekeeperNG)の API とは別物で、API は大会コード(ランダムな16進数8桁)で守る。
  */
 class Auth
 {
@@ -24,48 +27,109 @@ class Auth
         session_start();
     }
 
-    /** config.local.php の admin_password か、初回設定したパスワードのハッシュ */
-    private static function hash()
+    // ------------------------------------------------------------ パスワード
+
+    public static function hashPassword($password)
     {
-        if ($p = lite_config('admin_password')) {
-            return password_hash($p, PASSWORD_DEFAULT);
-        }
-        return (string)Settings::get('admin_hash');
+        return password_hash($password, PASSWORD_DEFAULT);
     }
 
-    public static function needsSetup()
+    public static function checkPasswordRule($password)
     {
-        return !lite_config('admin_password') && Settings::get('admin_hash') === '';
-    }
-
-    public static function setPassword($password)
-    {
-        if (mb_strlen($password) < 4) {
+        if (mb_strlen((string)$password) < 4) {
             throw new \InvalidArgumentException('パスワードは4文字以上にしてください');
         }
-        Settings::set('admin_hash', password_hash($password, PASSWORD_DEFAULT));
     }
 
-    public static function attempt($password)
+    private static function master()
+    {
+        $p = lite_config('admin_password');
+        return $p ? (string)$p : null;
+    }
+
+    /** 大会のパスワードが合っているか(共通のマスターパスワードでも可) */
+    public static function verify($code, $password)
+    {
+        if (($m = self::master()) !== null && hash_equals($m, (string)$password)) {
+            return true;
+        }
+        $h = (string)Competitions::readSetting($code, 'admin_hash');
+        return $h !== '' && password_verify((string)$password, $h);
+    }
+
+    /** いま使っている大会のパスワードを変える */
+    public static function setPassword($password)
+    {
+        self::checkPasswordRule($password);
+        Settings::set('admin_hash', self::hashPassword($password));
+    }
+
+    // ------------------------------------------------------------ ログイン状態(セッション)
+
+    /** パスワードを確かめて、合っていればその大会を開いた状態にする */
+    public static function login($code, $password)
     {
         self::start();
-        if ($p = lite_config('admin_password')) {
-            $ok = hash_equals((string)$p, (string)$password);
-        } else {
-            $h = (string)Settings::get('admin_hash');
-            $ok = $h !== '' && password_verify($password, $h);
+        $f = Competitions::find($code);
+        if (!$f || !self::verify($f['code'], $password)) {
+            return false;
         }
-        if ($ok) {
-            session_regenerate_id(true);
-            $_SESSION['admin'] = true;
+        session_regenerate_id(true);
+        $_SESSION['auth'][$f['code']] = true;
+        if (($m = self::master()) !== null && hash_equals($m, (string)$password)) {
+            $_SESSION['master'] = true;
         }
-        return $ok;
+        $_SESSION['comp'] = $f['code'];
+        return true;
+    }
+
+    public static function authorized($code)
+    {
+        self::start();
+        $f = Competitions::find($code);
+        return $f && !empty($_SESSION['auth'][$f['code']]);
+    }
+
+    /** 開いたことのある(パスワードを通った)大会のコード一覧 */
+    public static function authorizedCodes()
+    {
+        self::start();
+        return array_keys(array_filter($_SESSION['auth'] ?? []));
+    }
+
+    public static function anyAuthorized()
+    {
+        return !empty(self::authorizedCodes());
+    }
+
+    /** 大会を切り替える(パスワードを通った大会だけ) */
+    public static function switchTo($code)
+    {
+        if (!self::authorized($code)) {
+            return false;
+        }
+        $_SESSION['comp'] = Competitions::find($code)['code'];
+        return true;
+    }
+
+    /** いま管理している大会のコード。ログインしていなければ null */
+    public static function current()
+    {
+        self::start();
+        $c = $_SESSION['comp'] ?? null;
+        return ($c && self::authorized($c)) ? $c : null;
     }
 
     public static function check()
     {
+        return self::current() !== null;
+    }
+
+    /** 大会を新しく作ってよいか(まだ大会が無い、パスワードを通った大会がある、またはマスターパスワードで入った) */
+    public static function canCreate()
+    {
         self::start();
-        return !empty($_SESSION['admin']);
+        return !Competitions::files() || self::anyAuthorized() || !empty($_SESSION['master']);
     }
 
     public static function logout()
@@ -74,6 +138,8 @@ class Auth
         $_SESSION = [];
         session_destroy();
     }
+
+    // ------------------------------------------------------------ CSRF
 
     public static function csrf()
     {
@@ -87,7 +153,7 @@ class Auth
     public static function verifyCsrf()
     {
         self::start();
-        $t = $_POST['_csrf'] ?? '';
+        $t = $_POST['_csrf'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
         if (!$t || empty($_SESSION['csrf']) || !hash_equals($_SESSION['csrf'], $t)) {
             http_response_code(400);
             exit('不正なリクエストです(画面を開き直してください)');

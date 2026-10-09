@@ -6,8 +6,10 @@ use Lite\Pdf;
 use Lite\Results;
 
 $type = $_GET['type'] ?? '';
-// 結果PDFは公開。スコアカード・QRは管理者のみ。
-if ($type !== 'results') {
+// 結果PDFは公開(?c=大会コード)。スコアカード・QRは管理者のみ。
+if ($type === 'results') {
+    public_comp();
+} else {
     require_admin();
 }
 
