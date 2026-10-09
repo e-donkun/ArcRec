@@ -2,13 +2,18 @@
 	"id": "ianseo-lite",
 	"name": "ianseo-lite（簡易記録会システム）",
 	"description": "予選だけ・1セッションだけの記録会向け。SQLite + ScorekeeperNG(Lite)で入力し、スコアカードと結果をPDFで出力する。本体のDBとは独立して動く。",
-	"version": "0.2.2",
+	"version": "0.3.0",
 	"author": "e-donkun",
 	"homepage": "https://github.com/e-donkun/ianseo-lite",
 	"license": "GPL-2.0",
 	"testedIanseo": "2026-03-01",
 	"requiresPhp": "7.4",
 	"changelog": [
+		{
+			"version": "0.3.0",
+			"date": "2026-10-09",
+			"notes": "競技設定を簡素化: 大会コードは自動(8桁の16進数)、PIN・サーバーURL・セッション名の入力を廃止。競技形式の表記を Outdoor/Indoor に。距離名の初期値(前半/後半)と距離ごとの的面を追加"
+		},
 		{
 			"version": "0.2.2",
 			"date": "2026-10-09",

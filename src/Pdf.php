@@ -26,7 +26,7 @@ class Pdf extends \TCPDF
         $this->SetAutoPageBreak(false);
         $this->SetCreator('ianseo-lite');
         $this->SetTitle($title);
-        $this->footerText = (Settings::get('name') ?: Settings::get('code')) . '  /  出力 ' . date('Y-m-d H:i');
+        $this->footerText = Settings::title() . '  /  出力 ' . date('Y-m-d H:i');
         $this->setFontSubsetting(true);
         $this->SetFont(self::FONT, '', 10);
     }
@@ -91,11 +91,11 @@ class Pdf extends \TCPDF
         // ---- 見出し
         $this->f(12);
         $this->SetXY($x0, $y0);
-        $this->Cell(120, 6, Settings::get('name') ?: Settings::get('code'), 0, 1, 'L');
+        $this->Cell(120, 6, Settings::title(), 0, 1, 'L');
 
         $this->f(9);
         $this->SetXY($x0, $y0 + 6);
-        $this->Cell(120, 5, 'スコアカード  ' . $this->categoryLabel($e) . '  ' . Settings::distanceSummary(), 0, 0, 'L');
+        $this->Cell(120, 5, trim('スコアカード  ' . $this->categoryLabel($e) . '  ' . Settings::distanceSummary()), 0, 0, 'L');
 
         // 的番号の大きな枠
         $pos = $e['target'] ? $e['target'] . $e['letter'] : '--';
@@ -203,7 +203,7 @@ class Pdf extends \TCPDF
                 $this->SetFillColor(240, 240, 240);
                 $this->f(9);
                 $showDist = $filled && trim($arrows) !== '';
-                $this->Cell($wEnd + $wArrow * $per, $hDist, '距離' . $d . ' (' . Settings::distanceName($d) . ') 小計', 1, 0, 'C', true);
+                $this->Cell($wEnd + $wArrow * $per, $hDist, (Settings::distanceName($d) ?: '距離' . $d) . ' 小計', 1, 0, 'C', true);
                 $this->f(11);
                 $this->Cell($wSub + $wRun, $hDist, $showDist ? (string)$dScore : '', 1, 0, 'C', true);
                 $this->Cell($wGold, $hDist, $showDist ? (string)$dGold : '', 1, 0, 'C', true);
@@ -257,7 +257,7 @@ class Pdf extends \TCPDF
                 $pdf->AddPage();
                 $pdf->f(9);
                 $pdf->SetXY(15, 8);
-                $pdf->Cell(180, 5, (Settings::get('name') ?: Settings::get('code')) . '  端末で読み取って的を選びます', 0, 0, 'L');
+                $pdf->Cell(180, 5, Settings::title() . '  端末で読み取って的を選びます', 0, 0, 'L');
             }
             $k = $i % ($cols * $rows);
             $x = 15 + ($k % $cols) * $cw;
@@ -297,9 +297,9 @@ class Pdf extends \TCPDF
     {
         $this->f(16);
         $this->SetXY(15, 12);
-        $this->Cell(180, 8, Settings::get('name') ?: Settings::get('code'), 0, 1, 'C');
+        $this->Cell(180, 8, Settings::title(), 0, 1, 'C');
         $this->f(12);
-        $this->Cell(180, 8, '予選結果 ' . Settings::distanceSummary() . ' ' . Settings::totalArrows() . '射', 0, 1, 'C');
+        $this->Cell(180, 8, '予選結果 ' . Settings::roundLabel(), 0, 1, 'C');
         $this->Ln(2);
     }
 
@@ -376,8 +376,8 @@ class Pdf extends \TCPDF
         $this->Cell($w['aff'], 6, '所属', 1, 0, 'C', true);
         if ($nd > 1) {
             $this->f(7);
-            $this->Cell($w['d1'], 6, '距離1 ' . Settings::distanceName(1), 1, 0, 'C', true);
-            $this->Cell($w['d2'], 6, '距離2 ' . Settings::distanceName(2), 1, 0, 'C', true);
+            $this->Cell($w['d1'], 6, Settings::distanceName(1) ?: '距離1', 1, 0, 'C', true);
+            $this->Cell($w['d2'], 6, Settings::distanceName(2) ?: '距離2', 1, 0, 'C', true);
             $this->f(8);
         }
         $this->Cell($w['total'], 6, '合計', 1, 0, 'C', true);

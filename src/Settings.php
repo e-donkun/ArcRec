@@ -11,31 +11,36 @@ class Settings
      * 競技形式。ends/arrows は 1 距離ぶん。屋外は 6 射 x 6 エンド、屋内は 3 射 x 10 エンド。
      */
     const PRESETS = [
-        'outdoor36' => ['label' => '屋外 36射 (1距離)', 'category' => 1, 'distances' => 1, 'ends' => 6, 'arrows' => 6],
-        'outdoor72' => ['label' => '屋外 36射 x 2距離 (72射)', 'category' => 1, 'distances' => 2, 'ends' => 6, 'arrows' => 6],
-        'indoor30' => ['label' => '屋内 30射 (1距離)', 'category' => 2, 'distances' => 1, 'ends' => 10, 'arrows' => 3],
-        'indoor60' => ['label' => '屋内 30射 x 2距離 (60射)', 'category' => 2, 'distances' => 2, 'ends' => 10, 'arrows' => 3],
+        'outdoor36' => ['label' => 'Outdoor 36射', 'category' => 1, 'distances' => 1, 'ends' => 6, 'arrows' => 6],
+        'outdoor72' => ['label' => 'Outdoor 36射×2（72射）', 'category' => 1, 'distances' => 2, 'ends' => 6, 'arrows' => 6],
+        'indoor30' => ['label' => 'Indoor 30射', 'category' => 2, 'distances' => 1, 'ends' => 10, 'arrows' => 3],
+        'indoor60' => ['label' => 'Indoor 30射×2（60射）', 'category' => 2, 'distances' => 2, 'ends' => 10, 'arrows' => 3],
     ];
 
-    /** 屋外リカーブの的面(122cm 1-X)。屋内は indoor_face で選ぶ */
-    const OUTDOOR_FACE = 5;
-    /** 屋内の的面の選択肢: 40cm 単独(1-10) / 三つ目(6-10) */
-    const INDOOR_FACES = [1 => '40cm 単独 (1-10)', 2 => '三つ目 (6-10)'];
+    /** 的面の選択肢(リカーブ): 屋外 / 屋内。値は的面ID(TargetFaces) */
+    const FACES = [
+        1 => [5 => '10リング (1-X)', 10 => '6リング (6-X)'],
+        2 => [1 => '40cm 10リング (1-10)', 2 => '40cm 三つ目 (6-10)'],
+    ];
+
+    /** 2距離のときの距離名の初期値(1距離のときは空欄) */
+    const DEFAULT_DISTANCE_NAMES = [1 => '前半', 2 => '後半'];
+
+    /** 端末に見せるセッション名(セッションは1つだけ) */
+    const SESSION_NAME = 'Session 1';
 
     const DEFAULTS = [
-        'code' => 'LITE',
+        'code' => '',
         'name' => '',
         'preset' => 'outdoor72',
         'distance_name' => '',
         'distance_name2' => '',
-        'indoor_face' => '1',
-        'pin' => '',
+        'target_face1' => '',
+        'target_face2' => '',
         'gold_label' => '10+X',
         'x_label' => 'X',
-        'session_name' => '',
         'archers_per_target' => '4',
         'admin_hash' => '',
-        'server_url' => '',
         'api_log' => '0',
     ];
 
@@ -129,14 +134,28 @@ class Settings
         return self::preset()['category'];
     }
 
-    /** 距離の表記(例 "70m")。未入力なら屋外 70m / 屋内 18m */
-    public static function distanceName($d = 1)
+    /** 大会の表示名。未入力のときは大会コード */
+    public static function title()
     {
-        $v = trim((string)self::get($d == 2 ? 'distance_name2' : 'distance_name'));
-        return $v !== '' ? $v : (self::isIndoor() ? '18m' : '70m');
+        $n = trim((string)self::get('name'));
+        return $n !== '' ? $n : self::code();
     }
 
-    /** 距離の要約(例 "70m x 2" / "70m + 60m" / "70m") */
+    /** 距離の名前。入力が無ければ、2距離は 前半 / 後半、1距離は空欄 */
+    public static function distanceName($d = 1)
+    {
+        $d = $d == 2 ? 2 : 1;
+        $v = trim((string)self::get($d === 2 ? 'distance_name2' : 'distance_name'));
+        if ($v !== '') {
+            return $v;
+        }
+        return self::distances() === 2 ? self::DEFAULT_DISTANCE_NAMES[$d] : '';
+    }
+
+    /**
+     * 見出しに足す距離名(例 "70m + 60m")。初期値のまま(前半/後半)や空欄のときは空文字にして、
+     * 見出しには射数だけを出す。
+     */
     public static function distanceSummary()
     {
         if (self::distances() === 1) {
@@ -144,21 +163,59 @@ class Settings
         }
         $a = self::distanceName(1);
         $b = self::distanceName(2);
-        return $a === $b ? $a . ' x 2' : $a . ' + ' . $b;
+        if ($a === self::DEFAULT_DISTANCE_NAMES[1] && $b === self::DEFAULT_DISTANCE_NAMES[2]) {
+            return '';
+        }
+        return $a . ' + ' . $b;
     }
 
-    /** 全選手が使う的面ID */
-    public static function targetFace()
+    /** 見出し用: 「72射」「70m 36射」「70m + 60m 72射」 */
+    public static function roundLabel()
     {
-        if (!self::isIndoor()) {
-            return self::OUTDOOR_FACE;
+        return trim(self::distanceSummary() . ' ' . self::totalArrows() . '射');
+    }
+
+    /** 今の競技形式(屋外/屋内)で選べる的面 [的面ID => 表示名] */
+    public static function faceOptions()
+    {
+        return self::FACES[self::category()];
+    }
+
+    /** 距離ごとの的面ID。未設定や、競技形式に合わない値のときは選択肢の先頭 */
+    public static function targetFace($d = 1)
+    {
+        $opts = self::faceOptions();
+        $v = (int)self::get($d == 2 ? 'target_face2' : 'target_face1');
+        if (!isset($opts[$v]) && $d == 2) {
+            $v = (int)self::get('target_face1'); // 距離2が未設定なら距離1と同じ
         }
-        $f = (int)self::get('indoor_face');
-        return isset(self::INDOOR_FACES[$f]) ? $f : 1;
+        return isset($opts[$v]) ? $v : (int)array_key_first($opts);
+    }
+
+    /**
+     * 大会コード(端末が使う識別子)。ユーザーは入力しない。
+     * 大会の作成時(最初に必要になったとき)に、8桁の16進数をランダムに作って保存する。
+     * 空のときと、以前の既定値 "LITE" のときだけ作り直す(自分で入れた値は、そのまま使い続ける)。
+     */
+    public static function code()
+    {
+        $v = (string)self::get('code');
+        if ($v !== '' && $v !== 'LITE') {
+            return $v;
+        }
+        return Db::immediate(function () {
+            self::reset();
+            $v = (string)self::get('code');
+            if ($v === '' || $v === 'LITE') {
+                $v = strtoupper(bin2hex(random_bytes(4)));
+                self::set('code', $v);
+            }
+            return $v;
+        });
     }
 
     public static function sessionName()
     {
-        return self::get('session_name') ?: 'Session 1';
+        return self::SESSION_NAME;
     }
 }

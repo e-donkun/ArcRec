@@ -41,12 +41,9 @@ function csrf_field()
     return '<input type="hidden" name="_csrf" value="' . h(Auth::csrf()) . '">';
 }
 
-/** タブレットが接続するときの URL(…/ianseo-lite/)。設定が無ければアクセスされた URL から推測 */
+/** タブレットが接続するときの URL(…/ianseo-lite/)。いま開いている URL から作る(設定は不要) */
 function server_base_url()
 {
-    if ($u = trim((string)Settings::get('server_url'))) {
-        return rtrim($u, '/') . '/';
-    }
     $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
         || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';

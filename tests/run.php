@@ -23,7 +23,7 @@ function call(array $reqs)
 }
 
 echo "# 大会設定と選手\n";
-Settings::setMany(['code' => 'KYT26', 'name' => '京都テスト大会', 'preset' => 'outdoor36', 'pin' => '1234']);
+Settings::setMany(['code' => 'KYT26', 'name' => '京都テスト大会', 'preset' => 'outdoor36']);
 $rm = (int)Categories::byCode('RM')['id'];
 $rw = (int)Categories::byCode('RW')['id'];
 ok(count(Categories::all()) === 2, '部門はリカーブ男子・女子の2つだけ');
@@ -48,16 +48,17 @@ try {
 
 echo "# handshake\n";
 $h = ['action' => 'handshake', 'uuid' => 'dev-1', 'version' => '1.10.0', 'iskType' => 11];
+$r = call([$h + ['tournament' => 'WRONG']]);
+ok($r['error'] === true && $r['responses'][0]['error'] === 1, '違う大会コードの登録は拒否');
 $r = call([$h + ['tournament' => 'KYT26']]);
-ok($r['error'] === true && $r['responses'][0]['error'] === 1, 'PIN 無しの登録は拒否');
-$r = call([$h + ['tournament' => 'KYT26|9999']]);
-ok($r['error'] === true && $r['responses'] === [], 'PIN 違いは Validation failed');
-$r = call([$h + ['tournament' => 'KYT26|1234']]);
-ok($r['error'] === false && $r['responses'][0]['error'] === 0 && $r['responses'][0]['devCode'] === '0001', '正しい PIN で登録 devCode=0001');
+ok($r['error'] === false && $r['responses'][0]['error'] === 0 && $r['responses'][0]['devCode'] === '0001', '大会コードで登録 devCode=0001');
+$r = call([array_merge($h, ['uuid' => 'dev-pin', 'tournament' => 'KYT26|1234'])]);
+ok($r['responses'][0]['error'] === 0, '本家の "コード|PIN" の形で来ても、PINは無視して登録できる');
+Devices::forget('dev-pin');
 $r = call([['action' => 'handshake', 'uuid' => 'dev-1', 'version' => '1.10.0', 'iskType' => 12, 'tournament' => 'KYT26|1234']]);
 ok($r['responses'][0]['error'] === 1, 'Pro モードの端末は拒否');
 $r = call([array_merge($h, ['tournament' => 'KYT26|1234', 'uuid' => 'dev-2'])]);
-ok($r['responses'][0]['devCode'] === '0002', '2台目は 0002');
+ok($r['responses'][0]['devCode'] === '0002', '次の端末は 0002');
 
 echo "# comp / manual\n";
 $r = call([['action' => 'comp', 'device' => 'nobody', 'tocode' => 'KYT26']]);
@@ -175,7 +176,7 @@ $pdf = Lite\Pdf::results(Results::byCategory());
 ok(substr($pdf, 0, 4) === '%PDF', '結果PDF');
 $pdf = Lite\Pdf::qrSheet('http://192.168.0.10/ianseo-lite/');
 ok(substr($pdf, 0, 4) === '%PDF', '的QR PDF');
-ok(json_decode(Lite\Connect::targetPayload('http://x/', 12), true) === ['u' => 'http://x/', 'c' => 'KYT26|1234', 's' => '1', 't' => '0012', 'st' => 'Q'], '的QRの中身');
+ok(json_decode(Lite\Connect::targetPayload('http://x/', 12), true) === ['u' => 'http://x/', 'c' => 'KYT26', 's' => '1', 't' => '0012', 'st' => 'Q'], '的QRの中身');
 
 echo $fail ? "\nFAILED: $fail\n" : "\nAll OK\n";
 @unlink(getenv('LITE_DB'));

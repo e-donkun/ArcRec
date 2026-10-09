@@ -100,15 +100,11 @@ class IskApi
         if (!empty($req->extra) && is_string($req->extra)) {
             $req->extra = json_decode($req->extra);
         }
-        // 大会コードに "|PIN" が付いていれば PIN を検証して取り除く
+        // 本家は大会コードに "|PIN" を付けて送ることがあるが、このシステムに PIN は無い(大会コードがランダムな
+        // 8桁の16進数なので、それが合言葉になる)。付いていれば無視して、コードだけにする
         foreach (['tournament', 'tocode'] as $f) {
             if (!empty($req->$f) && strpos($req->$f, '|') !== false) {
-                list($req->$f, $pin) = explode('|', $req->$f, 2);
-                if ((string)Settings::get('pin') === '' || $pin !== Settings::get('pin')) {
-                    $this->fail('Validation failed');
-                    return;
-                }
-                $req->_pinChecked = true;
+                $req->$f = explode('|', $req->$f, 2)[0];
             }
         }
 
@@ -197,11 +193,7 @@ class IskApi
             return $res;
         }
         $code = trim($req->tournament ?? '');
-        if ($code === '' || strcasecmp($code, Settings::get('code')) !== 0) {
-            return $res;
-        }
-        // PIN を設定している大会は、端末の登録時に PIN を必須にする
-        if ((string)Settings::get('pin') !== '' && !$this->pinGiven($req)) {
+        if ($code === '' || strcasecmp($code, Settings::code()) !== 0) {
             return $res;
         }
         $extra = (empty($req->extra)) ? '' : json_encode($req->extra);
@@ -212,12 +204,6 @@ class IskApi
         return $res;
     }
 
-    /** one() が PIN を検証済みか */
-    private function pinGiven($req)
-    {
-        return !empty($req->_pinChecked);
-    }
-
     private function doComp($req)
     {
         if (empty($req->tocode)) {
@@ -226,7 +212,7 @@ class IskApi
         if (!$this->device($req)) {
             return $this->unknownDevice($req);
         }
-        if (strcasecmp($req->tocode, Settings::get('code')) !== 0) {
+        if (strcasecmp($req->tocode, Settings::code()) !== 0) {
             return ['action' => $req->action, 'device' => $req->device, 'tocode' => $req->tocode, 'errorcode' => 1];
         }
         $targets = [];
@@ -236,8 +222,8 @@ class IskApi
         return [
             'action' => $req->action,
             'device' => $req->device,
-            'tocode' => Settings::get('code'),
-            'toname' => Settings::get('name') ?: Settings::get('code'),
+            'tocode' => Settings::code(),
+            'toname' => Settings::title(),
             'tocategory' => (string)Settings::category(),
             'id' => '',
             'numdist' => Settings::distances(),
@@ -261,7 +247,7 @@ class IskApi
         if (!$dev) {
             return $this->unknownDevice($req);
         }
-        if (strcasecmp($req->tocode, Settings::get('code')) !== 0) {
+        if (strcasecmp($req->tocode, Settings::code()) !== 0) {
             return $this->fail('Competition missing');
         }
         if (($req->type ?? '') !== 'Q') {
@@ -491,7 +477,7 @@ class IskApi
         if (!$dev) {
             return [null, $this->unknownDevice($req)];
         }
-        if (!$dev['target'] || strcasecmp($req->tocode, Settings::get('code')) !== 0) {
+        if (!$dev['target'] || strcasecmp($req->tocode, Settings::code()) !== 0) {
             return [null, self::resetDevice($dev['uuid'], $dev['target'])];
         }
         return [$dev, null];
@@ -564,16 +550,16 @@ class IskApi
         $faces = [];
         $per = Settings::arrowsPerEnd();
         $ends = Settings::ends();
-        $face = (string)Settings::targetFace();
         $totalTargets = max(1, count(Entries::targets()));
         $golds = Settings::get('gold_label');
         $xl = Settings::get('x_label');
 
         foreach (Entries::onTarget($target) as $e) {
             $key = self::SESSION . '.' . $e['target'] . $e['letter'];
-            $faces[$face] = true;
             $scoring = [];
             for ($d = 1; $d <= Settings::distances(); $d++) {
+                $face = (string)Settings::targetFace($d);   // 距離ごとに的面を選べる
+                $faces[$face] = true;
                 $scoring[] = [
                     'distance' => (string)$d,
                     'distanceName' => Settings::distanceName($d),
@@ -623,8 +609,8 @@ class IskApi
             'action' => 'reconfigure',
             'msgIdentifier' => time(),
             'device' => $uuid,
-            'toCode' => Settings::get('code'),
-            'toName' => Settings::get('name') ?: Settings::get('code'),
+            'toCode' => Settings::code(),
+            'toName' => Settings::title(),
             'devCode' => $dev['code'],
             'targetAssigned' => (string)$target,
             'type' => 'Q',

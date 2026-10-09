@@ -51,7 +51,7 @@ echo '<p class="muted small">各エンドを <code>X 10 9 8 7 M</code> のよう
 echo '<form method="post" class="card">' . csrf_field() . '<input type="hidden" name="id" value="' . $e['id'] . '"><div class="row">';
 for ($d = 1; $d <= $nd; $d++) {
     $arrows = Entries::arrows($e, $d);
-    echo '<div style="flex:0 1 auto"><b>' . ($nd > 1 ? '距離' . $d . ' (' . h(Settings::distanceName($d)) . ')' : h(Settings::distanceName(1))) . '</b>'
+    echo '<div style="flex:0 1 auto"><b>' . ($nd > 1 ? h(Settings::distanceName($d) ?: '距離' . $d) : h(Settings::distanceName(1) ?: '得点')) . '</b>'
         . '<table style="width:auto"><tr><th>エンド</th><th>' . $per . '射</th><th class="n">小計</th></tr>';
     for ($n = 1; $n <= $ends; $n++) {
         $s = Scoring::endString($arrows, $n, $per);

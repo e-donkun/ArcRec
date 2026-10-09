@@ -35,7 +35,7 @@ echo '<div class="actions noprint"><a class="btn sub" href="pdf.php?type=scoreca
     . '<form method="post" class="inline" onsubmit="return confirm(\'全員のスコアカードを確定します。以後、端末からの更新は拒否されます。\')">' . csrf_field() . '<input type="hidden" name="do" value="lock_all"><input type="hidden" name="value" value="1"><button class="sub">全員を確定</button></form>'
     . '<form method="post" class="inline">' . csrf_field() . '<input type="hidden" name="do" value="lock_all"><input type="hidden" name="value" value="0"><button class="sub">全員の確定を解除</button></form></div>';
 
-echo '<div class="tablewrap"><table><tr><th class="c">的</th><th>氏名</th><th>部門</th><th>進行</th><th class="n">射数</th>' . ($nd > 1 ? '<th class="n">距離1</th><th class="n">距離2</th>' : '') . '<th class="n">合計</th><th class="n">' . h(Settings::get('gold_label')) . '</th><th class="n">' . h(Settings::get('x_label')) . '</th><th>最終更新</th><th class="noprint"></th></tr>';
+echo '<div class="tablewrap"><table><tr><th class="c">的</th><th>氏名</th><th>部門</th><th>進行</th><th class="n">射数</th>' . ($nd > 1 ? '<th class="n">' . h(Settings::distanceName(1) ?: '距離1') . '</th><th class="n">' . h(Settings::distanceName(2) ?: '距離2') . '</th>' : '') . '<th class="n">合計</th><th class="n">' . h(Settings::get('gold_label')) . '</th><th class="n">' . h(Settings::get('x_label')) . '</th><th>最終更新</th><th class="noprint"></th></tr>';
 $shown = 0;
 foreach ($rows as $e) {
     if ($e['status'] || ($onlyTarget && (int)$e['target'] !== $onlyTarget)) {

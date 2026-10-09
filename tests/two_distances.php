@@ -99,11 +99,12 @@ ok(substr(Pdf::scorecards(Entries::all(), false), 0, 4) === '%PDF', 'スコア�
 ok(substr(Pdf::results(Results::byCategory()), 0, 4) === '%PDF', '結果PDF 2距離');
 
 echo "# 屋内 30射 x 2距離 / 1距離\n";
-Settings::setMany(['preset' => 'indoor60', 'distance_name' => '', 'distance_name2' => '', 'indoor_face' => '2']);
+Settings::setMany(['preset' => 'indoor60', 'distance_name' => '', 'distance_name2' => '', 'target_face1' => '2', 'target_face2' => '']);
 ok(Settings::distances() === 2 && Settings::ends() === 10 && Settings::arrowsPerEnd() === 3 && Settings::totalArrows() === 60 && Settings::isIndoor(), '屋内60: 3射 x 10エンド x 2距離');
-ok(Settings::distanceSummary() === '18m x 2' && Settings::targetFace() === 2, '屋内の既定は18m、的面は設定(三つ目)');
+ok(Settings::distanceName(1) === '前半' && Settings::distanceName(2) === '後半' && Settings::distanceSummary() === '' && Settings::roundLabel() === '60射', '距離名の初期値は 前半/後半(見出しには出さない)');
+ok(Settings::targetFace(1) === 2 && Settings::targetFace(2) === 2, '屋内の的面: 距離1=三つ目、距離2は未設定なら距離1と同じ');
 $cfg = call([['action' => 'manual', 'device' => 'd1', 'tocode' => 'WA2', 'type' => 'Q', 'sesstarget' => '10001']])['responses'][0];
-ok($cfg['ctype'] === 'I' && count($cfg['archers'][0]['scoring']) === 2 && $cfg['archers'][0]['scoring'][0]['arrows'] === '3' && $cfg['targetFaces'][0]['code'] === '2', '屋内: ctype=I, 3射, 的面2');
+ok($cfg['ctype'] === 'I' && count($cfg['archers'][0]['scoring']) === 2 && $cfg['archers'][0]['scoring'][0]['arrows'] === '3' && $cfg['targetFaces'][0]['code'] === '2' && count($cfg['targetFaces']) === 1, '屋内: ctype=I, 3射, 的面2');
 ok(strlen($cfg['archers'][0]['scoring'][0]['arrowstring']) === 30, '屋内: 距離ごと30文字');
 ok(substr(Pdf::scorecards(Entries::all(), true), 0, 4) === '%PDF', 'スコアカードPDF 屋内60(1人1ページ)');
 ok(substr(Pdf::results(Results::byCategory()), 0, 4) === '%PDF', '結果PDF 屋内60');
@@ -111,8 +112,49 @@ Settings::setMany(['preset' => 'indoor30']);
 ok(Settings::distances() === 1 && Settings::totalArrows() === 30, '屋内30: 1距離');
 $cfg = call([['action' => 'manual', 'device' => 'd1', 'tocode' => 'WA2', 'type' => 'Q', 'sesstarget' => '10001']])['responses'][0];
 ok(count($cfg['archers'][0]['scoring']) === 1 && $cfg['schedule'] === 'Q11', '屋内30: scoring は1つ、schedule=Q11');
+// 距離ごとに別の的面
+Settings::setMany(['preset' => 'outdoor72', 'target_face1' => '5', 'target_face2' => '10']);
+ok(Settings::targetFace(1) === 5 && Settings::targetFace(2) === 10, '屋外: 距離1=10リング、距離2=6リング');
+$cfg = call([['action' => 'manual', 'device' => 'd1', 'tocode' => 'WA2', 'type' => 'Q', 'sesstarget' => '10001']])['responses'][0];
+$sc = $cfg['archers'][0]['scoring'];
+ok($sc[0]['targetface'] === '5' && $sc[1]['targetface'] === '10' && array_column($cfg['targetFaces'], 'code') === ['5', '10'], '距離ごとの targetface と、両方の的面を端末へ送る');
+Settings::setMany(['target_face1' => '1', 'target_face2' => '2']);   // 屋外で使えない的面(屋内用)は選択肢の先頭に戻る
+ok(Settings::targetFace(1) === 5 && Settings::targetFace(2) === 5, '競技形式に合わない的面は使わない');
+
 Settings::setMany(['preset' => 'bogus']);
 ok(Settings::distances() === 2 && Settings::totalArrows() === 72, '不明な形式は既定(屋外 36x2)に戻る');
+
+echo "# 大会コード・距離名・セッション名\n";
+$origDb = getenv('LITE_DB');
+putenv('LITE_DB=' . sys_get_temp_dir() . '/lite-test3-' . getmypid() . '.sqlite');
+Lite\Db::reset();
+Settings::reset();
+ok(Settings::get('code') === '', '作成直後は大会コードが空');
+$c1 = Settings::code();
+ok(preg_match('/^[0-9A-F]{8}$/', $c1) === 1, '大会コードは8桁の16進数: ' . $c1);
+ok(Settings::code() === $c1 && Settings::get('code') === $c1, '一度作ったら変わらない(保存される)');
+Settings::set('code', 'LITE');
+ok(Settings::code() !== 'LITE' && preg_match('/^[0-9A-F]{8}$/', Settings::code()) === 1, '以前の既定値 LITE は作り直す');
+Settings::set('code', 'KYOTO26');
+ok(Settings::code() === 'KYOTO26', '自分で入れていた値はそのまま使う');
+Settings::set('code', '');
+Settings::setMany(['preset' => 'outdoor36', 'distance_name' => '', 'distance_name2' => '']);
+ok(Settings::distanceName(1) === '' && Settings::distanceSummary() === '' && Settings::roundLabel() === '36射', '1距離の距離名は空欄');
+Settings::setMany(['preset' => 'outdoor72']);
+ok(Settings::distanceName(1) === '前半' && Settings::distanceName(2) === '後半', '2距離の初期値は 前半 / 後半');
+Settings::setMany(['distance_name' => '70m', 'distance_name2' => '60m']);
+ok(Settings::roundLabel() === '70m + 60m 72射', '入力した距離名は見出しに出す');
+Settings::setMany(['preset' => 'indoor30']);
+ok(Settings::category() === 2 && array_keys(Settings::faceOptions()) === [1, 2] && Settings::targetFace(1) === 1, '屋内の的面の選択肢と既定(40cm 10リング)');
+$code = Settings::code();
+call([['action' => 'handshake', 'uuid' => 'x1', 'version' => '1.10.0', 'iskType' => 11, 'tournament' => strtolower($code)]]);
+$comp = call([['action' => 'comp', 'device' => 'x1', 'tocode' => $code]])['responses'][0];
+ok($comp['tocode'] === $code && $comp['sessions'][0]['sessdesc'] === 'Session 1', '自動の大会コードで接続でき、セッション名は固定');
+ok($comp['toname'] === $code, '大会名が空なら大会コードを表示');
+foreach (['', '-wal', '-shm'] as $x) {
+    @unlink(getenv('LITE_DB') . $x);
+}
+putenv('LITE_DB=' . $origDb);
 
 echo $fail ? "\nFAILED(2距離): $fail\n" : "\nAll OK(2距離)\n";
 @unlink(getenv('LITE_DB'));

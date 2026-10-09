@@ -32,3 +32,12 @@ button.sm,.btn.sm{padding:.1rem .5rem;font-size:.85rem}
 .endin{width:16rem;max-width:100%;font-family:ui-monospace,Menlo,Consolas,monospace}
 .lock{color:var(--warn)}
 @media print{header.top,.noprint{display:none}body{background:#fff}main{max-width:none}}
+/* 横に並べるフォーム(距離1・距離2、ゴールド・X)。入力欄は列いっぱいに広げる */
+.row.nowrap{flex-wrap:nowrap}
+.row.wide>div{flex:1 1 0;min-width:0}
+.row.wide input[type=text],.row.wide select{max-width:none;width:100%}
+.row.wide select{margin-top:.4rem}
+@media (max-width:560px){.row.nowrap{flex-wrap:wrap}.row.wide>div{flex:1 1 100%}}
+.wideform input[type=text],.wideform select{max-width:none;width:100%}
+.wideform select{margin-top:0}
+.row.wide select{margin-top:.4rem}

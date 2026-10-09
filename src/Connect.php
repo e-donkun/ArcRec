@@ -3,16 +3,14 @@ namespace Lite;
 
 /**
  * ScorekeeperNG が読み取る QR コードの中身(本家 ianseo の DrawQRCode_ISK_NG と同じ形式)。
- *   {"u":"http://サーバー/ianseo-lite/","c":"大会コード|PIN"}                       ... 接続設定
+ *   {"u":"http://サーバー/ianseo-lite/","c":"大会コード"}                       ... 接続設定
  *   {"u":..,"c":..,"s":"1","t":"0012","st":"Q"}                                    ... 的を指定
  */
 class Connect
 {
     public static function code()
     {
-        $c = (string)Settings::get('code');
-        $pin = (string)Settings::get('pin');
-        return $pin === '' ? $c : $c . '|' . $pin;
+        return Settings::code();
     }
 
     public static function setupPayload($baseUrl)
