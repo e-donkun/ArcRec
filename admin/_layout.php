@@ -26,17 +26,23 @@ function require_admin()
 }
 
 /**
- * ログイン不要の公開ページ(結果)で、どの大会かを決めて DB を開く。
- * ?c=大会コード があればその大会、なければ管理中の大会、それも無ければいちばん新しい大会。
+ * ログイン不要の公開ページ(結果・結果PDF/CSV)で、どの大会かを決めて DB を開く。
+ * ?c=大会コード があればその大会、なければ管理中の大会。
+ * 大会設定で「結果を公開」にしている大会だけ見せる(その大会を開いている管理者は、非公開でも見られる)。
  */
 function public_comp()
 {
-    $code = $_GET['c'] ?? Auth::current() ?? Competitions::latest();
+    $code = $_GET['c'] ?? Auth::current();
     if (!$code || Competitions::open($code) === false) {
         http_response_code(404);
         exit('大会が見つかりません');
     }
-    return Competitions::find($code)['code'];
+    $code = Competitions::find($code)['code'];
+    if (!Settings::resultsPublic() && !Auth::isCurrent($code)) {
+        http_response_code(403);
+        exit('この大会の結果は公開されていません');
+    }
+    return $code;
 }
 
 function flash($msg = null, $type = 'ok')
@@ -67,7 +73,12 @@ function server_base_url()
     $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
         || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    $dir = rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'])), '/\\');
+    // admin/ の中のページなら1つ上、トップの公開ページ(results.php)ならそのフォルダ
+    $dir = dirname($_SERVER['SCRIPT_NAME']);
+    if (basename($dir) === 'admin') {
+        $dir = dirname($dir);
+    }
+    $dir = rtrim($dir, '/\\');
     return ($https ? 'https' : 'http') . '://' . $host . $dir . '/';
 }
 
@@ -102,7 +113,7 @@ function icon($name)
     return '<svg class="sp-icon" viewBox="0 0 24 24" aria-hidden="true">' . ($paths[$name] ?? '') . '</svg>';
 }
 
-/** 下部タブ(スマホモードと同じ並び方。競技設定・端末接続・大会切替などはホームのメニュー) */
+/** 下部タブ(スマホモードと同じ並び方。大会設定・端末接続などはホームのメニュー、大会の切り替えは大会の選択画面) */
 function tabs()
 {
     return [
@@ -116,33 +127,33 @@ function tabs()
 
 /**
  * 画面の上部(スマホモードと同じ: 上部バーに大会名と画面名)。
- * $opts: 'public' => ログインなしで見せる画面, 'wide' => 表の多い画面で横幅を広げる, 'js' => JavaScript に渡す変数, 'body' => body の class
+ * $opts: 'public' => 参加者向けの公開ページ(管理用のリンク・タブを出さない), 'base' => style.css などの場所(トップのページから使うとき 'admin/'),
+ *        'wide' => 表の多い画面で横幅を広げる, 'js' => JavaScript に渡す変数, 'body' => body の class
  */
 function page_head($title, $tab = '', array $opts = [])
 {
     $inComp = Lite\Db::hasSelection();
-    $admin = Auth::check() && $inComp;
+    $admin = Auth::check() && $inComp && empty($opts['public']);
+    $GLOBALS['LITE_PUBLIC_PAGE'] = !empty($opts['public']);
     $name = $inComp ? (Settings::get('name') ?: Settings::code()) : 'ianseo-lite';
     $js = array_merge(['LITE_CSRF' => Auth::csrf()], $opts['js'] ?? []);
+    $base = $opts['base'] ?? '';
     $ver = '?v=' . filemtime(__DIR__ . '/style.css') . '-' . filemtime(__DIR__ . '/app.js');
     echo '<!DOCTYPE html><html lang="ja" translate="no"><head><meta charset="UTF-8">'
         . '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
         . '<meta name="theme-color" content="#1e4d8c"><title>' . h($title) . ' - ianseo-lite</title>'
-        . '<link rel="stylesheet" href="style.css' . $ver . '"><script>';
+        . '<link rel="stylesheet" href="' . $base . 'style.css' . $ver . '"><script>';
     foreach ($js as $k => $v) {
         echo 'var ' . $k . '=' . json_encode($v, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE) . ';';
     }
-    echo '</script><script src="app.js' . $ver . '"></script></head>'
+    echo '</script><script src="' . $base . 'app.js' . $ver . '"></script></head>'
         . '<body class="' . h($opts['body'] ?? '') . '"><header class="sp-appbar"><div class="sp-appbar-title">';
     if ($admin) {
-        echo '<a class="sp-tour" href="home.php#comps" title="大会を切り替える">' . h($name) . ' ▸</a>';
+        echo '<a class="sp-tour" href="index.php" title="大会の選択(切り替え)">' . h($name) . ' ▸</a>';
     } else {
         echo '<span class="sp-tour">' . h($name) . '</span>';
     }
     echo '<h1>' . h($title) . '</h1></div>';
-    if (!empty($opts['public']) && !$admin) {
-        echo '<a class="sp-appbar-btn" href="index.php" title="管理者のログイン">' . icon('gear') . '<span>管理</span></a>';
-    }
     echo '</header><main class="sp-main' . (!empty($opts['wide']) ? ' wide' : '') . '">';
     foreach ((array)flash() as $f) {
         echo '<div class="sp-flash ' . h($f[0]) . '">' . h($f[1]) . '</div>';
@@ -153,11 +164,10 @@ function page_head($title, $tab = '', array $opts = [])
 function page_foot($tab = '')
 {
     echo '</main>';
-    if (Auth::check() && Lite\Db::hasSelection()) {
+    if (Auth::check() && Lite\Db::hasSelection() && empty($GLOBALS['LITE_PUBLIC_PAGE'])) {
         echo '<nav class="sp-tabbar">';
         foreach (tabs() as $k => $t) {
-            $href = $k === 'results' ? $t[0] . '?c=' . rawurlencode(Settings::code()) : $t[0];
-            echo '<a href="' . $href . '" class="' . ($k === $tab ? 'active' : '') . '">' . icon($t[2]) . '<span>' . $t[1] . '</span></a>';
+            echo '<a href="' . $t[0] . '" class="' . ($k === $tab ? 'active' : '') . '">' . icon($t[2]) . '<span>' . $t[1] . '</span></a>';
         }
         echo '</nav>';
     }
@@ -203,6 +213,10 @@ function render_competitions($next = 'home.php')
             $opts .= '<option value="' . $p[0] . '"' . ($p[0] === Settings::DEFAULTS['preset'] ? ' selected' : '') . '>' . h($p[1]) . '</option>';
         }
         echo '<p><button type="button" class="sp-btn sub block" id="CompNewBtn">' . icon('plus') . '新しい大会を作る</button></p>';
+    } else {
+        echo '<p class="sp-note">新しい大会は、どれかの大会をパスワードで開いたあと、この画面から作れます。</p>';
+    }
+    if (Auth::canCreate()) {
         echo '<template id="CompNewTpl">' . $form('<input type="hidden" name="do" value="create"><h2>新しい大会</h2>'
             . '<div class="sp-sub">大会コード(8桁の16進数)は自動で付きます。パスワードはこの大会だけのもので、大会の DB に保存します。</div>'
             . '<label class="sp-field"><span>大会名</span><input type="text" name="name"></label>'

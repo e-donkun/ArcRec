@@ -1,5 +1,6 @@
 <?php
-// 入口: 大会を選んでパスワードで開く(大会ごとに DB とパスワードがある)。開いたあとの大会の切り替えはホームのメニューから。
+// 大会の選択: 大会を選んでパスワードで開く(大会ごとに DB とパスワードがある)。大会の切り替え・新しい大会もこの画面だけで行う。
+// 開くとき・切り替えるときは毎回パスワードを入れる(前に開いた大会のパスワードは覚えない)。
 require __DIR__ . '/_layout.php';
 
 use Lite\Auth;
@@ -11,7 +12,7 @@ $next = preg_match('/^[a-z_]+\.php$/', $next) ? $next : 'home.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     Auth::verifyCsrf();
-    $back = Auth::check() ? 'home.php#comps' : 'index.php';
+    $back = 'index.php';
     try {
         switch ($_POST['do'] ?? '') {
             case 'open':
@@ -30,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 $code = Competitions::create($_POST['name'] ?? '', $_POST['preset'] ?? '', (string)($_POST['password'] ?? ''));
                 Auth::login($code, (string)$_POST['password']);
-                flash('大会を作りました。競技設定を確認してください');
+                flash('大会を作りました。大会設定を確認してください');
                 redirect('setup.php');
         }
     } catch (InvalidArgumentException $e) {
@@ -39,13 +40,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// 大会を開いていれば、ホーム(メニュー)へ
-if (Auth::check() && Competitions::open(Auth::current()) !== false) {
-    redirect($next);
+// 大会を開いていれば、その大会を開いたまま一覧を出す(上部バーに大会名、下部タブも出る)
+if (!Auth::check() || Competitions::open(Auth::current()) === false) {
+    Db::unselect();
 }
-Db::unselect();
-page_head('大会の選択', '', ['public' => true]);
+page_head('大会の選択', 'home');
 echo '<p class="sp-note">大会をタップして、その大会のパスワードを入れると開きます。大会ごとにデータ(SQLite)とパスワードが別です。</p>';
 render_competitions($next);
-echo '<p class="sp-note"><a href="results.php">結果を見る(ログイン不要)</a></p>';
-page_foot();
+echo '<p class="sp-note"><a href="../results.php">結果を見る(公開している大会)</a></p>';
+page_foot(Auth::check() ? 'home' : '');

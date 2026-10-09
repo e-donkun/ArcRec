@@ -2,13 +2,18 @@
 	"id": "ianseo-lite",
 	"name": "ianseo-lite（簡易記録会システム）",
 	"description": "予選だけ・1セッションだけの記録会向け。SQLite + ScorekeeperNG(Lite)で入力し、スコアカードと結果をPDFで出力する。本体のDBとは独立して動く。",
-	"version": "0.5.0",
+	"version": "0.6.0",
 	"author": "e-donkun",
 	"homepage": "https://github.com/e-donkun/ianseo-lite",
 	"license": "GPL-2.0",
 	"testedIanseo": "2026-03-01",
 	"requiresPhp": "7.4",
 	"changelog": [
+		{
+			"version": "0.6.0",
+			"date": "2026-10-09",
+			"notes": "競技設定を「大会設定」に改名。大会の切り替え・新しい大会は「大会の選択」画面に一本化(ホームからはログアウトで戻る)し、ホームのメニューはキャプションなしに。参加者向けの結果ページをトップの results.php に移し、大会設定で公開/非公開を選べるように。結果のスコアカードにゴールド・X の数と距離ごとの小計を表示。サンプル大会の矢を高い順(X→M)にし、屋内のサンプルを追加"
+		},
 		{
 			"version": "0.5.0",
 			"date": "2026-10-09",

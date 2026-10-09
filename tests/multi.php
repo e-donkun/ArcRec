@@ -40,13 +40,37 @@ function rrmdir($d)
 
 echo "# サンプル大会\n";
 $list = Competitions::all();
-$sample = null;
+$samples = [];
 foreach ($list as $c) {
     if ($c['sample']) {
-        $sample = $c;
+        $samples[$c['code']] = $c;
     }
 }
-ok($sample && $sample['code'] === '5A4D0001' && $sample['entries'] === 16, 'サンプル大会が大会フォルダに入っている(選手16人): ' . ($sample['name'] ?? '-'));
+ok(isset($samples['5A4D0001'], $samples['5A4D0002']) && $samples['5A4D0001']['entries'] === 16 && $samples['5A4D0002']['entries'] === 16,
+    'サンプル大会(屋外・屋内)が大会フォルダに入っている(選手16人ずつ)');
+ok(Auth::verify('5A4D0002', 'sample'), '屋内サンプルのパスワードも sample');
+Competitions::open('5A4D0002');
+ok(Lite\Settings::preset()['label'] === 'Indoor 30射×2（60射）' && Lite\Results::byCategory()[0]['rows'][0]['hits'] === 60, '屋内サンプル: Indoor 30射×2、1位は60射終了');
+// 各エンドは X → 10 → … → M の高い順
+$sorted = true;
+foreach (['5A4D0001', '5A4D0002'] as $sc) {
+    Competitions::open($sc);
+    $per = Lite\Settings::arrowsPerEnd();
+    foreach (Lite\Entries::all() as $e) {
+        foreach (str_split(Lite\Entries::allArrows($e), $per) as $end) {
+            $chars = str_split(trim($end));
+            $want = $chars;
+            usort($want, function ($a, $b) {
+                return strpos('KLJIHGFEDCBA', $a) <=> strpos('KLJIHGFEDCBA', $b);
+            });
+            if ($chars !== $want) {
+                $sorted = false;
+            }
+        }
+    }
+}
+ok($sorted, 'サンプル: 各エンドの矢は X → M の高い順');
+ok(Lite\Settings::resultsPublic(), 'サンプルは結果を公開している');
 ok(Auth::verify('5A4D0001', 'sample') && !Auth::verify('5A4D0001', 'wrong'), 'サンプルのパスワードは sample');
 Competitions::open('5A4D0001');
 $g = Lite\Results::byCategory();
@@ -209,7 +233,7 @@ Competitions::bootstrap(true);
 $files = Competitions::files();
 $found = null;
 foreach ($files as $c => $path) {
-    if ($c !== '5A4D0001') {
+    if (!Competitions::isSample($c)) {
         $found = $c;
     }
 }

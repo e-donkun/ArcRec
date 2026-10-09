@@ -1,5 +1,5 @@
 <?php
-// ホーム: 大会の状況と、メニュー(競技設定・端末接続・印刷・大会の切り替え・ログアウト)
+// ホーム: 大会の状況と、メニュー(大会設定・端末接続・印刷・ログアウト)。大会の切り替え・新しい大会は、ログアウトして「大会の選択」(index.php)で
 require __DIR__ . '/_layout.php';
 require_admin();
 
@@ -25,7 +25,7 @@ foreach (Entries::all() as $e) {
 $code = Settings::code();
 page_head('ホーム', 'home');
 if (!Settings::get('name')) {
-    echo '<div class="sp-flash warn">大会名がまだありません。<a href="setup.php">競技設定</a> で入れてください。</div>';
+    echo '<div class="sp-flash warn">大会名がまだありません。<a href="setup.php">大会設定</a> で入れてください。</div>';
 }
 echo '<div class="sp-stats">'
     . '<div><small>選手(的に配置)</small><b>' . $p['archers'] . '</b> <span class="sp-sub">(' . $placed . ')</span></div>'
@@ -35,14 +35,15 @@ echo '<div class="sp-stats">'
     . '</div>';
 echo '<p class="sp-note">スコア最終更新: <b>' . h(Results::lastUpdateText()) . '</b></p>';
 
-$item = function ($href, $icon, $title, $sub, $attr = '') {
-    return '<a class="sp-card tap" href="' . $href . '"' . $attr . '>' . icon($icon) . '<div class="sp-card-main"><div class="sp-name">' . $title . '</div><div class="sp-sub">' . $sub . '</div></div></a>';
+$item = function ($href, $icon, $title, $sub = '', $attr = '') {
+    return '<a class="sp-card tap" href="' . $href . '"' . $attr . '>' . icon($icon) . '<div class="sp-card-main"><div class="sp-name">' . $title . '</div>'
+        . ($sub !== '' ? '<div class="sp-sub">' . $sub . '</div>' : '') . '</div></a>';
 };
 echo '<div class="sp-section-title">大会の準備</div><div class="sp-menu">'
-    . $item('setup.php', 'gear', '競技設定', h(Settings::preset()['label']) . ' / 大会名・距離・的面・パスワード')
-    . $item('entries.php', 'users', '選手登録', '名簿の登録(過去の大会から追加・CSV)')
-    . $item('targets.php', 'target', '的番号', '割り当て表(タップで移動)・一覧(プルダウン)')
-    . $item('qr.php', 'qr', '端末接続', 'ScorekeeperNG の接続QR・登録された端末・通信ログ')
+    . $item('setup.php', 'gear', '大会設定')
+    . $item('entries.php', 'users', '選手登録')
+    . $item('targets.php', 'target', '的番号')
+    . $item('qr.php', 'qr', '端末接続')
     . '</div>';
 echo '<div class="sp-section-title">印刷・出力</div><div class="sp-menu">'
     . $item('pdf.php?type=scorecard_blank', 'print', 'スコアカード(白紙)PDF', '記入用。各カードに的のQR付き', ' target="_blank"')
@@ -54,8 +55,5 @@ echo '<div class="sp-section-title">印刷・出力</div><div class="sp-menu">'
     . '<a class="btn sub sm" href="export.php?what=entries">名簿</a></div></div></div>'
     . '</div>';
 
-echo '<div class="sp-section-title" id="comps">大会の切り替え</div>';
-echo '<p class="sp-note">別の大会を開くときは、その大会のパスワードを入れてください。</p>';
-render_competitions('home.php');
-echo '<div class="sp-menu" style="margin-top:12px">' . $item('logout.php', 'logout', 'ログアウト', 'この大会を閉じて、大会の選択に戻る') . '</div>';
+echo '<div class="sp-menu" style="margin-top:16px">' . $item('logout.php', 'logout', 'ログアウト', 'この大会を閉じて、大会の選択に戻る') . '</div>';
 page_foot('home');

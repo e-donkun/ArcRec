@@ -37,10 +37,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'distance_name' => trim($_POST['distance_name'] ?? ''), 'distance_name2' => trim($_POST['distance_name2'] ?? ''),
                     'gold_label' => trim($_POST['gold_label'] ?? '') ?: '10+X', 'x_label' => trim($_POST['x_label'] ?? '') ?: 'X',
                     'archers_per_target' => max(1, min(4, (int)($_POST['archers_per_target'] ?? 4))),
+                    'results_public' => empty($_POST['results_public']) ? '0' : '1',
                 ], $faces));
                 // 端末に保存した選手一覧・的面・距離の設定は、次の接続で作り直させる
                 Db::pdo()->exec("UPDATE devices SET setup = '', setup_confirmed = 0");
-                flash('競技設定を保存しました');
+                flash('大会設定を保存しました');
                 break;
 
             case 'clear_scores':
@@ -69,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $s = Settings::all();
 $cat = Settings::category();
 $nd = Settings::distances();
-page_head('競技設定', 'home');
+page_head('大会設定', 'home');
 echo '<form method="post" class="card wideform">' . csrf_field() . '<input type="hidden" name="do" value="settings">';
 echo '<label>大会名</label><input type="text" name="name" value="' . h($s['name']) . '">';
 
@@ -94,6 +95,8 @@ echo '</div>';
 
 echo '<div class="row nowrap wide"><div><label>ゴールド欄の見出し</label><input type="text" name="gold_label" value="' . h($s['gold_label']) . '"></div>'
     . '<div><label>X欄の見出し</label><input type="text" name="x_label" value="' . h($s['x_label']) . '"></div></div>';
+echo '<label>結果の公開</label><label class="sp-switch"><input type="checkbox" name="results_public" value="1"' . (Settings::resultsPublic() ? ' checked' : '') . '> 結果を公開する(ログインなしで見られる)</label>'
+    . '<p class="sp-note">公開用のURL: <code>' . h(server_base_url() . 'results.php?c=' . Settings::code()) . '</code>(非公開のときは、この大会を開いている管理者だけが見られます)</p>';
 echo '<input type="hidden" name="archers_per_target" value="' . h($s['archers_per_target']) . '">';
 echo '<p class="muted small">大会コード <code>' . h(Settings::code()) . '</code> は自動で決まります(端末の接続は「端末接続」のQRで行います)。</p>';
 echo '<p><button>保存</button></p></form>';

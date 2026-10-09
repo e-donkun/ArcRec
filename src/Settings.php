@@ -42,6 +42,7 @@ class Settings
         'archers_per_target' => '4',
         'admin_hash' => '',
         'api_log' => '0',
+        'results_public' => '0',   // 1 = 結果をトップの results.php で誰でも見られる(管理者は非公開でも見られる)
     ];
 
     private static $cache;
@@ -55,6 +56,12 @@ class Settings
             }
         }
         return self::$cache;
+    }
+
+    /** 結果を一般に公開しているか */
+    public static function resultsPublic()
+    {
+        return (string)self::get('results_public') === '1';
     }
 
     public static function get($key)

@@ -9,9 +9,20 @@ use PDO;
  */
 class Competitions
 {
-    /** 同梱のサンプル大会(samples/ からコピーして使う) */
+    /** 同梱のサンプル大会(samples/ からコピーして使う): 屋外(Outdoor 36射×2)と屋内(Indoor 30射×2)。パスワードはどちらも sample */
     const SAMPLE_CODE = '5A4D0001';
+    const SAMPLE_CODES = ['5A4D0001', '5A4D0002'];
     const SAMPLE_PASSWORD = 'sample';
+
+    public static function isSample($code)
+    {
+        foreach (self::SAMPLE_CODES as $c) {
+            if (strcasecmp($c, (string)$code) === 0) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private static $booted = false;
 
@@ -68,7 +79,7 @@ class Competitions
             'last_score' => $last ?: '',
             'created' => (string)($set['created_at'] ?? ''),
             'updated' => $mtime,
-            'sample' => strcasecmp($code, self::SAMPLE_CODE) === 0,
+            'sample' => self::isSample($code),
         ];
     }
 
@@ -88,18 +99,6 @@ class Competitions
             return [$a['sample'], $b['updated']] <=> [$b['sample'], $a['updated']];
         });
         return $list;
-    }
-
-    /** 参加者向けページ(結果)で、大会を指定しないときに使う大会: いちばん新しい(サンプル以外) */
-    public static function latest()
-    {
-        $all = self::all();
-        foreach ($all as $c) {
-            if (!$c['sample']) {
-                return $c['code'];
-            }
-        }
-        return $all ? $all[0]['code'] : null;
     }
 
     // ------------------------------------------------------------ 切り替え
@@ -249,10 +248,12 @@ class Competitions
     /** 同梱のサンプル大会を、まだ無ければコピーする */
     private static function seedSample()
     {
-        $src = LITE_ROOT . '/samples/' . self::SAMPLE_CODE . '.sqlite';
-        $dest = Db::competitionsDir() . '/' . self::SAMPLE_CODE . '.sqlite';
-        if (is_file($src) && !is_file($dest)) {
-            @copy($src, $dest);
+        foreach (self::SAMPLE_CODES as $code) {
+            $src = LITE_ROOT . '/samples/' . $code . '.sqlite';
+            $dest = Db::competitionsDir() . '/' . $code . '.sqlite';
+            if (is_file($src) && !is_file($dest)) {
+                @copy($src, $dest);
+            }
         }
     }
 }
