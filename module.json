@@ -2,13 +2,18 @@
 	"id": "ianseo-lite",
 	"name": "ianseo-lite（簡易記録会システム）",
 	"description": "予選だけ・1セッションだけの記録会向け。SQLite + ScorekeeperNG(Lite)で入力し、スコアカードと結果をPDFで出力する。本体のDBとは独立して動く。",
-	"version": "0.11.3",
+	"version": "0.12.0",
 	"author": "e-donkun",
 	"homepage": "https://github.com/e-donkun/ianseo-lite",
 	"license": "GPL-2.0",
 	"testedIanseo": "2026-03-01",
 	"requiresPhp": "7.4",
 	"changelog": [
+		{
+			"version": "0.12.0",
+			"date": "2026-10-10",
+			"notes": "「端末接続」を「端末設定」に改名し、下部タブ(立順と入力の間)に追加。的のQRを ＜ ＞ で的ごとに切り替えて表示し、2距離では 距離手動/前半/後半 のQRを選べる(的QR一覧PDFも同じ)。不要な説明文を削除"
+		},
 		{
 			"version": "0.11.3",
 			"date": "2026-10-10",

@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $on = ApiLog::enabled();
-page_head('通信ログ', 'home');
+page_head('通信ログ', 'qr');
 echo '<p class="sp-note">端末(ScorekeeperNG)とのやりとり</p>';
 echo '<p class="muted small">端末が「どこまで進んで、どこで止まるか」を調べるためのものです。オンのあいだ、端末からの全リクエストと返事を '
     . '<code>data/api-日付.jsonl</code> に記録します(的面画像などの長い値は短くします)。原因がわかったらオフにして、ログを消してください。</p>';
@@ -58,4 +58,4 @@ foreach ($rows as $r) {
         . '<p class="small muted" style="margin:.4rem 0 0">リクエスト</p><pre style="overflow:auto;max-height:18rem">' . h(json_encode($r['request'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) . '</pre>'
         . '<p class="small muted" style="margin:.4rem 0 0">レスポンス</p><pre style="overflow:auto;max-height:24rem">' . h(json_encode($r['response'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) . '</pre></details>';
 }
-page_foot('home');
+page_foot('qr');

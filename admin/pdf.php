@@ -37,7 +37,7 @@ switch ($type) {
         $name = 'scorecards.pdf';
         break;
     case 'qr':
-        $data = Pdf::qrSheet(server_base_url());
+        $data = Pdf::qrSheet(server_base_url(), Lite\Connect::mode($_GET['d'] ?? Lite\Connect::defaultMode()));
         $name = 'target-qr.pdf';
         break;
     default:

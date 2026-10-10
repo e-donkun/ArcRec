@@ -454,3 +454,13 @@ details.sp-advanced[open] { padding-bottom: 8px; }
 details.sp-advanced input:not([type=checkbox]):not([type=radio]) { width: 100%; box-sizing: border-box; }
 details.sp-manage form { border-top: 1px solid var(--sp-border); padding-top: 4px; }
 details.sp-manage h3 { font-size: 15px; margin: 10px 0 4px; }
+
+/* 端末設定: QR とカルーセル(左右で的を切り替え) */
+.sp-qr { display: block; width: 100%; max-width: 220px; aspect-ratio: 1; background: #fff; padding: 8px; border-radius: 8px; box-sizing: border-box; }
+.sp-qr svg { display: block; width: 100%; height: 100%; }
+.sp-qr-carousel { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 10px 0; }
+.sp-qr-main { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; }
+.sp-qr-label { font-size: 26px; font-weight: bold; margin-top: 4px; color: var(--sp-text); }
+.sp-qr-nav { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--sp-border); background: #fff; display: flex; align-items: center; justify-content: center; padding: 0; color: var(--sp-primary); }
+.sp-qr-nav svg { width: 26px; height: 26px; fill: currentColor; }
+.sp-qr-nav:active { background: var(--sp-primary-light); }

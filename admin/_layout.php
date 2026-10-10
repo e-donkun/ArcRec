@@ -114,13 +114,14 @@ function icon($name)
     return '<svg class="sp-icon" viewBox="0 0 24 24" aria-hidden="true">' . ($paths[$name] ?? '') . '</svg>';
 }
 
-/** 下部タブ(スマホモードと同じ並び方。記録会設定・端末接続などはホームのメニュー、記録会の切り替えは記録会の選択画面) */
+/** 下部タブ(スマホモードと同じ並び方 + 端末設定。記録会設定などはホームのメニュー、記録会の切り替えは記録会の選択画面) */
 function tabs()
 {
     return [
         'home' => ['home.php', 'ホーム', 'home'],
         'entries' => ['entries.php', '選手', 'users'],
         'targets' => ['targets.php', '立順', 'target'],
+        'qr' => ['qr.php', '端末設定', 'qr'],
         'scores' => ['scores.php', '入力', 'edit'],
         'results' => ['results.php', '結果', 'chart'],
     ];

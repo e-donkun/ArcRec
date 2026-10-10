@@ -1,5 +1,5 @@
 <?php
-// ホーム: 記録会の状況と、メニュー(記録会設定・端末接続・印刷)。ログアウトは上部バーの右上(ホームだけ)。記録会の切り替え・新しい記録会は、ログアウトして「記録会の選択」(index.php)で
+// ホーム: 記録会の状況と、メニュー(記録会設定・端末設定・印刷)。ログアウトは上部バーの右上(ホームだけ)。記録会の切り替え・新しい記録会は、ログアウトして「記録会の選択」(index.php)で
 require __DIR__ . '/_layout.php';
 require_admin();
 
@@ -76,7 +76,7 @@ echo '<div class="sp-section-title">記録会の準備</div><div class="sp-menu"
     . $item('setup.php', 'gear', '記録会設定')
     . $item('entries.php', 'users', '選手登録')
     . $item('targets.php', 'target', '立順')
-    . $item('qr.php', 'qr', '端末接続')
+    . $item('qr.php', 'qr', '端末設定')
     . '</div>';
 echo '<div class="sp-section-title">印刷・出力</div><div class="sp-menu">'
     . $item('pdf.php?type=scorecard_blank', 'print', 'スコアカード(白紙)PDF', '記入用。各カードに的のQR付き', ' target="_blank"')

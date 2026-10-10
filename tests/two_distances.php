@@ -119,6 +119,8 @@ ok(substr(Pdf::scorecards(Entries::all(), true), 0, 4) === '%PDF', 'スコアカ
 ok(substr(Pdf::results(Results::byCategory()), 0, 4) === '%PDF', '結果PDF 屋内60');
 Settings::setMany(['preset' => 'indoor30']);
 ok(Settings::distances() === 1 && Settings::totalArrows() === 30, '屋内30: 1距離');
+ok(Lite\Connect::distanceModes() === [1 => ''] && Lite\Connect::targetLabel(3, 1) === '3的'
+    && strpos(Lite\Connect::targetPayload('http://x/', 3, 1), '"d":"1","t":"0003"') !== false, '1距離: 的のQRは「3的」(距離名なし)、距離1を指定');
 $cfg = call([['action' => 'manual', 'device' => 'd1', 'tocode' => 'WA2', 'type' => 'Q', 'sesstarget' => '10001']])['responses'][0];
 ok(count($cfg['archers'][0]['scoring']) === 1 && $cfg['schedule'] === 'Q11', '屋内30: scoring は1つ、schedule=Q11');
 Settings::setMany(['target_face1' => '']);
@@ -127,6 +129,9 @@ Settings::setMany(['target_face1' => '2']);
 ok(Settings::tieLabel(1) === '10' && Settings::tieLabel(2) === '9' && Settings::tieChars(1) === 'L' && Settings::tieChars(2) === 'J', '屋内の優先順位の初期値: 第1=10・第2=9');
 // 的の種類は前半・後半で同じ
 Settings::setMany(['preset' => 'outdoor72', 'target_face1' => '10', 'target_face2' => '5']);
+ok(array_keys(Lite\Connect::distanceModes()) === [0, 1, 2] && Lite\Connect::targetLabel(2, 2) === '2的 後半' && Lite\Connect::targetLabel(2, 0) === '2的'
+    && strpos(Lite\Connect::targetPayload('http://x/', 2, 0), '"d"') === false && strpos(Lite\Connect::targetPayload('http://x/', 2, 2), '"d":"2"') !== false,
+    '2距離: 距離手動(d なし)・前半・後半(d=1/2)の的のQR');
 ok(Settings::targetFace(1) === 10 && Settings::targetFace(2) === 10, '屋外: 的の種類は前半・後半とも同じ(6リング)');
 $cfg = call([['action' => 'manual', 'device' => 'd1', 'tocode' => 'WA2', 'type' => 'Q', 'sesstarget' => '10001']])['responses'][0];
 $sc = $cfg['archers'][0]['scoring'];

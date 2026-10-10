@@ -235,12 +235,6 @@ class Pdf extends \TCPDF
         $this->Cell($half, 11, '記録員署名', 1, 0, 'L');
     }
 
-    /** 的QRの表記: 1的 */
-    private static function targetLabel($target)
-    {
-        return (int)$target . '的';
-    }
-
     private function categoryLabel(array $e)
     {
         return (string)($e['category_name'] ?? '');
@@ -249,9 +243,11 @@ class Pdf extends \TCPDF
     // ================================================================ 的のQR一覧
 
     /** 的ごとの接続QR(的に貼って、端末に読ませる) */
-    public static function qrSheet($baseUrl)
+    /** @param int $distance 0 = 距離手動、1/2 = その距離のQR(Connect::distanceModes) */
+    public static function qrSheet($baseUrl, $distance = 0)
     {
         $pdf = new self('的QRコード');
+        $modeName = $distance > 0 ? (Connect::distanceModes()[$distance] ?? '') : (Settings::distances() > 1 ? '距離手動' : '');
         $targets = Entries::targets();
         $cols = 3;
         $rows = 4;
@@ -263,7 +259,7 @@ class Pdf extends \TCPDF
                 $pdf->AddPage();
                 $pdf->f(9);
                 $pdf->SetXY(15, 8);
-                $pdf->Cell(180, 5, Settings::title() . '  端末で読み取って的を選びます', 0, 0, 'L');
+                $pdf->Cell(180, 5, Settings::title() . ($modeName !== '' ? '  [' . $modeName . ']' : '') . '  端末で読み取って的を選びます', 0, 0, 'L');
             }
             $k = $i % ($cols * $rows);
             $x = 15 + ($k % $cols) * $cw;
@@ -271,10 +267,10 @@ class Pdf extends \TCPDF
             $pdf->SetLineStyle(['width' => 0.2, 'dash' => '1.5,1.5', 'color' => [170, 170, 170]]);
             $pdf->Rect($x, $y, $cw, $ch);
             $pdf->SetLineStyle(['width' => 0.2, 'dash' => 0, 'color' => [0, 0, 0]]);
-            $pdf->write2DBarcode(Connect::targetPayload($baseUrl, $t), 'QRCODE,M', $x + 8, $y + 4, 44, 44, ['border' => false, 'padding' => 0], 'N');
+            $pdf->write2DBarcode(Connect::targetPayload($baseUrl, $t, $distance), 'QRCODE,M', $x + 8, $y + 4, 44, 44, ['border' => false, 'padding' => 0], 'N');
             $pdf->f(22);
             $pdf->SetXY($x, $y + 48);
-            $pdf->Cell($cw, 10, self::targetLabel($t), 0, 0, 'C');
+            $pdf->Cell($cw, 10, Connect::targetLabel($t, $distance), 0, 0, 'C');
             // 切り離して的に貼っても、どの記録会のQRかわかるように
             $pdf->f(8);
             $pdf->SetXY($x + 2, $y + 58.5);
