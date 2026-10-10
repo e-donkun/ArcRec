@@ -159,7 +159,7 @@ page_head('参加者登録', 'entries', ['js' => ['LiteRows' => entry_rows(), 'L
 	<button type="button" class="sp-btn sub" style="flex:none" id="SpAddBtn"><?php echo icon('plus'); ?>追加</button>
 </div>
 <div class="sp-list" id="SpList"></div>
-<p class="sp-note">カードをタップすると、名前・所属・部門を変更できます。点数のない参加者は削除もできます。的番号と位置は <a href="targets.php">立順</a> の画面で設定します。</p>
+<p class="sp-note">カードをタップすると、名前・所属・部門を変更できます。</p>
 <details class="card"><summary>CSVでまとめて登録</summary>
 	<form method="post" enctype="multipart/form-data"><?php echo csrf_field(); ?><input type="hidden" name="do" value="import">
 	<p class="sp-note">列: <code>姓,名,所属,部門</code>(部門は 男子 / 女子)。カンマかタブ区切り、UTF-8 か Shift_JIS(Excel保存)。1行目が見出しなら飛ばします。</p>
