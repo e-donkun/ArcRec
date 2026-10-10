@@ -32,6 +32,9 @@ class Settings
         2 => [1 => ['10'], 2 => ['9']],
     ];
 
+    /** 1的あたりの立ち数(位置 A〜F)の上限 */
+    const MAX_PER_TARGET = 6;
+
     /** 2距離のときの距離名の初期値(1距離のときは空欄) */
     const DEFAULT_DISTANCE_NAMES = [1 => '前半', 2 => '後半'];
 
@@ -48,7 +51,8 @@ class Settings
         'target_face2' => '',
         'tie1' => '',   // 第1優先順位(カンマ区切り。例 "10,X")。空なら競技形式(屋外/屋内)の初期値
         'tie2' => '',   // 第2優先順位
-        'archers_per_target' => '4',
+        'archers_per_target' => '4',   // 立ち数(1的あたりの人数。1〜6 = A〜F)
+        'target_count' => '0',         // 立順の割り当て表に出す的の数(0 = 選手の人数から決める)
         'admin_hash' => '',
         'api_log' => '0',
         'results_public' => '0',   // 1 = 結果をトップの results.php で誰でも見られる(管理者は非公開でも見られる)
@@ -203,6 +207,36 @@ class Settings
         $opts = self::faceOptions();
         $v = (int)self::get('target_face1');
         return isset($opts[$v]) ? $v : (int)array_key_first($opts);
+    }
+
+    // ------------------------------------------------------------ 立順(的の数・立ち数)
+
+    /** 1的あたりの立ち数(1〜6) */
+    public static function perTarget()
+    {
+        return max(1, min(self::MAX_PER_TARGET, (int)self::get('archers_per_target')));
+    }
+
+    /** 使える位置(立ち数ぶん。A, B, C, D …) */
+    public static function letters()
+    {
+        return array_slice(['A', 'B', 'C', 'D', 'E', 'F'], 0, self::perTarget());
+    }
+
+    /**
+     * 「1A」「001a」「１Ａ」のような入力を [的番号, 位置] にする。位置は大文字、頭の 0 は取る。
+     * 空なら [0, '']、位置を省いた「3」は [3, '']。読めなければ null
+     */
+    public static function parsePosition($text)
+    {
+        $t = strtoupper(trim(mb_convert_kana((string)$text, 'as')));
+        if ($t === '') {
+            return [0, ''];
+        }
+        if (!preg_match('/^0*(\d{1,4})\s*([A-F]?)$/', $t, $m) || (int)$m[1] === 0) {
+            return null;
+        }
+        return [(int)$m[1], $m[2]];
     }
 
     // ------------------------------------------------------------ 同点のときの優先順位

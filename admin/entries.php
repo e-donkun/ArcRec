@@ -35,7 +35,7 @@ function import_entries($text)
         $target = 0;
         $letter = '';
         if ($pos !== '') {
-            if (!preg_match('/^(\d+)\s*([A-Da-d])$/', $pos, $m)) {
+            if (!preg_match('/^(\d+)\s*([A-Fa-f])$/', $pos, $m)) {
                 $errors[] = ($n + 1) . '行目: 的の指定「' . $pos . '」が不正です(例 3A)';
                 continue;
             }

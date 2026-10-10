@@ -2,13 +2,18 @@
 	"id": "ianseo-lite",
 	"name": "ianseo-lite（簡易記録会システム）",
 	"description": "予選だけ・1セッションだけの記録会向け。SQLite + ScorekeeperNG(Lite)で入力し、スコアカードと結果をPDFで出力する。本体のDBとは独立して動く。",
-	"version": "0.13.0",
+	"version": "0.14.0",
 	"author": "e-donkun",
 	"homepage": "https://github.com/e-donkun/ianseo-lite",
 	"license": "GPL-2.0",
 	"testedIanseo": "2026-03-01",
 	"requiresPhp": "7.4",
 	"changelog": [
+		{
+			"version": "0.14.0",
+			"date": "2026-10-10",
+			"notes": "立順: 割り当て表で 的の数 と 立ち数(1〜6 = A〜F)を ＋/− で変更(選手のいる的・位置より小さくはできない)。一覧は立順を直接入力(001a → 1A)。不要な説明文を削除。管理画面の結果の説明文を削除"
+		},
 		{
 			"version": "0.13.0",
 			"date": "2026-10-10",

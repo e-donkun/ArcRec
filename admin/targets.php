@@ -1,7 +1,8 @@
 <?php
-// 立順(的番号と位置)の設定(ianseo 本体のスマホモード「的番号設定」と同じ画面構成)。登録した選手を、的番号と位置(A〜D)に割り当てる。
+// 立順(的番号と位置)の設定(ianseo 本体のスマホモード「的番号設定」と同じ画面構成)。登録した選手を、的番号と位置(A〜F)に割り当てる。
 // 表示は「一覧」と「割り当て表」を切り替えられる(どちらも同じ処理 Entries::place を呼ぶ):
-//   ・一覧: 選手のカードごとのプルダウンで、的番号と位置を選ぶ
+//   ・一覧: 選手のカードの立順(1A など)を直接入力する(001a → 1A。位置を省くと空いている最初の位置)
+//   ・割り当て表: 的の数と立ち数(1的あたりの人数、A〜F)を ＋/− で変える
 //   ・割り当て表: 下の未割当の選手(または枠の選手)をタップしてから、空いている枠をタップする。選手のいる枠なら入れ替え
 // 点数が入っている選手は動かせない(端末は「的+位置」で選手を見分けるため)。
 require __DIR__ . '/_layout.php';
@@ -11,17 +12,21 @@ use Lite\Categories;
 use Lite\Entries;
 use Lite\Settings;
 
-/** 画面が使う状態(選手と的の数) */
+/** 画面が使う状態(選手と的の数・立ち数) */
 function targets_state()
 {
-    $per = max(1, min(4, (int)Settings::get('archers_per_target')));
+    $per = Settings::perTarget();
     $entries = [];
     $maxT = 0;
+    $maxL = 0;   // 選手のいるいちばん後ろの位置(A=1 … F=6)
     foreach (Entries::all(false) as $e) {
         if ($e['status']) {
             continue;   // 欠場の選手は出さない
         }
         $maxT = max($maxT, (int)$e['target']);
+        if ($e['target'] && $e['letter'] !== '') {
+            $maxL = max($maxL, ord($e['letter']) - 64);
+        }
         $entries[] = [
             'id' => (int)$e['id'],
             'name' => Entries::fullName($e),
@@ -33,9 +38,13 @@ function targets_state()
             'lock' => Entries::hasScore($e),
         ];
     }
+    $count = (int)Settings::get('target_count');   // 0 = 選手の人数から決める
     return [
         'per' => $per,
-        'n' => max(1, $maxT, (int)ceil(count($entries) / $per)),
+        'letters' => Settings::letters(),
+        'n' => max(1, $maxT, $count ?: (int)ceil(count($entries) / $per)),
+        'minN' => max(1, $maxT),
+        'minPer' => max(1, $maxL),
         'entries' => $entries,
     ];
 }
@@ -43,15 +52,45 @@ function targets_state()
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $do = $_POST['do'] ?? '';
     if ($do === 'place') {
-        $r = Entries::place((int)($_POST['id'] ?? 0), (int)($_POST['target'] ?? 0), (string)($_POST['letter'] ?? ''));
-        header('Content-Type: application/json; charset=UTF-8');
-        echo json_encode($r + ['state' => targets_state()], JSON_UNESCAPED_UNICODE);
-        exit;
+        if (isset($_POST['pos'])) {
+            // 一覧で直接入力した立順(1A など)
+            $p = Settings::parsePosition($_POST['pos']);
+            $r = $p === null
+                ? ['ok' => false, 'msg' => '立順は「1A」のように、的番号と位置(A〜' . implode('', array_slice(Settings::letters(), -1)) . ')で入力してください']
+                : Entries::place((int)($_POST['id'] ?? 0), $p[0], $p[1]);
+        } else {
+            $r = Entries::place((int)($_POST['id'] ?? 0), (int)($_POST['target'] ?? 0), (string)($_POST['letter'] ?? ''));
+        }
+        json_out($r + ['state' => targets_state()]);
+    }
+    if ($do === 'targets' || $do === 'per') {
+        // 的の数・立ち数の ＋/−。選手のいる的・位置より小さくはできない
+        $st = targets_state();
+        $delta = (int)($_POST['delta'] ?? 0) < 0 ? -1 : 1;
+        if ($do === 'targets') {
+            $n = $st['n'] + $delta;
+            if ($n < $st['minN']) {
+                json_out(['ok' => false, 'msg' => $st['minN'] . '的に選手がいるため、' . $st['minN'] . '的より少なくはできません', 'state' => $st]);
+            }
+            Settings::set('target_count', $n);
+            json_out(['ok' => true, 'msg' => '的の数: ' . $n, 'state' => targets_state()]);
+        }
+        $per = $st['per'] + $delta;
+        if ($per > Settings::MAX_PER_TARGET) {
+            json_out(['ok' => false, 'msg' => '立ち数は ' . Settings::MAX_PER_TARGET . '(A〜F)までです', 'state' => $st]);
+        }
+        if ($per < $st['minPer']) {
+            json_out(['ok' => false, 'msg' => chr(64 + $st['minPer']) . ' の位置に選手がいるため、立ち数は ' . $st['minPer'] . ' より少なくはできません', 'state' => $st]);
+        }
+        Settings::set('archers_per_target', $per);
+        Lite\Db::pdo()->exec("UPDATE devices SET setup = '', setup_confirmed = 0");
+        json_out(['ok' => true, 'msg' => '立ち数: ' . $per, 'state' => targets_state()]);
     }
     try {
         if ($do === 'auto') {
             Entries::autoAssign((int)($_POST['per_target'] ?? 4), (int)($_POST['first'] ?? 1));
-            Settings::set('archers_per_target', max(1, min(4, (int)($_POST['per_target'] ?? 4))));
+            Settings::set('archers_per_target', max(1, min(Settings::MAX_PER_TARGET, (int)($_POST['per_target'] ?? 4))));
+            Settings::set('target_count', 0);   // 的の数は、割り当てた結果から決め直す
             flash('的番号を割り当てました(点数のある選手は動かしていません)');
         } elseif ($do === 'clear') {
             Entries::unassignAll();
@@ -86,12 +125,12 @@ if (!$state['entries']) {
 	</div>
 	<div class="sp-count" id="SpCount"></div>
 	<div class="sp-list" id="SpList"></div>
-	<p class="sp-note">的番号と位置をプルダウンで選ぶと保存されます。位置を選ばないときは、その的の空いている最初の位置に入ります。選手のいる位置を選ぶと入れ替えます。<br>点数が入っている選手(🔒)は動かせません。点数が入っている選手のいる位置へも移せません。</p>
+	<p class="sp-note">点数が入っている選手(🔒)は動かせません。</p>
 	<details class="card noprint">
 		<summary>自動で割り当てる</summary>
 		<form method="post" class="inline-form" style="margin-top:8px" onsubmit="return window.confirm('点数のない選手の的番号を、部門順・登録順に付け直します。よろしいですか?')">
 			<?php echo csrf_field(); ?><input type="hidden" name="do" value="auto">
-			<label class="inline-label">1的あたり <input type="number" name="per_target" min="1" max="4" value="<?php echo (int)$state['per']; ?>" style="width:4.5rem"> 人</label>
+			<label class="inline-label">1的あたり <input type="number" name="per_target" min="1" max="<?php echo Settings::MAX_PER_TARGET; ?>" value="<?php echo (int)$state['per']; ?>" style="width:4.5rem"> 人</label>
 			<label class="inline-label">開始の的 <input type="number" name="first" min="1" value="1" style="width:5rem"></label>
 			<button class="sp-btn sub">自動で割り当てる</button>
 		</form>
@@ -102,8 +141,11 @@ if (!$state['entries']) {
 	</details>
 </div>
 <div id="SpGridView" class="sp-hide">
+	<div class="sp-steppers">
+		<div class="sp-stepper"><span>的の数</span><button type="button" class="sp-btn sub" data-step="targets" data-delta="-1" aria-label="的を減らす">−</button><b id="SpNumTargets"></b><button type="button" class="sp-btn sub" data-step="targets" data-delta="1" aria-label="的を増やす">＋</button></div>
+		<div class="sp-stepper"><span>立ち数</span><button type="button" class="sp-btn sub" data-step="per" data-delta="-1" aria-label="立ち数を減らす">−</button><b id="SpNumPer"></b><button type="button" class="sp-btn sub" data-step="per" data-delta="1" aria-label="立ち数を増やす">＋</button></div>
+	</div>
 	<div id="SpGrid"></div>
-	<p><button type="button" class="sp-btn sub" id="SpAddTarget"><?php echo icon('plus'); ?>的を追加</button></p>
 	<p class="sp-note">下の未割当の選手をタップしてから、空いている枠をタップすると割り当てます。枠の選手をタップすると、別の空き枠へ移したり、割り当てを外したりできます(選手のいる枠をタップすると入れ替え)。🔒の選手(点数が入っている)は動かせません。</p>
 </div>
 <div id="SpTray" class="sp-tray sp-hide">
@@ -120,24 +162,35 @@ if (!$state['entries']) {
 </div>
 
 <script>
-const LETTERS = ['A', 'B', 'C', 'D'];
-const SpGrid = {sel: null, busy: false, extra: 0, filter: spStore('tgt_tray_filter') || ''};
+const SpGrid = {sel: null, busy: false, filter: spStore('tgt_tray_filter') || ''};
 
 function spRow(id) { return LiteState.entries.find(e => e.id == id); }
 function spOwner(t, l) { return LiteState.entries.find(e => e.t === t && e.l === l); }
 function spPos(e) { return e.t ? e.t + e.l : ''; }
-function spBoardCount() {
-	let n = LiteState.n;
-	LiteState.entries.forEach(e => { if (e.t > n) n = e.t; });
-	return n + SpGrid.extra;
+function spBoardCount() { return LiteState.n; }
+
+/* 的の数・立ち数の ＋/− */
+async function spStep(kind, delta) {
+	if (SpGrid.busy) return;
+	SpGrid.busy = true;
+	try {
+		const res = await spPostJson('targets.php', {do: kind, delta: delta});
+		LiteState = res.state;
+		spToast(res.msg, !res.ok);
+	} catch (err) {
+		spToast('保存できませんでした: ' + err.message, true);
+	} finally {
+		SpGrid.busy = false;
+		spRender();
+	}
 }
 
 /* サーバーで置き直す(入れ替え・点数ありの拒否はサーバーが判断する)。結果の状態で描き直す */
-async function spPlace(id, t, l) {
+async function spPlace(id, t, l, pos) {
 	if (SpGrid.busy) return false;
 	SpGrid.busy = true;
 	try {
-		const res = await spPostJson('targets.php', {do: 'place', id: id, target: t, letter: l || ''});
+		const res = await spPostJson('targets.php', pos !== undefined ? {do: 'place', id: id, pos: pos} : {do: 'place', id: id, target: t, letter: l || ''});
 		LiteState = res.state;
 		const e = spRow(id);
 		if (res.ok) {
@@ -156,28 +209,18 @@ async function spPlace(id, t, l) {
 	}
 }
 
-/* ---- 一覧(カードごとのプルダウン) ---- */
+/* ---- 一覧(カードの立順を直接入力) ---- */
 function spTgtCard(e) {
-	const n = spBoardCount();
-	let to = '<option value="0"' + (e.t ? '' : ' selected') + '>-- 的</option>';
-	for (let t = 1; t <= Math.max(n, e.t) + 2; t++) to += '<option value="' + t + '"' + (e.t === t ? ' selected' : '') + '>' + t + '的</option>';
-	let lo = e.t ? '' : '<option value="">位置 --</option>';
-	LETTERS.forEach(l => {
-		const o = e.t ? spOwner(e.t, l) : null;
-		lo += '<option value="' + l + '"' + (e.l === l ? ' selected' : '') + '>' + l + (o && o.id !== e.id ? '(' + spEsc(o.name) + ')' : '') + '</option>';
-	});
-	const dis = e.lock ? ' disabled' : '';
 	const search = spNorm([e.name, e.aff, e.cat, spPos(e)].join(' '));
 	return '<div class="sp-card" data-id="' + e.id + '" data-search="' + spEsc(search) + '" data-empty="' + (e.t ? 0 : 1) + '">'
-		+ '<div class="sp-card-head"><span class="sp-badge' + (e.t ? '' : ' none') + '">' + spEsc(spPos(e) || '-') + '</span><div class="sp-card-main">'
+		+ '<div class="sp-card-head">'
+		+ '<input type="text" class="sp-pos-input' + (e.t ? '' : ' none') + '" value="' + spEsc(spPos(e)) + '" placeholder="-" maxlength="8" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false"'
+		+ (e.lock ? ' readonly title="点数が入っているため変更できません"' : '') + ' aria-label="立順">'
+		+ '<div class="sp-card-main">'
 		+ '<div class="sp-name">' + spEsc(e.name) + '</div>'
 		+ '<div class="sp-sub">' + spEsc([e.aff, e.cat].filter(x => x).join(' / ')) + '</div>'
 		+ (e.lock ? '<div style="margin-top:4px"><span class="sp-tag danger">🔒 点数入力済み</span></div>' : '')
-		+ '</div></div>'
-		+ '<div class="sp-target-edit">'
-		+ '<select data-role="t"' + dis + ' aria-label="的番号">' + to + '</select>'
-		+ '<select data-role="l"' + dis + (e.t ? '' : ' disabled') + ' aria-label="位置">' + lo + '</select>'
-		+ '</div></div>';
+		+ '</div></div></div>';
 }
 
 function spListRender() {
@@ -198,8 +241,8 @@ function spGridRender() {
 	const sel = SpGrid.sel ? spRow(SpGrid.sel) : null;
 	let html = '';
 	for (let t = 1; t <= spBoardCount(); t++) {
-		html += '<div class="sp-grid-row"><div class="sp-grid-no">' + t + '的</div><div class="sp-grid-cells" style="--cols:4">';
-		LETTERS.forEach(l => {
+		html += '<div class="sp-grid-row"><div class="sp-grid-no">' + t + '的</div><div class="sp-grid-cells" style="--cols:' + LiteState.per + '">';
+		LiteState.letters.forEach(l => {
 			const r = spOwner(t, l);
 			if (!r) {
 				html += '<button type="button" class="sp-slot empty' + (sel ? ' target' : '') + '" data-t="' + t + '" data-l="' + l + '"><small>' + l + '</small></button>';
@@ -212,6 +255,8 @@ function spGridRender() {
 		html += '</div></div>';
 	}
 	document.getElementById('SpGrid').innerHTML = html;
+	document.getElementById('SpNumTargets').textContent = LiteState.n;
+	document.getElementById('SpNumPer').textContent = LiteState.per + '(' + LiteState.letters[0] + '〜' + LiteState.letters[LiteState.letters.length - 1] + ')';
 	spTrayRender();
 }
 
@@ -256,16 +301,27 @@ document.addEventListener('DOMContentLoaded', () => {
 		const b = ev.target.closest('[data-view]');
 		if (b) spSetView(b.dataset.view);
 	});
-	// 一覧: プルダウンで的番号・位置を選ぶ
-	document.getElementById('SpList').addEventListener('change', ev => {
+	// 一覧: 立順を直接入力(小文字は大文字に。決定したら保存)
+	const list = document.getElementById('SpList');
+	list.addEventListener('input', ev => {
+		const inp = ev.target.closest('.sp-pos-input');
+		if (!inp) return;
+		const p = inp.selectionStart;
+		inp.value = inp.value.toUpperCase();
+		inp.setSelectionRange(p, p);
+	});
+	list.addEventListener('change', ev => {
+		const inp = ev.target.closest('.sp-pos-input');
 		const card = ev.target.closest('.sp-card[data-id]');
-		if (!card) return;
+		if (!inp || !card || inp.readOnly) return;
 		card.setAttribute('data-keep', '1');
-		const id = +card.dataset.id, e = spRow(id);
-		const t = +card.querySelector('[data-role=t]').value;
-		let l = card.querySelector('[data-role=l]').value;
-		if (ev.target.dataset.role === 't') l = (e && e.t === t) ? e.l : '';   // 的を選び直したら、空いている最初の位置
-		spPlace(id, t, t ? l : '');
+		const e = spRow(+card.dataset.id);
+		const v = inp.value.trim();
+		if (e && v.replace(/^0+/, '') === spPos(e)) { inp.value = spPos(e); return; }   // 変わっていない
+		spPlace(+card.dataset.id, 0, '', v);
+	});
+	list.addEventListener('keydown', ev => {
+		if (ev.key === 'Enter' && ev.target.classList.contains('sp-pos-input')) ev.target.blur();
 	});
 	document.getElementById('SpSearch').addEventListener('input', spListFilter);
 	const only = document.getElementById('SpOnlyEmpty');
@@ -304,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	});
 	document.getElementById('SpUnassign').addEventListener('click', () => { if (SpGrid.sel) spPlace(SpGrid.sel, 0, ''); });
 	document.getElementById('SpCancelSel').addEventListener('click', () => { SpGrid.sel = null; spGridRender(); });
-	document.getElementById('SpAddTarget').addEventListener('click', () => { SpGrid.extra++; spGridRender(); });
+	document.querySelectorAll('[data-step]').forEach(b => b.addEventListener('click', () => spStep(b.dataset.step, +b.dataset.delta)));
 	spSetView(spStore('tgt_view') === 'grid' ? 'grid' : 'list');
 });
 </script>

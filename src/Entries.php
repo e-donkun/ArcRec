@@ -92,8 +92,8 @@ class Entries
         $target = max(0, (int)($d['target'] ?? 0));
         $letter = $target ? strtoupper(trim($d['letter'] ?? 'A')) : '';
         if ($setPos) {
-            if ($target && !preg_match('/^[A-D]$/', $letter)) {
-                throw new \InvalidArgumentException('的の位置は A〜D で指定してください');
+            if ($target && !preg_match('/^[A-F]$/', $letter)) {
+                throw new \InvalidArgumentException('的の位置は A〜F で指定してください');
             }
             if ($target > 9999) {
                 throw new \InvalidArgumentException('的番号が大きすぎます');
@@ -167,10 +167,11 @@ class Entries
         if ($target < 0 || $target > 9999) {
             return ['ok' => false, 'msg' => '的番号は 1〜9999 で指定してください'];
         }
-        if ($letter !== '' && !preg_match('/^[A-D]$/', $letter)) {
-            return ['ok' => false, 'msg' => '位置は A〜D で指定してください'];
+        $letters = Settings::letters();
+        if ($letter !== '' && !in_array($letter, $letters, true)) {
+            return ['ok' => false, 'msg' => '位置は A〜' . end($letters) . ' で指定してください(立ち数 ' . count($letters) . ')'];
         }
-        return Db::immediate(function (\PDO $pdo) use ($id, $target, $letter) {
+        return Db::immediate(function (\PDO $pdo) use ($id, $target, $letter, $letters) {
             $e = self::find($id);
             if (!$e) {
                 return ['ok' => false, 'msg' => '選手が見つかりません'];
@@ -181,7 +182,7 @@ class Entries
             if ($target === 0) {
                 $letter = '';
             } elseif ($letter === '') {
-                foreach (['A', 'B', 'C', 'D'] as $l) {
+                foreach ($letters as $l) {
                     $o = self::findByPos($target, $l);
                     if (!$o || (int)$o['id'] === (int)$e['id']) {
                         $letter = $l;
@@ -189,7 +190,7 @@ class Entries
                     }
                 }
                 if ($letter === '') {
-                    return ['ok' => false, 'msg' => "{$target}的は満員です(A〜D)"];
+                    return ['ok' => false, 'msg' => "{$target}的は満員です(A〜" . end($letters) . ')'];
                 }
             }
             if ((int)$e['target'] === $target && $e['letter'] === $letter) {
@@ -236,7 +237,7 @@ class Entries
      */
     public static function autoAssign($perTarget, $firstTarget = 1)
     {
-        $perTarget = max(1, min(4, (int)$perTarget));
+        $perTarget = max(1, min(Settings::MAX_PER_TARGET, (int)$perTarget));
         Db::immediate(function (\PDO $pdo) use ($perTarget, $firstTarget) {
             $rows = self::all(false);
             $fixed = [];

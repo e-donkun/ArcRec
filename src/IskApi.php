@@ -609,7 +609,7 @@ class IskApi
         if ($distance < 1 || $distance > Settings::distances()) {
             return 'Incorrect Distance Setting';
         }
-        if (!preg_match('/^(\d+)\.(\d+)([A-Da-d])$/', (string)$refKey, $m) || (int)$m[1] !== self::SESSION) {
+        if (!preg_match('/^(\d+)\.(\d+)([A-Fa-f])$/', (string)$refKey, $m) || (int)$m[1] !== self::SESSION) {
             return 'RECONFIGURE';
         }
         $entry = Entries::findByPos((int)$m[2], $m[3]);
@@ -722,7 +722,7 @@ class IskApi
         }
         $setup['configHash'] = md5($dev['setup']);
         foreach ($setup['archers'] as $key => &$a) {
-            if (!preg_match('/^\d+\.(\d+)([A-D])$/', $key, $m)) {
+            if (!preg_match('/^\d+\.(\d+)([A-F])$/', $key, $m)) {
                 continue;
             }
             $e = Entries::findByPos((int)$m[1], $m[2]);

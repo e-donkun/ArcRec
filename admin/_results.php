@@ -88,9 +88,6 @@ function results_page($code, $public)
 	</div>
 </div>
 <div class="sp-list" id="SpList"></div>
-<?php if (!$public) {   // 一般向けには、説明と結果CSVを出さない ?>
-<p class="sp-note">カードをタップするとスコアカードを表示します。* は 合計・<?php echo h(Settings::tieLabel(1)); ?>・<?php echo h(Settings::tieLabel(2)); ?> がすべて同じ(シュートオフ等で決める)選手です。</p>
-<?php } ?>
 <div class="actions noprint">
 	<a class="sp-btn sub" href="<?php echo $adm; ?>pdf.php?type=results&c=<?php echo h($code); ?>" target="_blank"><?php echo icon('print'); ?>結果PDF</a>
 <?php if (!$public) { ?>

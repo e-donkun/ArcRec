@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'name' => trim($_POST['name'] ?? ''),
                     'preset' => $preset,
                     'distance_name' => trim($_POST['distance_name'] ?? ''), 'distance_name2' => trim($_POST['distance_name2'] ?? ''),
-                    'archers_per_target' => max(1, min(4, (int)($_POST['archers_per_target'] ?? 4))),
+                    'archers_per_target' => max(1, min(Settings::MAX_PER_TARGET, (int)($_POST['archers_per_target'] ?? 4))),
                 ], $faces, $ties));
                 // 端末に保存した選手一覧・的面・距離の設定は、次の接続で作り直させる
                 Db::pdo()->exec("UPDATE devices SET setup = '', setup_confirmed = 0");

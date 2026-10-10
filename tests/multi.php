@@ -159,6 +159,20 @@ foreach (['A', 'B', 'C', 'D'] as $l) {
 }
 $r = Entries::place($a2, 9, '');
 ok(!$r['ok'] && strpos($r['msg'], '満員') !== false, '満員の的には置けない');
+// 立順の直接入力と立ち数(A〜F)
+ok(Settings::parsePosition('001a') === [1, 'A'] && Settings::parsePosition(' 12 b ') === [12, 'B'] && Settings::parsePosition('１Ａ') === [1, 'A']
+    && Settings::parsePosition('') === [0, ''] && Settings::parsePosition('3') === [3, ''] && Settings::parsePosition('1G') === null
+    && Settings::parsePosition('0A') === null && Settings::parsePosition('A1') === null, '立順の入力: 001a→1A、全角可、頭の0は取る、G以降・0的は不可');
+$per0 = Settings::get('archers_per_target');
+Settings::set('archers_per_target', 4);
+$r = Entries::place($a3, 1, 'E');
+ok(!$r['ok'] && strpos($r['msg'], 'A〜D') !== false, '立ち数4なら E には置けない');
+Settings::set('archers_per_target', 6);
+ok(Settings::letters() === ['A', 'B', 'C', 'D', 'E', 'F'], '立ち数6なら A〜F');
+$r = Entries::place($a3, 9, 'F');
+ok($r['ok'] && Entries::find($a3)['target'] == 9 && Entries::find($a3)['letter'] === 'F', '立ち数6なら F に置ける');
+Entries::place($a3, 0, '');
+Settings::set('archers_per_target', $per0);
 ok(!Entries::place($a2, 10000, 'A')['ok'] && !Entries::place($a2, 1, 'E')['ok'], '範囲外・不正な位置は拒否');
 Entries::save(['family_name' => '乙', 'given_name' => '二', 'category_id' => $rw, 'status' => 1], $a2);
 ok(!Entries::place($a2, 5, 'A')['ok'], '欠場の選手は置けない');
