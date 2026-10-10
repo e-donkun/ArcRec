@@ -31,26 +31,30 @@ switch ($what) {
         }
         csv_out('entries.csv', $rows);
     case 'results':
+        // 順位 | 的番号 | 選手氏名 | 所属 | 総合計 | 第1優先 | 第2優先 | (空) | 距離1のエンド 1〜n | 距離1の計 | (空) | 距離2 …
         $ends = Settings::ends();
-        $head = ['部門', '順位', '的', '氏名', '所属'];
-        for ($d = 1; $d <= Settings::distances(); $d++) {
+        $nd = Settings::distances();
+        $head = ['順位', '的番号', '選手氏名', '所属', '総合計', Settings::tieLabel(1), Settings::tieLabel(2)];
+        for ($d = 1; $d <= $nd; $d++) {
+            $head[] = '';
             for ($i = 1; $i <= $ends; $i++) {
-                $head[] = (Settings::distances() > 1 ? 'D' . $d : '') . $i . 'E';
+                $head[] = (string)$i;
             }
+            $head[] = ($nd > 1 ? Settings::distanceName($d) : '') . '計';
         }
-        if (Settings::distances() > 1) {
-            $head[] = '距離1合計';
-            $head[] = '距離2合計';
-        }
-        $rows = [array_merge($head, ['合計', Settings::tieLabel(1), Settings::tieLabel(2)])];
+        $rows = [$head];
         foreach (Results::byCategory() as $g) {
             foreach ($g['rows'] as $r) {
-                $rows[] = array_merge(
-                    [$g['category']['name'], $r['absent'] ? '欠' : $r['rank'], $r['target'] ? $r['target'] . $r['letter'] : '', Entries::fullName($r), $r['affiliation']],
-                    $r['end_scores'],
-                    Settings::distances() > 1 ? [$r['dist_scores'][1], $r['dist_scores'][2]] : [],
-                    [$r['hits'] ? $r['score'] : '', $r['hits'] ? $r['golds'] : '', $r['hits'] ? $r['xs'] : '']
-                );
+                $row = [$r['absent'] ? '欠' : ($r['rank'] ?? ''), $r['target'] ? $r['target'] . $r['letter'] : '', Entries::fullName($r), $r['affiliation'],
+                    $r['hits'] ? $r['score'] : '', $r['hits'] ? $r['golds'] : '', $r['hits'] ? $r['xs'] : ''];
+                for ($d = 1; $d <= $nd; $d++) {
+                    $row[] = '';
+                    foreach (array_slice($r['end_scores'], ($d - 1) * $ends, $ends) as $v) {
+                        $row[] = $v === null ? '' : $v;
+                    }
+                    $row[] = $r['dist_scores'][$d] ?? '';
+                }
+                $rows[] = $row;
             }
         }
         csv_out('results.csv', $rows);
