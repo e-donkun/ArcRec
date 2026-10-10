@@ -32,14 +32,14 @@ class Connect
     }
 
     /**
-     * 的のQRの距離の選び方。2距離なら [0 => 距離手動, 1 => 前半, 2 => 後半]、1距離なら [1 => ''](距離名は出さない)
+     * 的のQRの距離の選び方。2距離なら [1 => 前半, 2 => 後半, 0 => 指定無し(距離は端末で選ぶ。本家の ALL と同じ)]、1距離なら [1 => ''](距離名は出さない)
      */
     public static function distanceModes()
     {
         if (Settings::distances() < 2) {
             return [1 => ''];
         }
-        return [0 => '距離手動', 1 => Settings::distanceName(1) ?: '距離1', 2 => Settings::distanceName(2) ?: '距離2'];
+        return [1 => Settings::distanceName(1) ?: '距離1', 2 => Settings::distanceName(2) ?: '距離2', 0 => '指定無し'];
     }
 
     /** 既定の距離の選び方(2距離なら前半、1距離ならその距離) */
@@ -55,7 +55,7 @@ class Connect
         return array_key_exists($d, self::distanceModes()) ? $d : self::defaultMode();
     }
 
-    /** 的のQRの見出し: 「1的 前半」。1距離や距離手動のときは「1的」だけ */
+    /** 的のQRの見出し: 「1的 前半」。1距離や指定無しのときは「1的」だけ */
     public static function targetLabel($target, $distance = 0)
     {
         $name = $distance > 0 ? (self::distanceModes()[$distance] ?? '') : '';

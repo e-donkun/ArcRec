@@ -31,13 +31,13 @@ if (in_array($host, ['localhost', '127.0.0.1', '::1'], true)) {
 $targets = Entries::targets();
 $modes = Connect::distanceModes();
 $mode = Connect::defaultMode();
-echo '<div class="row"><div class="card"><h2 style="margin-top:0">1. 接続設定のQR</h2>'
+echo '<div class="row"><div class="card"><h2 style="margin-top:0">設定用QRコード</h2>'
     . '<p class="muted small">ScorekeeperNG の設定画面(モード: <b>Lite</b>)でこの QR を読み取ります。</p>'
     . '<div class="sp-qr">' . Connect::svg(Connect::setupPayload($base)) . '</div>'
     . '<p>サーバーURL: <code>' . h($base) . '</code><br>記録会コード: <code>' . h(Settings::code()) . '</code></p></div>';
-echo '<div class="card"><h2 style="margin-top:0">2. 的のQR</h2>';
+echo '<div class="card"><h2 style="margin-top:0">設定用(的ごと)QRコード</h2>';
 if (count($modes) > 1) {
-    // 距離の選び方(距離手動 / 前半 / 後半)
+    // 距離の選び方(前半 / 後半 / 指定無し)。1距離なら切り替えなし
     echo '<div class="sp-chips" id="QrModes">';
     foreach ($modes as $d => $label) {
         echo '<button type="button" class="sp-chip' . ($d === $mode ? ' active' : '') . '" data-d="' . $d . '">' . h($label) . '</button>';
@@ -56,7 +56,7 @@ if ($targets) {
     echo '<div class="sp-empty">立順が決まった的がまだありません</div>';
 }
 echo '<p><a class="sp-btn" id="QrPdf" href="pdf.php?type=qr&amp;d=' . $mode . '" target="_blank">' . icon('print') . '的QR一覧 PDF</a></p>'
-    . '<p class="muted small">対象の的: ' . h(implode(', ', $targets) ?: 'まだありません') . '</p></div></div>';
+    . '</div></div>';
 ?>
 <script>
 (function () {
@@ -87,7 +87,7 @@ echo '<p><a class="sp-btn" id="QrPdf" href="pdf.php?type=qr&amp;d=' . $mode . '"
 </script>
 <?php
 
-echo '<h2>登録された端末</h2><div class="tablewrap"><table><tr><th>コード</th><th>的</th><th>電池</th><th>アプリ</th><th>最終通信</th><th>設定確認</th><th></th></tr>';
+echo '<h2 class="sp-h-link">登録された端末 <a class="small" href="log.php">通信ログ</a></h2><div class="tablewrap"><table><tr><th>コード</th><th>的</th><th>電池</th><th>アプリ</th><th>最終通信</th><th>設定確認</th><th></th></tr>';
 foreach (Devices::all() as $d) {
     $age = time() - strtotime($d['last_seen']);
     $b = (int)$d['battery'];
@@ -101,5 +101,4 @@ if (!Devices::all()) {
     echo '<tr><td colspan="7" class="muted">まだ端末が接続していません</td></tr>';
 }
 echo '</table></div>';
-echo '<p class="small">端末がつながらない・入力画面に進まないときは <a href="log.php">通信ログ</a> で、端末とのやりとりを確認できます。</p>';
 page_foot('qr');

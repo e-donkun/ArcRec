@@ -129,9 +129,9 @@ Settings::setMany(['target_face1' => '2']);
 ok(Settings::tieLabel(1) === '10' && Settings::tieLabel(2) === '9' && Settings::tieChars(1) === 'L' && Settings::tieChars(2) === 'J', '屋内の優先順位の初期値: 第1=10・第2=9');
 // 的の種類は前半・後半で同じ
 Settings::setMany(['preset' => 'outdoor72', 'target_face1' => '10', 'target_face2' => '5']);
-ok(array_keys(Lite\Connect::distanceModes()) === [0, 1, 2] && Lite\Connect::targetLabel(2, 2) === '2的 後半' && Lite\Connect::targetLabel(2, 0) === '2的'
+ok(array_keys(Lite\Connect::distanceModes()) === [1, 2, 0] && Lite\Connect::targetLabel(2, 2) === '2的 後半' && Lite\Connect::targetLabel(2, 0) === '2的'
     && strpos(Lite\Connect::targetPayload('http://x/', 2, 0), '"d"') === false && strpos(Lite\Connect::targetPayload('http://x/', 2, 2), '"d":"2"') !== false,
-    '2距離: 距離手動(d なし)・前半・後半(d=1/2)の的のQR');
+    '2距離: 前半・後半(d=1/2)・指定無し(d なし)の的のQR');
 ok(Settings::targetFace(1) === 10 && Settings::targetFace(2) === 10, '屋外: 的の種類は前半・後半とも同じ(6リング)');
 $cfg = call([['action' => 'manual', 'device' => 'd1', 'tocode' => 'WA2', 'type' => 'Q', 'sesstarget' => '10001']])['responses'][0];
 $sc = $cfg['archers'][0]['scoring'];

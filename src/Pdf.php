@@ -243,11 +243,11 @@ class Pdf extends \TCPDF
     // ================================================================ 的のQR一覧
 
     /** 的ごとの接続QR(的に貼って、端末に読ませる) */
-    /** @param int $distance 0 = 距離手動、1/2 = その距離のQR(Connect::distanceModes) */
+    /** @param int $distance 0 = 指定無し、1/2 = その距離のQR(Connect::distanceModes) */
     public static function qrSheet($baseUrl, $distance = 0)
     {
         $pdf = new self('的QRコード');
-        $modeName = $distance > 0 ? (Connect::distanceModes()[$distance] ?? '') : (Settings::distances() > 1 ? '距離手動' : '');
+        $modeName = $distance > 0 ? (Connect::distanceModes()[$distance] ?? '') : (Settings::distances() > 1 ? '指定無し' : '');
         $targets = Entries::targets();
         $cols = 3;
         $rows = 4;
