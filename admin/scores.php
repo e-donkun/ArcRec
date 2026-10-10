@@ -75,7 +75,6 @@ foreach (Entries::all() as $e) {
         }
     }
     $chips[] = (int)floor($hits / $per) . '/' . $ends . 'エンド';
-    $chips[] = $hits . '/' . $total . '射';
     $pos = $e['target'] ? $e['target'] . $e['letter'] : '';
     $search = mb_strtolower(implode(' ', [Entries::fullName($e), $e['family_name'] . $e['given_name'], $e['affiliation'], $e['category_name'], $pos]));
     echo '<div class="sp-card sp-score-card" data-cat="' . (int)$e['category_id'] . '" data-done="' . ($hits >= $total ? 1 : 0) . '" data-search="' . h($search) . '">'
