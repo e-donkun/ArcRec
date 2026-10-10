@@ -415,8 +415,15 @@ class Pdf extends \TCPDF
         $pdf->SetXY(10, 10);
         $pdf->Cell(190, 8, Settings::title(), 0, 1, 'C');
         $pdf->f(9);
-        $upd = Results::lastUpdate();   // 点数の最終更新(まだ無ければ出さない)
-        $pdf->Cell(190, 5, Settings::roundLabel() . ($upd ? '（最終更新：' . substr($upd, 0, 16) . '）' : ''), 0, 1, 'C');
+        // 点数の最終更新(まだ無ければ出さない)。欠場以外の全員が確定していたら「確定記録」
+        $upd = Results::lastUpdate();
+        $active = array_filter(Entries::all(), function ($e) {
+            return !$e['status'];
+        });
+        $fixed = $active && !array_filter($active, function ($e) {
+            return !$e['locked'];
+        });
+        $pdf->Cell(190, 5, Settings::roundLabel() . ($upd ? '（' . ($fixed ? '確定記録' : '最終更新') . '：' . substr($upd, 0, 16) . '）' : ''), 0, 1, 'C');
         $pdf->SetY($pdf->GetY() + 3);
         foreach ($groups as $g) {
             $pdf->resultsCategory($g);
