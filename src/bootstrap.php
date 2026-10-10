@@ -1,10 +1,10 @@
 <?php
-// ianseo-lite 共通の初期化。親ディレクトリ(本家 ianseo)には依存しない。
+// ianseo-lite 共通の初期化。ianseo 本体には依存しない(単体で動く)。
 if (defined('LITE_ROOT')) {
     return;
 }
 define('LITE_ROOT', dirname(__DIR__));
-define('LITE_VERSION', '0.1.0');
+define('LITE_VERSION', '0.16.0');   // 版。変更の履歴は CHANGELOG.md
 
 date_default_timezone_set('Asia/Tokyo');
 mb_internal_encoding('UTF-8');
@@ -18,15 +18,6 @@ if (is_file(LITE_ROOT . '/config.local.php')) {
 if (!empty($GLOBALS['LITE_CONFIG']['timezone'])) {
     date_default_timezone_set($GLOBALS['LITE_CONFIG']['timezone']);
 }
-
-// ianseo の Modules/Custom に置いたときだけ、カスタムモジュール管理の「無効」を尊重する(単体で動かすときは何もしない)。
-// State.php は ianseo 本体の関数を使わない軽い作りなので、ここから直接読める。
-$cmState = dirname(LITE_ROOT) . '/ModuleManager/State.php';
-if (is_file($cmState)) {
-    require_once $cmState;
-    cmBlockDisabledModule();
-}
-unset($cmState);
 
 spl_autoload_register(function ($class) {
     if (strpos($class, 'Lite\\') === 0) {

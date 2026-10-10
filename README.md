@@ -1,13 +1,8 @@
 # ianseo-lite
 
 ScorekeeperNG(ISK-NG)で得点を入力できる、**予選だけ・1セッションだけ**の記録会向けの簡易システムです。
-本家 ianseo とは独立していて(本家の DB・`Common/` などには依存しません)、このフォルダだけで動きます。
-
-**置き場所は `Modules/Custom/ianseo-lite/`** です。ianseo 本体の更新は `Modules/Custom/` を触らないので(`Update/FileList.php`)、
-更新しても消えません。メニューの「モジュール」→「ianseo-lite（簡易記録会）」から管理画面を開けます。
-カスタムモジュール管理(`Modules/Custom/ModuleManager`)の有効/無効の切り替えにも対応します(無効にすると管理画面と端末 API が 403 になります)。
-`data/`(SQLite の DB)と `config.local.php` はモジュールの更新でも残る設定にしています(`module.json` の `keep`)。
-単体で別の場所に置いて動かすこともできます。
+本家 ianseo とは独立した単体のシステムで(本家の DB・`Common/` などには依存しません)、このフォルダだけで動きます。
+もとは ianseo のカスタムモジュールでしたが、0.16.0 で独立させました。版ごとの変更は `CHANGELOG.md` にあります。
 
 - バックエンド: **PHP + SQLite**(MySQL・Apache の専用設定は不要)
 - 入力クライアント: 既存の **ScorekeeperNG**(モード: **Lite**)
@@ -20,15 +15,16 @@ ScorekeeperNG(ISK-NG)で得点を入力できる、**予選だけ・1セッシ�
 本家 ianseo の ISK-NG Lite モードの通信(`Api/ISK-NG/v1/*`)を、予選に必要な部分だけ SQLite 上に再実装しています。
 個人戦/団体戦のマッチ・エリミネーション・ゲート・Pro/Live モードは対象外です。
 
-## 入れ方(ianseo の Modules/Custom に置く場合)
+## 入れ方
+
+Web サーバー(PHP が動く場所)の公開フォルダに置きます。
 
 ```sh
-cd <ianseo>/Modules/Custom
+cd <公開フォルダ>
 git clone https://github.com/e-donkun/ianseo-lite
 ```
 
-更新するときは `git pull`(`data/` と `config.local.php` は Git 管理外なので残ります)。zip で入れる場合は
-ianseo の「カスタムモジュール」→「新規追加」から、`ianseo-lite` フォルダの zip を指定します。
+更新するときは `git pull`(`data/` と `config.local.php` は Git 管理外なので残ります)。GitHub への push で自動更新する方法は下の「サーバーへの自動反映」を参照。
 
 ## 必要なもの
 
@@ -37,13 +33,13 @@ ianseo の「カスタムモジュール」→「新規追加」から、`ianseo
 
 ## 起動
 
-ianseo と同じ Web サーバー(XAMPP など)に置いてある場合は、そのまま
-`http://<サーバー>/<ianseoのパス>/Modules/Custom/ianseo-lite/admin/` を開きます(ianseo のメニューからもリンクしています)。
+Web サーバー(XAMPP など)に置いた場合は、`http://<サーバー>/<置いたパス>/ianseo-lite/`(参加者向け)と
+`…/ianseo-lite/admin/`(管理画面)を開きます。
 
-ianseo を使わず単体で試すだけなら、PHP の組み込みサーバーで足ります。
+手元で試すだけなら、PHP の組み込みサーバーで足ります。
 
 ```sh
-cd Modules/Custom/ianseo-lite
+cd ianseo-lite
 php -S 0.0.0.0:8080 -t .
 # → http://<このPCのIP>:8080/        参加者向けの記録会一覧(右上の「ログイン」、各記録会の結果の右上の「設定」から管理画面へ)
 # → http://<このPCのIP>:8080/admin/  管理画面(管理者メニュー)
@@ -136,7 +132,7 @@ Webhook の署名(Secret)を確かめてから動くので、ほかの人がこ�
 `https://github.com/...` で clone して認証情報を保存している場合は、そのままで構いません
 (サーバーで `GIT_TERMINAL_PROMPT=0 git pull --ff-only origin main` が入力なしで通れば OK。下の 1・2 と `deploy_ssh_key` は不要)。
 そうでなければ、**読み取り専用の鍵(Deploy key)**を置きます。以下は さくらのレンタルサーバ の例です
-(`<ユーザー名>` はサーバーのアカウント名、`~/www/ianseo-lite` は置き場所。ianseo の `Modules/Custom/ianseo-lite` に置くならそのパス)。
+(`<ユーザー名>` はサーバーのアカウント名、`~/www/ianseo-lite` は置き場所)。
 
 1. **SSH でサーバーに入り、鍵を作る**
    ```sh
@@ -183,9 +179,8 @@ php tests/run.php        # (このフォルダで実行) ScorekeeperNG との通
 ## 構成
 
 ```
-Modules/Custom/ianseo-lite/
-├─ module.json            カスタムモジュール管理用のパッケージ情報
-├─ menu.php               ianseo のメニュー「モジュール」にリンクを追加
+ianseo-lite/
+├─ CHANGELOG.md           版ごとの変更の履歴(いまの版は src/bootstrap.php の LITE_VERSION)
 ├─ index.php              入口(端末のPOSTはAPI、ブラウザには記録会結果)
 ├─ results.php            参加者向けの記録会結果(公開にした記録会だけ。ログイン不要。トップ / を開いてもこれが出る)
 ├─ deploy.php             GitHub の Webhook を受けて git pull(サーバーへの自動反映。Secret を設定したときだけ動く)
