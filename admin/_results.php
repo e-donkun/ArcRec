@@ -68,7 +68,9 @@ function results_page($code, $public)
     if (isset($_GET['json'])) {
         json_out(results_data());
     }
-    page_head('記録会結果', 'results', ['public' => $public, 'base' => $public ? 'admin/' : '', 'gear' => $public ? 'admin/index.php' : '',
+    // 公開ページの右上は「記録会一覧」(公開している記録会の一覧に戻る)
+    page_head('記録会結果', 'results', ['public' => $public, 'base' => $public ? 'admin/' : '',
+        'right' => $public ? '<a class="sp-appbar-btn" href="./?list=1" title="記録会一覧に戻る">' . icon('list') . '<span>記録会一覧</span></a>' : '',
         'js' => ['LiteRes' => results_data(), 'LiteCode' => $code, 'LitePublic' => $public]]);
     $adm = $public ? 'admin/' : '';
     if (!$public) {

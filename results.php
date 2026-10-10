@@ -20,7 +20,7 @@ foreach (Competitions::all() as $c) {
         $list[] = $c;
     }
 }
-if (count($list) === 1) {
+if (count($list) === 1 && !isset($_GET['list'])) {   // 1つだけなら、その結果へ(結果の画面の「記録会一覧」から来たときは一覧のまま)
     redirect('./?c=' . rawurlencode($list[0]['code']));
 }
 page_head('記録会一覧', '', ['public' => true, 'base' => 'admin/', 'gear' => 'admin/index.php']);
