@@ -415,7 +415,8 @@ class Pdf extends \TCPDF
         $pdf->SetXY(10, 10);
         $pdf->Cell(190, 8, Settings::title(), 0, 1, 'C');
         $pdf->f(9);
-        $pdf->Cell(190, 5, Settings::roundLabel(), 0, 1, 'C');
+        $upd = Results::lastUpdate();   // 点数の最終更新(まだ無ければ出さない)
+        $pdf->Cell(190, 5, Settings::roundLabel() . ($upd ? '（最終更新：' . substr($upd, 0, 16) . '）' : ''), 0, 1, 'C');
         $pdf->SetY($pdf->GetY() + 3);
         foreach ($groups as $g) {
             $pdf->resultsCategory($g);

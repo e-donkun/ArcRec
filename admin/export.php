@@ -31,10 +31,10 @@ switch ($what) {
         }
         csv_out('entries.csv', $rows);
     case 'results':
-        // 順位 | 的番号 | 選手氏名 | 所属 | 総合計 | 第1優先 | 第2優先 | (空) | 距離1のエンド 1〜n | 距離1の計 | (空) | 距離2 …
+        // 部門コード | 部門名 | 順位 | 的番号 | 選手氏名 | 所属 | 総合計 | 第1優先 | 第2優先 | (空) | 距離1のエンド 1〜n | 距離1の計 | (空) | 距離2 …
         $ends = Settings::ends();
         $nd = Settings::distances();
-        $head = ['順位', '的番号', '選手氏名', '所属', '総合計', Settings::tieLabel(1), Settings::tieLabel(2)];
+        $head = ['部門コード', '部門名', '順位', '的番号', '選手氏名', '所属', '総合計', Settings::tieLabel(1), Settings::tieLabel(2)];
         for ($d = 1; $d <= $nd; $d++) {
             $head[] = '';
             for ($i = 1; $i <= $ends; $i++) {
@@ -45,7 +45,7 @@ switch ($what) {
         $rows = [$head];
         foreach (Results::byCategory() as $g) {
             foreach ($g['rows'] as $r) {
-                $row = [$r['absent'] ? '欠' : ($r['rank'] ?? ''), $r['target'] ? $r['target'] . $r['letter'] : '', Entries::fullName($r), $r['affiliation'],
+                $row = [$g['category']['code'], $g['category']['name'], $r['absent'] ? '欠' : ($r['rank'] ?? ''), $r['target'] ? $r['target'] . $r['letter'] : '', Entries::fullName($r), $r['affiliation'],
                     $r['hits'] ? $r['score'] : '', $r['hits'] ? $r['golds'] : '', $r['hits'] ? $r['xs'] : ''];
                 for ($d = 1; $d <= $nd; $d++) {
                     $row[] = '';
