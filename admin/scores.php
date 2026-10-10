@@ -82,7 +82,7 @@ foreach (Entries::all() as $e) {
         . '<div class="sp-name">' . h(Entries::fullName($e)) . '<span class="sp-tag">' . h($e['category_name']) . '</span>' . ($e['locked'] ? '<span class="sp-tag warn">確定</span>' : '') . '</div>'
         . '<div class="sp-sub">' . h($e['affiliation']) . '</div></div>'
         . '<div class="sp-score">' . ($hits ? '<b>' . $score . '</b><div class="sp-sub">' . h($t1) . ':' . $g . ' ' . h($t2) . ':' . $x . '</div>' : '') . '</div>'
-        . '<a class="sp-btn sub sp-edit-btn" href="score_edit.php?id=' . $e['id'] . '">編集</a></div>'
+        . '<a class="sp-btn sub sp-edit-btn" href="score_edit.php?id=' . $e['id'] . '">' . ($e['locked'] ? '表示' : '編集') . '</a></div>'
         . '<div class="sp-progress"><span>' . ($e['updated_at'] ? '入力:' . h(ago($e['updated_at'])) : '未入力') . '</span><div class="bar"><i style="width:' . $pct . '%"></i></div></div>'
         . '<div class="sp-dists">' . implode('', array_map(function ($c) {
             return '<span>' . $c . '</span>';

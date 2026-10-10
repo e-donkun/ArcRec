@@ -58,6 +58,10 @@ if (isset($_GET['history'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // 確定済みは、管理画面からも編集しない(点数管理で確定を解除してから)
+    if ($e['locked']) {
+        json_out(['ok' => false, 'msg' => '確定済みのため編集できません(点数管理で確定を解除してください)']);
+    }
     // まず全距離を検証して、1つでも不正なら何も保存しない(画面からは Ajax で送る)
     $new = [];
     for ($d = 1; $d <= $nd; $d++) {
@@ -88,13 +92,13 @@ page_head('素点の編集', 'scores', ['body' => 'sp-has-keypad sp-score-edit',
     'right' => '<button type="button" class="sp-appbar-btn" id="ScHistBtn">' . icon('history') . '<span>更新履歴</span></button>',
     'js' => [
         'LiteSc' => [
-            'id' => (int)$e['id'], 'per' => $per, 'ends' => $ends, 'dists' => $dists, 'keys' => $keys,
+            'id' => (int)$e['id'], 'locked' => (bool)$e['locked'], 'per' => $per, 'ends' => $ends, 'dists' => $dists, 'keys' => $keys,
             'tie1' => Settings::tieChars(1), 'tie2' => Settings::tieChars(2),
             'tie1Label' => Settings::tieLabel(1), 'tie2Label' => Settings::tieLabel(2),
         ],
     ]]);
 if ($e['locked']) {
-    echo '<div class="sp-flash warn">このスコアカードは確定済みです(管理画面からは編集できます)。</div>';
+    echo '<div class="sp-flash warn">このスコアカードは確定済みのため編集できません(点数管理で「全員の確定を解除」すると編集できます)。</div>';
 }
 // 参加者と合計のカードは、スクロールしても上部バーの下に固定する
 echo '<div class="sp-card sp-sticky-card" id="ScHead"><div class="sp-card-head"><span class="sp-badge' . ($pos ? '' : ' none') . '">' . h($pos ?: '-') . '</span><div class="sp-card-main">'
@@ -147,7 +151,7 @@ echo '<table class="sp-sc sp-sc-edit" id="ScTable"></table>';
 			for (let j = 0; j < C.per; j++) {
 				const i = e * C.per + j, c = model[dist][i];
 				const changed = c !== base[dist][i];
-				h += '<td><button type="button" class="sp-cell' + (i === sel ? ' sel' : '') + (changed ? ' changed' : '') + '" data-i="' + i + '">' + (c && c !== ' ' ? spEsc(disp[c] || c) : '') + '</button></td>';
+				h += '<td><button type="button" class="sp-cell' + (i === sel && !C.locked ? ' sel' : '') + (changed ? ' changed' : '') + '" data-i="' + i + '">' + (c && c !== ' ' ? spEsc(disp[c] || c) : '') + '</button></td>';
 			}
 			h += '<td class="tot">' + (s === null ? '' : s) + '</td><td class="run">' + (s === null ? '' : run) + '</td></tr>';
 		}
@@ -164,11 +168,13 @@ echo '<table class="sp-sc sp-sc-edit" id="ScTable"></table>';
 		t.innerHTML = tot;
 		t.style.gridTemplateColumns = 'repeat(' + (C.dists.length > 1 ? 5 : 3) + ', 1fr)';
 		// 下のボタン: 編集前は「戻る」「編集内容を保存(押せない)」、編集したら「編集内容を保存せず戻る」「編集内容を保存」
+		if (C.locked) return;   // 確定済み: 見るだけ
 		const d = dirty();
 		document.getElementById('ScBack').textContent = d ? '編集内容を保存せず戻る' : '戻る';
 		document.getElementById('ScSave').disabled = !d || saving;
 	}
 	function select(i) {
+		if (C.locked) return;
 		const n = C.ends * C.per;
 		sel = Math.max(0, Math.min(n - 1, i));
 		render();
@@ -202,7 +208,9 @@ echo '<table class="sp-sc sp-sc-edit" id="ScTable"></table>';
 	}
 	// キーパッド: 的面の色の点ボタン(3列)、素点削除・エンド削除、その下に 戻る・編集内容を保存
 	const pad = document.getElementById('ScPad');
-	pad.innerHTML = C.keys.map(k => '<button type="button" data-k="' + k.l + '" style="background:' + k.bg + ';color:' + k.fg + '">' + spEsc(k.p) + '</button>').join('')
+	// 確定済みは編集できないので「戻る」だけ
+	if (C.locked) pad.innerHTML = '<div class="sp-pad-row nav"><button type="button" class="fn back" id="ScBack" data-fn="back">戻る</button></div>';
+	else pad.innerHTML = C.keys.map(k => '<button type="button" data-k="' + k.l + '" style="background:' + k.bg + ';color:' + k.fg + '">' + spEsc(k.p) + '</button>').join('')
 		+ '<div class="sp-pad-row"><button type="button" class="fn" data-fn="del">素点削除</button><button type="button" class="fn" data-fn="end">エンド削除</button></div>'
 		+ '<div class="sp-pad-row nav"><button type="button" class="fn back" id="ScBack" data-fn="back">戻る</button><button type="button" class="fn save" id="ScSave" data-fn="save" disabled>編集内容を保存</button></div>';
 	pad.addEventListener('click', ev => {
