@@ -15,7 +15,6 @@ class Pdf extends \TCPDF
     const FONT = 'komorebigothic';
 
     private $footerText = '';
-    private $qrBase = null;
 
     public function __construct($title)
     {
@@ -46,198 +45,269 @@ class Pdf extends \TCPDF
         $this->SetFont(self::FONT, '', $size);
     }
 
-    // ================================================================ スコアカード
+    /** 数字・英字だけの欄(得点・的番号など)は Helvetica(本体と同じ字形) */
+    private function n($size, $style = '')
+    {
+        $this->SetFont('helvetica', $style, $size);
+    }
+
+    // ================================================================ スコアカード(ianseo 本体の予選スコアカードと同じ形)
 
     /**
+     * 白紙: 1 距離 1 枚。的ごとにページを分け、立ち数で 1 ページの枚数を決める(本体と同じ)
+     *   1〜2 人 → A4 横に 2 枚、3・5・6 人 → A4 横に 3 枚、4 人 → A4 縦に 2×2。ページ下(縦は中央)にその的の QR。
+     * 素点入力済: 1 人 1 ページ(A4 横)に、距離ごとのカードを並べる。署名欄は出さない(本体と同じ)。
      * @param array $entries Entries::all() 形式の配列
-     * @param bool $filled true: 入力済みの得点を印字 / false: 記入用の白紙
      */
     public static function scorecards(array $entries, $filled, $baseUrl = null)
     {
         $pdf = new self('スコアカード');
-        $pdf->qrBase = $baseUrl;
-        $rows = Settings::ends() * Settings::distances();
-        $perPage = $rows <= 13 ? 2 : 1;
-        $cardH = $perPage === 2 ? 136 : 273;
-        $i = 0;
-        foreach ($entries as $e) {
-            if ($i % $perPage === 0) {
-                $pdf->AddPage();
+        $pdf->setPrintFooter(false);
+        $pdf->SetLineWidth(0.1);
+        $pdf->SetDrawColor(51);
+        $nd = Settings::distances();
+        if ($filled) {
+            $lay = self::cardLayout(2, false);
+            foreach ($entries as $e) {
+                $pdf->AddPage($lay['o']);
+                $pdf->pageHeader();
+                for ($d = 1; $d <= $nd; $d++) {
+                    list($x, $y, $w, $h) = $lay['slots'][$d - 1];
+                    $pdf->card($x, $y, $w, $h, $e, $d, true);
+                }
             }
-            $y = 12 + ($i % $perPage) * 137;
-            $pdf->card($e, $y, $cardH, $filled);
-            if ($perPage === 2 && $i % 2 === 0) {
-                $pdf->SetLineStyle(['width' => 0.2, 'dash' => '2,2', 'color' => [150, 150, 150]]);
-                $pdf->Line(10, 12 + 136.5, 200, 12 + 136.5);
-                $pdf->SetLineStyle(['width' => 0.2, 'dash' => 0, 'color' => [0, 0, 0]]);
+        } else {
+            $lay = self::cardLayout(Settings::perTarget(), (bool)$baseUrl);
+            $n = count($lay['slots']);
+            // ページ: [的番号, [スロット => 選手]]。的のない選手は最後に詰めて並べる
+            $pages = [];
+            $loose = [];
+            $letters = array_flip(Settings::letters());
+            foreach ($entries as $e) {
+                $li = $letters[$e['letter']] ?? null;
+                if (!$e['target'] || $li === null) {
+                    $loose[] = $e;
+                    continue;
+                }
+                $pages[$e['target'] . '-' . intdiv($li, $n)]['t'] = (int)$e['target'];
+                $pages[$e['target'] . '-' . intdiv($li, $n)]['cards'][$li % $n] = $e;
             }
-            $i++;
+            ksort($pages, SORT_NATURAL);
+            foreach (array_chunk($loose, $n) as $chunk) {
+                $pages[] = ['t' => 0, 'cards' => $chunk];
+            }
+            for ($d = 1; $d <= $nd; $d++) {
+                foreach ($pages as $p) {
+                    $pdf->AddPage($lay['o']);
+                    $pdf->pageHeader();
+                    foreach ($p['cards'] as $k => $e) {
+                        list($x, $y, $w, $h) = $lay['slots'][$k];
+                        $pdf->card($x, $y, $w, $h, $e, $d, false);
+                    }
+                    if ($baseUrl && $p['t']) {
+                        // この的を端末に読ませる QR(2 距離のときは、その距離を指定した QR)
+                        list($qx, $qy, $qs) = $lay['qr'];
+                        $mode = $nd > 1 ? $d : 0;
+                        $pdf->Rect($qx - 1.5, $qy - 1.5, $qs + 3, $qs + 3);
+                        $pdf->write2DBarcode(Connect::targetPayload($baseUrl, $p['t'], $mode), 'QRCODE,M', $qx, $qy, $qs, $qs,
+                            ['border' => false, 'padding' => 0, 'fgcolor' => [0, 0, 0], 'bgcolor' => false], 'N');
+                        $pdf->f(7);
+                        $pdf->SetXY($qx - 10, $qy + $qs + 1.6);
+                        $pdf->Cell($qs + 20, 3, Connect::targetLabel($p['t'], $mode), 0, 0, 'C');
+                    }
+                }
+            }
         }
-        if ($i === 0) {
+        if (!$pdf->getNumPages()) {
             $pdf->AddPage();
             $pdf->f(12);
-            $pdf->Cell(0, 10, '出力する選手がいません', 0, 1);
+            $pdf->Cell(0, 10, '出力する参加者がいません', 0, 1);
         }
         return $pdf->Output('scorecards.pdf', 'S');
     }
 
-    private function card(array $e, $y0, $cardH, $filled)
+    /** 1 ページのカードの位置 [x, y, 幅, 高さ] と QR の位置 [x, y, 大きさ](本体の CreateSessionScorecard と同じ割り付け) */
+    private static function cardLayout($perTarget, $qr)
     {
-        $x0 = 15;
-        $W = 180;
-        $per = Settings::arrowsPerEnd();
-        $ends = Settings::ends();
-
-        // ---- 見出し
-        $this->f(12);
-        $this->SetXY($x0, $y0);
-        $this->Cell(120, 6, Settings::title(), 0, 1, 'L');
-
-        $this->f(9);
-        $this->SetXY($x0, $y0 + 6);
-        $this->Cell(120, 5, trim('スコアカード  ' . $this->categoryLabel($e) . '  ' . Settings::distanceSummary()), 0, 0, 'L');
-
-        // 的番号の大きな枠(「1A」の形で)
-        $pos = $e['target'] ? $e['target'] . $e['letter'] : '--';
-        $this->SetFillColor(235, 235, 235);
-        $this->Rect($x0 + $W - 34, $y0 + 6, 34, 15, 'DF');
-        $this->f(8);
-        $this->SetXY($x0 + $W - 34, $y0 + 6.3);
-        $this->Cell(34, 3.5, '立順', 0, 0, 'C');
-        $this->f(18);
-        $this->SetXY($x0 + $W - 34, $y0 + 10);
-        $this->Cell(34, 9, $pos, 0, 0, 'C');
-
-        $this->f(15);
-        $this->SetXY($x0, $y0 + 12);
-        $this->Cell(76, 9, Entries::fullName($e), 'B', 0, 'L');
-        $this->f(10);
-        $this->Cell(50, 9, mb_strimwidth($e['affiliation'], 0, 24, '…'), 'B', 0, 'L');
-
-        // この的を端末に読ませる QR(的を指定する形式)
-        if ($this->qrBase && $e['target']) {
-            $this->write2DBarcode(Connect::targetPayload($this->qrBase, $e['target']), 'QRCODE,L',
-                $x0 + 128, $y0 + 4.5, 16, 16, ['border' => false, 'padding' => 0, 'fgcolor' => [0, 0, 0], 'bgcolor' => false], 'N');
+        $top = 26;
+        $qs = 25;
+        if ($perTarget === 4) {
+            // A4 縦に 2×2。QR は上下のカードの間
+            $w = 90;
+            $gap = $qr ? $qs + 5 : 8;
+            $h = (297 - $top - 8 - $gap) / 2;
+            $y2 = $top + $h + $gap;
+            return ['o' => 'P', 'slots' => [[10, $top, $w, $h], [110, $top, $w, $h], [10, $y2, $w, $h], [110, $y2, $w, $h]],
+                'qr' => [(210 - $qs) / 2, $top + $h + ($gap - $qs) / 2, $qs]];
         }
-
-        // ---- 表(距離ごとにエンドを並べ、2 距離のときは距離ごとの小計の行を入れる)
-        $nd = Settings::distances();
-        $units = 6 + 1.2 * $per;
-        $u = $W / $units;
-        $wEnd = $u;
-        $wArrow = $u * 1.2;
-        $wSub = $u * 1.4;
-        $wRun = $u * 1.4;
-        $wGold = $u * 1.1;
-        $wX = $u * 1.1;
-
-        $yT = $y0 + 24;
-        $hHead = 6;
-        $hDist = 6;
-        $hTotal = 7;
-        $reserved = $hTotal + ($nd > 1 ? $nd * $hDist : 0) + 13 + 4; // 合計行・距離小計・署名欄・余白
-        $rowH = max(5.5, min(10, ($cardH - 24 - $hHead - $reserved) / ($ends * $nd)));
-
-        $this->SetFillColor(225, 225, 225);
-        $this->f(8);
-        $this->SetXY($x0, $yT);
-        $this->Cell($wEnd, $hHead, 'エンド', 1, 0, 'C', true);
-        for ($a = 1; $a <= $per; $a++) {
-            $this->Cell($wArrow, $hHead, (string)$a, 1, 0, 'C', true);
+        $h = $qr ? 210 - $top - $qs - 16 : 210 - $top - 8;
+        $qrPos = [(297 - $qs) / 2, $top + $h + 5, $qs];
+        if ($perTarget <= 2) {
+            $w = (297 - 90) / 2;
+            return ['o' => 'L', 'slots' => [[30, $top, $w, $h], [60 + $w, $top, $w, $h]], 'qr' => $qrPos];
         }
-        $this->Cell($wSub, $hHead, '小計', 1, 0, 'C', true);
-        $this->Cell($wRun, $hHead, '累計', 1, 0, 'C', true);
-        $this->Cell($wGold, $hHead, Settings::tieLabel(1), 1, 0, 'C', true);
-        $this->Cell($wX, $hHead, Settings::tieLabel(2), 1, 1, 'C', true);
-
-        $run = 0;
-        $tGold = 0;
-        $tX = 0;
-        $tScore = 0;
-        $y = $yT + $hHead;
-        for ($d = 1; $d <= $nd; $d++) {
-            $arrows = Entries::arrows($e, $d);
-            $dScore = $dGold = $dX = 0;
-            for ($n = 1; $n <= $ends; $n++) {
-                $s = Scoring::endString($arrows, $n, $per);
-                $has = $filled && trim($s) !== '';
-                $this->SetXY($x0, $y);
-                $this->f(9);
-                $this->Cell($wEnd, $rowH, (string)$n, 1, 0, 'C');
-                for ($a = 0; $a < $per; $a++) {
-                    $ch = $has ? ($s[$a] ?? ' ') : ' ';
-                    $txt = trim($ch) === '' ? '' : Scoring::display($ch);
-                    $gold = $txt !== '' && strpos(Scoring::GOLD_CHARS, strtoupper($ch)) !== false;
-                    if ($gold) {
-                        $this->SetFillColor(250, 232, 120);
-                    }
-                    $this->f(12);
-                    $this->Cell($wArrow, $rowH, $txt, 1, 0, 'C', $gold);
-                    $this->SetFillColor(225, 225, 225);
-                }
-                $this->f(11);
-                if ($has) {
-                    list($sc, $g, $x) = Scoring::total($s);
-                    $run += $sc;
-                    $dScore += $sc;
-                    $dGold += $g;
-                    $dX += $x;
-                    $this->Cell($wSub, $rowH, (string)$sc, 1, 0, 'C');
-                    $this->Cell($wRun, $rowH, (string)$run, 1, 0, 'C');
-                    $this->Cell($wGold, $rowH, (string)$g, 1, 0, 'C');
-                    $this->Cell($wX, $rowH, (string)$x, 1, 1, 'C');
-                } else {
-                    $this->Cell($wSub, $rowH, '', 1, 0);
-                    $this->Cell($wRun, $rowH, '', 1, 0);
-                    $this->Cell($wGold, $rowH, '', 1, 0);
-                    $this->Cell($wX, $rowH, '', 1, 1);
-                }
-                $y += $rowH;
-            }
-            $tScore += $dScore;
-            $tGold += $dGold;
-            $tX += $dX;
-            if ($nd > 1) {
-                // 距離ごとの小計
-                $this->SetXY($x0, $y);
-                $this->SetFillColor(240, 240, 240);
-                $this->f(9);
-                $showDist = $filled && trim($arrows) !== '';
-                $this->Cell($wEnd + $wArrow * $per, $hDist, (Settings::distanceName($d) ?: '距離' . $d) . ' 小計', 1, 0, 'C', true);
-                $this->f(11);
-                $this->Cell($wSub + $wRun, $hDist, $showDist ? (string)$dScore : '', 1, 0, 'C', true);
-                $this->Cell($wGold, $hDist, $showDist ? (string)$dGold : '', 1, 0, 'C', true);
-                $this->Cell($wX, $hDist, $showDist ? (string)$dX : '', 1, 1, 'C', true);
-                $this->SetFillColor(225, 225, 225);
-                $y += $hDist;
-            }
-        }
-
-        // 合計行
-        $this->SetXY($x0, $y);
-        $this->SetFillColor(240, 240, 240);
-        $this->f(10);
-        $this->Cell($wEnd + $wArrow * $per, $hTotal, '合 計', 1, 0, 'C', true);
-        $this->f(13);
-        $showTotal = $filled && trim(Entries::allArrows($e)) !== '';
-        $this->Cell($wSub + $wRun, $hTotal, $showTotal ? (string)$tScore : '', 1, 0, 'C', true);
-        $this->f(11);
-        $this->Cell($wGold, $hTotal, $showTotal ? (string)$tGold : '', 1, 0, 'C', true);
-        $this->Cell($wX, $hTotal, $showTotal ? (string)$tX : '', 1, 1, 'C', true);
-
-        // 署名欄
-        $y += $hTotal + 2;
-        $this->f(8);
-        $half = $W / 2 - 2;
-        $this->SetXY($x0, $y);
-        $this->Cell($half, 11, '選手署名', 1, 0, 'L');
-        $this->SetXY($x0 + $W / 2 + 2, $y);
-        $this->Cell($half, 11, '記録員署名', 1, 0, 'L');
+        $w = (297 - 40) / 3;
+        return ['o' => 'L', 'slots' => [[10, $top, $w, $h], [20 + $w, $top, $w, $h], [30 + 2 * $w, $top, $w, $h]], 'qr' => $qrPos];
     }
 
-    private function categoryLabel(array $e)
+    /** ページ上の見出し(記録会名と記録会コード・競技形式) */
+    private function pageHeader()
     {
-        return (string)($e['category_name'] ?? '');
+        $this->SetTextColor(0);
+        $this->f(15);
+        $this->SetXY(10, 7);
+        $this->Cell(270, 7, Settings::title(), 0, 0, 'L');
+        $this->f(9);
+        $this->SetXY(10, 15);
+        $this->Cell(270, 4.5, '(' . Settings::code() . ')  ' . Settings::roundLabel(), 0, 0, 'L');
+    }
+
+    /**
+     * スコアカード 1 枚(1 距離)。寸法は本体の DrawScoreNew と同じ考え方:
+     * 列の幅 CW = 幅 / (1 行の矢数 + 5)。6 射のエンドは 3 射ずつ 2 行にして、エンド番号を 2 行ぶんにまとめる。
+     * 列: エンド 0.8 | 矢 1 × n | 小計 | 累計 | 第1優先 0.7 | 第2優先 0.7
+     */
+    private function card($x0, $y0, $W, $H, array $e, $d, $filled)
+    {
+        $per = Settings::arrowsPerEnd();
+        $ends = Settings::ends();
+        $split = $per === 6 && $ends <= 7;
+        $cols = $split ? 3 : $per;
+        $rowsPerEnd = $split ? 2 : 1;
+        $nRows = $ends * $rowsPerEnd;
+        $CW = floor(10 * $W / ($cols + 5)) / 10;
+        $W = $CW * ($cols + 5);
+        $endW = 0.8 * $CW;
+        $totCellW = 1.4 * $CW;
+        $sumW = $totCellW * ($per >= 6 ? 3 / 4 : 1);
+        $totW = $totCellW * ($per >= 6 ? 5 / 4 : 1);
+        $tieW = 0.7 * $CW;
+        $sig = $filled ? 0 : 12;
+        $tableTop = $y0 + 14;
+        $CH = floor(10 * min(10, ($H - 14 - $sig - 4) / ($nRows + 2.2))) / 10;
+        $std = min(10, $CH * 2);
+        $fill = function ($light = false) {
+            $this->SetFillColor($light ? 248 : 232);
+        };
+
+        // ---- 名前・所属と、右の的番号・部門の枠
+        $boxW = 1.4 * $CW;
+        $fill();
+        $this->SetXY($x0 + $W - $boxW, $y0);
+        $this->n(17, 'B');
+        $this->Cell($boxW, 8.75, $e['target'] ? $e['target'] . $e['letter'] : '', 'B', 0, 'C', true);
+        $this->SetXY($x0 + $W - $boxW, $y0 + 9);
+        $this->n(7, 'B');
+        $this->Cell($boxW, 4, (string)($e['category_code'] ?: $e['category_name']), 0, 0, 'C', true);
+        $lineW = $W - $boxW - 4;
+        foreach ([[2, '選手名:', Entries::fullName($e), 11], [8.6, '所属先:', (string)$e['affiliation'], 9]] as $r) {
+            $this->SetXY($x0 + 2, $y0 + $r[0]);
+            $this->f(6.5);
+            $this->Cell(10, 5, $r[1], 'B', 0, 'L');
+            $this->f($r[3]);
+            $this->Cell($lineW - 10, 5, $r[2], 'B', 0, 'L');
+        }
+
+        // ---- 表の見出し(1 行目: 距離名 | 矢番号 | 帯、2 行目: 小計・累計・第1/第2優先)
+        $y = $tableTop;
+        $fill(true);
+        $this->SetXY($x0, $y);
+        $this->f(min(8, $std * 0.8));
+        $this->Cell($endW, $CH, Settings::distances() > 1 ? Settings::distanceName($d) : '', 0, 0, 'C', true);
+        $fill();
+        $this->n($std, 'B');
+        for ($a = 1; $a <= $cols; $a++) {
+            $this->Cell($CW, $CH, (string)$a, 1, 0, 'C', true);
+        }
+        $rx = $this->GetX();
+        $restW = $sumW + $totW + 2 * $tieW;
+        $this->Cell($restW, $CH / 2, '', 1, 0, 'C', true);
+        $this->SetXY($rx, $y + $CH / 2);
+        $this->f(max(5, $std * 0.65));
+        $this->Cell($sumW, $CH / 2, '小計', 1, 0, 'C', true);
+        $this->Cell($totW, $CH / 2, '累計', 1, 0, 'C', true);
+        $this->n(max(5, $std * 0.65));
+        $this->Cell($tieW, $CH / 2, Settings::tieLabel(1), 1, 0, 'C', true);
+        $this->Cell($tieW, $CH / 2, Settings::tieLabel(2), 1, 0, 'C', true);
+        $y += $CH;
+
+        // ---- エンドの行
+        $arrows = Entries::arrows($e, $d);
+        $run = 0;
+        $show = function ($v) use ($filled) {
+            return $filled && $v !== null && $v !== 0 ? (string)$v : '';
+        };
+        for ($i = 0; $i < $nRows; $i++) {
+            $end = intdiv($i, $rowsPerEnd) + 1;
+            $half = $i % $rowsPerEnd;
+            $s = Scoring::endString($arrows, $end, $per);
+            $part = (string)substr(str_pad($s, $per), $half * $cols, $cols);
+            $has = $filled && trim($part) !== '';
+            $this->SetXY($x0, $y);
+            if ($half === 0) {
+                $fill();
+                $this->n($std, 'B');
+                $this->Cell($endW, $CH * $rowsPerEnd, (string)$end, 1, 0, 'C', true);
+            } else {
+                $this->SetX($x0 + $endW);
+            }
+            $this->n($std * 0.9);
+            for ($a = 0; $a < $cols; $a++) {
+                $ch = $part[$a] ?? ' ';
+                $this->Cell($CW, $CH, $has && trim($ch) !== '' ? Scoring::display($ch) : '', 1, 0, 'C');
+            }
+            list($sc, $g, $xx) = $has ? Scoring::total($part) : [0, 0, 0];
+            $this->Cell($sumW, $CH, $has ? (string)$sc : '', 1, 0, 'C');
+            $endDone = $filled && trim($s) !== '' && $half === $rowsPerEnd - 1;
+            if ($endDone) {
+                $endTotal = Scoring::total($s)[0];
+                $run += $endTotal;
+            }
+            if ($split && $half === 0) {
+                // 6 射のエンドの 1 行目: 累計の欄は斜線
+                $cx = $this->GetX();
+                $this->Cell($totW, $CH, '', 1, 0, 'C');
+                $this->Line($cx, $y, $cx + $totW, $y + $CH);
+                $this->Line($cx, $y + $CH, $cx + $totW, $y);
+            } elseif ($split) {
+                // 2 行目: エンドの合計 | 累計
+                $this->Cell($totCellW / 2, $CH, $endDone ? (string)$endTotal : '', 1, 0, 'C');
+                $this->Cell($totCellW * 3 / 4, $CH, $endDone ? (string)$run : '', 1, 0, 'C');
+            } else {
+                $this->Cell($totW, $CH, $endDone ? (string)$run : '', 1, 0, 'C');
+            }
+            $this->n($std * 0.8);
+            $this->Cell($tieW, $CH, $show($has ? $g : null), 1, 0, 'C');
+            $this->Cell($tieW, $CH, $show($has ? $xx : null), 1, 0, 'C');
+            $y += $CH;
+        }
+
+        // ---- 総計の行(累計の列の下に合計、第1/第2優先の下にそれぞれの数)
+        list($tScore, $tGold, $tX, $hits) = Scoring::total($arrows);
+        $boxTotW = $split ? $totCellW * 3 / 4 : $totW;
+        $bx = $x0 + $W - 2 * $tieW - $boxTotW;
+        $this->SetXY($x0, $y);
+        $this->f(11);
+        $this->Cell($bx - $x0 - 2, $CH, '総計', 0, 0, 'R');
+        $this->SetX($bx);
+        $this->n(11, 'B');
+        $has = $filled && $hits;
+        $this->Cell($boxTotW, $CH, $has ? (string)$tScore : '', 1, 0, 'C');
+        $this->n(9, 'B');
+        $this->Cell($tieW, $CH, $has ? (string)$tGold : '', 1, 0, 'C');
+        $this->Cell($tieW, $CH, $has ? (string)$tX : '', 1, 0, 'C');
+
+        // ---- 署名欄(白紙のとき)
+        if (!$filled) {
+            $sy = $y0 + $H - 4;
+            $this->SetDrawColor(120);
+            $this->f(6);
+            $this->SetXY($x0 + 4, $sy);
+            $this->Cell($W / 2 - 7, 3, '選手名', 'T', 0, 'C');
+            $this->SetX($this->GetX() + 6);
+            $this->Cell($W / 2 - 7, 3, '記録者', 'T', 0, 'C');
+            $this->SetDrawColor(51);
+        }
     }
 
     // ================================================================ 的のQR一覧
@@ -287,26 +357,64 @@ class Pdf extends \TCPDF
 
     // ================================================================ 結果
 
-    /** @param array $groups Results::byCategory() の戻り値 */
+    /**
+     * 結果(A4 縦の成績表)。部門ごとに、順位 | 選手氏名 | 所属 | 距離ごと(前半・後半)と合計の 得点・第1優先・第2優先。
+     * @param array $groups Results::byCategory() の戻り値
+     */
     public static function results(array $groups)
     {
         $pdf = new self('結果');
+        $pdf->SetLineWidth(0.2);
+        $pdf->SetDrawColor(0);
+        $nd = Settings::distances();
+        // 列の幅(合わせて 190mm)。1 距離のときは合計だけ
+        $pdf->cols = $nd > 1
+            ? ['rank' => 10, 'name' => 30, 'aff' => 48, 'grp' => [15, 9.5, 9.5]]
+            : ['rank' => 12, 'name' => 44, 'aff' => 81, 'grp' => [23, 15, 15]];
+        $pdf->groupNames = $nd > 1 ? [Settings::distanceName(1), Settings::distanceName(2), '合計'] : ['合計'];
         $pdf->AddPage();
-        $pdf->resultsHeader();
+        $pdf->f(16);
+        $pdf->SetXY(10, 10);
+        $pdf->Cell(190, 8, Settings::title() . '　成績', 0, 1, 'C');
+        $pdf->f(9);
+        $pdf->Cell(190, 5, Settings::roundLabel(), 0, 1, 'C');
+        $pdf->SetY($pdf->GetY() + 3);
+        $pdf->resultsHead();
         foreach ($groups as $g) {
             $pdf->resultsCategory($g);
         }
         return $pdf->Output('results.pdf', 'S');
     }
 
-    private function resultsHeader()
+    private $cols = [];
+    private $groupNames = [];
+    const RES_ROW = 5.6;
+    const RES_BOTTOM = 284;
+
+    /** 見出し(2 行): 順位・選手氏名・所属は 2 行ぶん、距離と合計は 得点・第1優先・第2優先 に分ける */
+    private function resultsHead()
     {
-        $this->f(16);
-        $this->SetXY(15, 12);
-        $this->Cell(180, 8, Settings::title(), 0, 1, 'C');
-        $this->f(12);
-        $this->Cell(180, 8, '記録会結果 ' . Settings::roundLabel(), 0, 1, 'C');
-        $this->Ln(2);
+        $h = 5;
+        $c = $this->cols;
+        $y = $this->GetY();
+        $this->f(10);
+        $this->SetXY(10, $y);
+        $this->Cell($c['rank'], 2 * $h, '順位', 1, 0, 'C');
+        $this->Cell($c['name'], 2 * $h, '選手氏名', 1, 0, 'C');
+        $this->Cell($c['aff'], 2 * $h, '所　属', 1, 0, 'C');
+        $gw = array_sum($c['grp']);
+        foreach ($this->groupNames as $i => $name) {
+            $x = 10 + $c['rank'] + $c['name'] + $c['aff'] + $i * $gw;
+            $this->f(10);
+            $this->SetXY($x, $y);
+            $this->Cell($gw, $h, $name, 1, 0, 'C');
+            $this->SetXY($x, $y + $h);
+            $this->Cell($c['grp'][0], $h, '得点', 1, 0, 'C');
+            $this->n(9);
+            $this->Cell($c['grp'][1], $h, Settings::tieLabel(1), 1, 0, 'C');
+            $this->Cell($c['grp'][2], $h, Settings::tieLabel(2), 1, 0, 'C');
+        }
+        $this->SetXY(10, $y + 2 * $h);
     }
 
     private function resultsCategory(array $g)
@@ -316,78 +424,46 @@ class Pdf extends \TCPDF
             return;
         }
         $nd = Settings::distances();
-
-        // 2 距離のときは距離ごとの合計の列を足す。余りは所属欄に回して 180mm に揃える
-        $w = ['rank' => 11, 'tgt' => 14, 'name' => 38, 'aff' => 0, 'total' => 17, 'gold' => 16, 'x' => 12];
-        if ($nd > 1) {
-            $w = array_merge(array_slice($w, 0, 4, true), ['d1' => 19, 'd2' => 19], array_slice($w, 4, null, true));
-        }
-        $w['aff'] = 180 - array_sum($w);
-        $rowH = 6.5;
-
-        $needed = 10 + 6 + $rowH * min(count($rows), 4);
-        if ($this->GetY() + $needed > 285) {
+        $c = $this->cols;
+        $h = self::RES_ROW;
+        // 部門名の行(部門名だけ表の下に残らないよう、2 行入らなければ次のページへ)
+        if ($this->GetY() + 3 * $h > self::RES_BOTTOM) {
             $this->AddPage();
+            $this->SetY(10);
+            $this->resultsHead();
         }
-
-        $this->f(11);
-        $this->SetFillColor(70, 90, 120);
-        $this->SetTextColor(255);
-        $this->SetX(15);
-        $this->Cell(180, 7, $g['category']['name'], 0, 1, 'L', true);
-        $this->SetTextColor(0);
-        $this->headRow($w, $nd);
-
+        $this->f(10);
+        $this->SetX(10);
+        $this->Cell(190, $h, $g['category']['name'], 0, 1, 'L');
         foreach ($rows as $r) {
-            if ($this->GetY() + $rowH > 285) {
+            if ($this->GetY() + $h > self::RES_BOTTOM) {
                 $this->AddPage();
+                $this->SetY(10);
+                $this->resultsHead();
                 $this->f(10);
-                $this->SetX(15);
-                $this->Cell(180, 6, $g['category']['name'] . '(続き)', 0, 1, 'L');
-                $this->headRow($w, $nd);
+                $this->SetX(10);
+                $this->Cell(190, $h, $g['category']['name'] . '(続き)', 0, 1, 'L');
             }
-            $this->SetX(15);
-            $this->f(9);
-            $rank = $r['rank'] === null ? '' : $r['rank'] . ($r['tie'] ? '*' : '');
-            $this->Cell($w['rank'], $rowH, $rank, 1, 0, 'C');
-            $this->Cell($w['tgt'], $rowH, $r['target'] ? $r['target'] . $r['letter'] : '', 1, 0, 'C');
-            $this->f(10);
-            $this->Cell($w['name'], $rowH, Entries::fullName($r), 1, 0, 'L');
-            $this->f(8);
-            $this->Cell($w['aff'], $rowH, mb_strimwidth($r['affiliation'], 0, 36, '…'), 1, 0, 'L');
-            $this->f(10);
+            $this->SetX(10);
+            $this->n(10);
+            $this->Cell($c['rank'], $h, $r['rank'] === null ? '' : (string)$r['rank'], 1, 0, 'C');
+            $this->f(10.5);
+            $this->Cell($c['name'], $h, Entries::fullName($r), 1, 0, 'C', false, '', 1);
+            $this->Cell($c['aff'], $h, (string)$r['affiliation'], 1, 0, 'C', false, '', 1);
+            $vals = [];
             if ($nd > 1) {
-                foreach ([1, 2] as $d) {
-                    $v = $r['dist_scores'][$d] ?? null;
-                    $this->Cell($w['d' . $d], $rowH, $v === null ? '' : (string)$v, 1, 0, 'C');
+                for ($d = 1; $d <= $nd; $d++) {
+                    $vals[] = Scoring::total(Entries::arrows($r, $d));
                 }
             }
-            $this->f(11);
-            $this->Cell($w['total'], $rowH, $r['hits'] ? (string)$r['score'] : '', 1, 0, 'C');
-            $this->f(10);
-            $this->Cell($w['gold'], $rowH, $r['hits'] ? (string)$r['golds'] : '', 1, 0, 'C');
-            $this->Cell($w['x'], $rowH, $r['hits'] ? (string)$r['xs'] : '', 1, 1, 'C');
+            $vals[] = [$r['score'], $r['golds'], $r['xs'], $r['hits']];
+            $this->n(10);
+            foreach ($vals as $v) {
+                foreach ([0, 1, 2] as $k) {
+                    $this->Cell($c['grp'][$k], $h, $v[3] ? (string)$v[$k] : '', 1, 0, 'R');
+                }
+            }
+            $this->Ln($h);
         }
-        $this->Ln(5);
-    }
-
-    private function headRow(array $w, $nd)
-    {
-        $this->SetFillColor(225, 225, 225);
-        $this->f(8);
-        $this->SetX(15);
-        $this->Cell($w['rank'], 6, '順位', 1, 0, 'C', true);
-        $this->Cell($w['tgt'], 6, '立順', 1, 0, 'C', true);
-        $this->Cell($w['name'], 6, '氏名', 1, 0, 'C', true);
-        $this->Cell($w['aff'], 6, '所属', 1, 0, 'C', true);
-        if ($nd > 1) {
-            $this->f(7);
-            $this->Cell($w['d1'], 6, Settings::distanceName(1) ?: '距離1', 1, 0, 'C', true);
-            $this->Cell($w['d2'], 6, Settings::distanceName(2) ?: '距離2', 1, 0, 'C', true);
-            $this->f(8);
-        }
-        $this->Cell($w['total'], 6, '合計', 1, 0, 'C', true);
-        $this->Cell($w['gold'], 6, Settings::tieLabel(1), 1, 0, 'C', true);
-        $this->Cell($w['x'], 6, Settings::tieLabel(2), 1, 1, 'C', true);
     }
 }
