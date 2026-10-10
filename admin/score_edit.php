@@ -98,7 +98,7 @@ page_head('素点の編集', 'scores', ['body' => 'sp-has-keypad sp-score-edit',
         ],
     ]]);
 if ($e['locked']) {
-    echo '<div class="sp-flash warn">このスコアカードは確定済みのため編集できません(点数管理で「全員の確定を解除」すると編集できます)。</div>';
+    echo '<div class="sp-flash warn">このスコアカードは確定済みのため編集できません。</div>';
 }
 // 参加者と合計のカードは、スクロールしても上部バーの下に固定する
 echo '<div class="sp-card sp-sticky-card" id="ScHead"><div class="sp-card-head"><span class="sp-badge' . ($pos ? '' : ' none') . '">' . h($pos ?: '-') . '</span><div class="sp-card-main">'
