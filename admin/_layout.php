@@ -166,7 +166,7 @@ function page_head($title, $tab = '', array $opts = [])
     // ホーム以外の管理画面は、左上に「<」(ホームに戻る)。'back' => [URL, 説明] で戻り先を変える
     $back = $opts['back'] ?? ($admin && basename($_SERVER['SCRIPT_NAME']) !== 'home.php' && empty($opts['noback']) ? ['home.php', 'ホームに戻る'] : null);
     if ($back && !empty($back[2])) {
-        // アイコンと表記のボタン(管理者画面ホームの「記録会一覧」)
+        // アイコンと表記のボタン(記録会管理ホームの「記録会一覧」)
         echo '<a class="sp-appbar-btn sp-appbar-left" href="' . h($back[0]) . '" title="' . h($back[1]) . '">' . icon($back[2]) . '<span>' . h($back[1]) . '</span></a>';
     } elseif ($back) {
         echo '<a class="sp-appbar-back" href="' . h($back[0]) . '" title="' . h($back[1]) . '" aria-label="' . h($back[1]) . '">'
@@ -395,7 +395,7 @@ HTML;
 /**
  * 公開ページ(トップ)の右上のボタン。シートのフォームは admin/index.php に送る。
  *   $code = null … 記録会一覧: 「ログイン」。管理者メニューへ
- *   $code = 記録会コード … 記録会結果: 「設定」。この記録会を開いている(または全体管理者)ならそのまま管理者画面ホームへ、
+ *   $code = 記録会コード … 記録会結果: 「設定」。この記録会を開いている(または全体管理者)ならそのまま記録会管理ホームへ、
  *                          そうでなければ個別パスワードのシート
  */
 function public_admin_button($code = null)
