@@ -23,6 +23,15 @@ class Settings
         2 => [1 => '40cm 10リング (1-10)', 2 => '40cm 三つ目 (6-10)'],
     ];
 
+    /**
+     * 同点のときの優先順位(ianseo の Points as 1st / 2nd Tie-Breaker)の初期値。屋外(1) / 屋内(2)。
+     * 合計点が同じなら、第1優先順位の点の本数 → 第2優先順位の点の本数 の多い順。
+     */
+    const TIE_DEFAULTS = [
+        1 => [1 => ['X'], 2 => ['10']],
+        2 => [1 => ['10'], 2 => ['9']],
+    ];
+
     /** 2距離のときの距離名の初期値(1距離のときは空欄) */
     const DEFAULT_DISTANCE_NAMES = [1 => '前半', 2 => '後半'];
 
@@ -37,8 +46,8 @@ class Settings
         'distance_name2' => '',
         'target_face1' => '',
         'target_face2' => '',
-        'gold_label' => '10+X',
-        'x_label' => 'X',
+        'tie1' => '',   // 第1優先順位(カンマ区切り。例 "10,X")。空なら競技形式(屋外/屋内)の初期値
+        'tie2' => '',   // 第2優先順位
         'archers_per_target' => '4',
         'admin_hash' => '',
         'api_log' => '0',
@@ -188,15 +197,73 @@ class Settings
         return self::FACES[self::category()];
     }
 
-    /** 距離ごとの的面ID。未設定や、競技形式に合わない値のときは選択肢の先頭 */
+    /** 的面ID(前半・後半とも同じ的)。未設定や、競技形式に合わない値のときは選択肢の先頭 */
     public static function targetFace($d = 1)
     {
         $opts = self::faceOptions();
-        $v = (int)self::get($d == 2 ? 'target_face2' : 'target_face1');
-        if (!isset($opts[$v]) && $d == 2) {
-            $v = (int)self::get('target_face1'); // 距離2が未設定なら距離1と同じ
-        }
+        $v = (int)self::get('target_face1');
         return isset($opts[$v]) ? $v : (int)array_key_first($opts);
+    }
+
+    // ------------------------------------------------------------ 同点のときの優先順位
+
+    /**
+     * 「10,X」のような入力を点の並び(['10', 'X'])にする。使える点は X・10〜1・M。
+     * 区切りはカンマ(全角・読点も可)か空白。重複は1つにまとめる。不正なら InvalidArgumentException
+     */
+    public static function parseTie($text)
+    {
+        $out = [];
+        foreach (preg_split('/[\s,，、+＋]+/u', mb_convert_kana(trim((string)$text), 'as'), -1, PREG_SPLIT_NO_EMPTY) as $t) {
+            $t = strtoupper($t);
+            if (Scoring::fromDisplay($t) === null) {
+                throw new \InvalidArgumentException('優先順位に使えない点です: ' . $t . '(X・10〜1・M をカンマ区切りで)');
+            }
+            if (!in_array($t, $out, true)) {
+                $out[] = $t;
+            }
+        }
+        if (!$out) {
+            throw new \InvalidArgumentException('優先順位を入力してください(例 X や 10,X)');
+        }
+        return $out;
+    }
+
+    /** 競技形式(屋外/屋内)ごとの初期値 */
+    public static function tieDefault($n, $category = null)
+    {
+        return self::TIE_DEFAULTS[$category ?: self::category()][$n == 2 ? 2 : 1];
+    }
+
+    /** 第1($n=1)・第2($n=2)優先順位の点の並び */
+    public static function tiePoints($n)
+    {
+        $v = trim((string)self::get($n == 2 ? 'tie2' : 'tie1'));
+        if ($v !== '') {
+            try {
+                return self::parseTie($v);
+            } catch (\InvalidArgumentException $e) {
+                // 壊れた値なら初期値
+            }
+        }
+        return self::tieDefault($n);
+    }
+
+    /** 優先順位の矢の文字(arrowstring の文字。X→K, 10→L …) */
+    public static function tieChars($n)
+    {
+        static $memo = [];   // 採点のたびに呼ばれるので、設定値ごとに覚えておく
+        $key = $n . '|' . self::category() . '|' . self::get($n == 2 ? 'tie2' : 'tie1');
+        if (!isset($memo[$key])) {
+            $memo[$key] = implode('', array_map([Scoring::class, 'fromDisplay'], self::tiePoints($n)));
+        }
+        return $memo[$key];
+    }
+
+    /** 見出し(点を + でつなぐ。例 10+X) */
+    public static function tieLabel($n)
+    {
+        return implode('+', self::tiePoints($n));
     }
 
     /**

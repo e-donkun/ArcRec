@@ -609,8 +609,8 @@ class IskApi
         $per = Settings::arrowsPerEnd();
         $ends = Settings::ends();
         $totalTargets = max(1, count(Entries::targets()));
-        $golds = Settings::get('gold_label');
-        $xl = Settings::get('x_label');
+        $golds = Settings::tieLabel(1);
+        $xl = Settings::tieLabel(2);
 
         foreach (Entries::onTarget($target) as $e) {
             $key = self::SESSION . '.' . $e['target'] . $e['letter'];
@@ -626,8 +626,8 @@ class IskApi
                     'shootOff' => 0,
                     'soEnds' => 1,
                     'soClosest' => '0',
-                    'gold' => Scoring::GOLD_CHARS,
-                    'xnine' => Scoring::X_CHARS,
+                    'gold' => Settings::tieChars(1),
+                    'xnine' => Settings::tieChars(2),
                     'targetface' => $face,
                     'arrowstring' => '',
                     'previous' => '0',

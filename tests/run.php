@@ -148,7 +148,8 @@ $r = call([['action' => 'handshake', 'uuid' => 'old', 'version' => '1.2.0', 'isk
 ok(isset($r['responses'][1]['targetFaces'][0]['imgGzip']), 'v1.2 の端末には的面画像を含める');
 
 echo "# 採点と順位\n";
-ok(Scoring::total('KLJIHG') === [10 + 10 + 9 + 8 + 7 + 6, 2, 1, 6], '採点: 合計/ゴールド/X/射数');
+ok(Scoring::total('KLJIHG', 'KL', 'K') === [10 + 10 + 9 + 8 + 7 + 6, 2, 1, 6], '採点: 合計/第1優先(10+X)/第2優先(X)/射数');
+ok(Scoring::total('KLJIHG') === [50, 1, 1, 6], '採点: 優先順位の初期値は 屋外 X → 10');
 ok(Scoring::parseInput('X 10 9 8 7 M') === 'KLJIHA', '入力 "X 10 9 8 7 M"');
 ok(Scoring::parseInput('X1098') === 'KLIHJ' || Scoring::parseInput('X1098') === 'KLJI', '連続入力 X1098 -> KLJI');
 ok(Scoring::parseInput('X Q') === null, '不正入力は null');

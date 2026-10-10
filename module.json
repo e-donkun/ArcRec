@@ -2,13 +2,18 @@
 	"id": "ianseo-lite",
 	"name": "ianseo-lite（簡易記録会システム）",
 	"description": "予選だけ・1セッションだけの記録会向け。SQLite + ScorekeeperNG(Lite)で入力し、スコアカードと結果をPDFで出力する。本体のDBとは独立して動く。",
-	"version": "0.8.1",
+	"version": "0.9.0",
 	"author": "e-donkun",
 	"homepage": "https://github.com/e-donkun/ianseo-lite",
 	"license": "GPL-2.0",
 	"testedIanseo": "2026-03-01",
 	"requiresPhp": "7.4",
 	"changelog": [
+		{
+			"version": "0.9.0",
+			"date": "2026-10-10",
+			"notes": "同点のときの第1・第2優先順位(Points as 1st / 2nd Tie-Breaker)を設定できるように(カンマ区切り、見出しは自動。初期値 屋外 X→10、屋内 10→9)。ゴールド/X 欄の見出しの設定は廃止。大会設定に「詳細設定」(距離の名称・優先順位)を設け、的の種類は前半・後半で共通の1つに"
+		},
 		{
 			"version": "0.8.1",
 			"date": "2026-10-10",

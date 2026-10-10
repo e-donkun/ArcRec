@@ -63,7 +63,7 @@ foreach (Entries::all() as $e) {
         . '<div class="sp-card-head"><span class="sp-badge' . ($pos ? '' : ' none') . '">' . h($pos ?: '-') . '</span><div class="sp-card-main">'
         . '<div class="sp-name">' . h(Entries::fullName($e)) . '<span class="sp-tag">' . h($e['category_name']) . '</span></div>'
         . '<div class="sp-sub">' . h($e['affiliation']) . '</div></div>'
-        . '<div class="sp-score">' . ($hits ? '<b>' . $score . '</b><div class="sp-sub">' . h(Settings::get('gold_label')) . ':' . $g . ' ' . h(Settings::get('x_label')) . ':' . $x . '</div>' : '') . '</div></div>'
+        . '<div class="sp-score">' . ($hits ? '<b>' . $score . '</b><div class="sp-sub">' . h(Settings::tieLabel(1)) . ':' . $g . ' ' . h(Settings::tieLabel(2)) . ':' . $x . '</div>' : '') . '</div></div>'
         . '<div class="bar" style="margin-top:8px"><i style="width:' . $pct . '%"></i></div>'
         . '<div class="sp-dists">' . implode('', $dist) . '<span>' . (int)floor($hits / $per) . '/' . $ends . 'エンド</span><span>' . $hits . '/' . $total . '射</span></div>'
         . '<div class="sp-row" style="margin-top:8px;align-items:center"><div class="sp-sub" style="white-space:normal">'

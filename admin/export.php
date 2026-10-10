@@ -46,7 +46,7 @@ switch ($what) {
             $head[] = '距離1合計';
             $head[] = '距離2合計';
         }
-        $rows = [array_merge($head, ['合計', Settings::get('gold_label'), Settings::get('x_label')])];
+        $rows = [array_merge($head, ['合計', Settings::tieLabel(1), Settings::tieLabel(2)])];
         foreach (Results::byCategory() as $g) {
             foreach ($g['rows'] as $r) {
                 $rows[] = array_merge(

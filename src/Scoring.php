@@ -7,8 +7,7 @@ namespace Lite;
  */
 class Scoring
 {
-    const GOLD_CHARS = 'KL';  // 10 と X
-    const X_CHARS = 'K';
+    const GOLD_CHARS = 'KL';  // 10 と X(スコアカードPDFで黄色にする点。順位の優先順位は Settings::tieChars)
 
     private static $lp;
 
@@ -20,9 +19,15 @@ class Scoring
         return self::$lp;
     }
 
-    /** @return int[] [合計点, ゴールド(10+X)数, X数, 射数] */
-    public static function total($arrowstring, $gold = self::GOLD_CHARS, $x = self::X_CHARS)
+    /**
+     * @param string|null $gold 第1優先順位の文字(省略時は大会設定の Settings::tieChars(1))
+     * @param string|null $x    第2優先順位の文字(省略時は Settings::tieChars(2))
+     * @return int[] [合計点, 第1優先順位の本数, 第2優先順位の本数, 射数]
+     */
+    public static function total($arrowstring, $gold = null, $x = null)
     {
+        $gold = $gold ?? Settings::tieChars(1);
+        $x = $x ?? Settings::tieChars(2);
         $lp = self::letterPoint();
         $score = $golds = $xs = $hits = 0;
         $s = strtoupper((string)$arrowstring);

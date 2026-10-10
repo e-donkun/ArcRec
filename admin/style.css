@@ -419,3 +419,11 @@ code { background: #eef0f3; padding: 1px 5px; border-radius: 4px; word-break: br
 .bar i { display: block; height: 100%; background: var(--sp-primary); }
 details.card summary { cursor: pointer; font-weight: bold; }
 @media print { .sp-appbar, .sp-tabbar, .noprint { display: none !important; } body { background: #fff; } .sp-main { padding: 0; max-width: none; } }
+
+/* 大会設定の「詳細設定」(タップで開く) */
+details.sp-advanced { margin: 16px 0 8px; border: 1px solid var(--sp-border); border-radius: 10px; padding: 0 12px; background: #fafbfc; }
+details.sp-advanced > summary { cursor: pointer; font-weight: bold; padding: 12px 0; color: var(--sp-primary-dark); list-style: none; }
+details.sp-advanced > summary::-webkit-details-marker { display: none; }
+details.sp-advanced > summary::before { content: "▸"; display: inline-block; width: 1.2em; transition: transform .15s; }
+details.sp-advanced[open] > summary::before { transform: rotate(90deg); }
+details.sp-advanced[open] { padding-bottom: 8px; }

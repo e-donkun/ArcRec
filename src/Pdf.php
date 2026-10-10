@@ -147,8 +147,8 @@ class Pdf extends \TCPDF
         }
         $this->Cell($wSub, $hHead, '小計', 1, 0, 'C', true);
         $this->Cell($wRun, $hHead, '累計', 1, 0, 'C', true);
-        $this->Cell($wGold, $hHead, Settings::get('gold_label'), 1, 0, 'C', true);
-        $this->Cell($wX, $hHead, Settings::get('x_label'), 1, 1, 'C', true);
+        $this->Cell($wGold, $hHead, Settings::tieLabel(1), 1, 0, 'C', true);
+        $this->Cell($wX, $hHead, Settings::tieLabel(2), 1, 1, 'C', true);
 
         $run = 0;
         $tGold = 0;
@@ -391,7 +391,7 @@ class Pdf extends \TCPDF
             $this->f(8);
         }
         $this->Cell($w['total'], 6, '合計', 1, 0, 'C', true);
-        $this->Cell($w['gold'], 6, Settings::get('gold_label'), 1, 0, 'C', true);
-        $this->Cell($w['x'], 6, Settings::get('x_label'), 1, 1, 'C', true);
+        $this->Cell($w['gold'], 6, Settings::tieLabel(1), 1, 0, 'C', true);
+        $this->Cell($w['x'], 6, Settings::tieLabel(2), 1, 1, 'C', true);
     }
 }

@@ -59,10 +59,10 @@ class TargetFaces
             'imgName' => $id . '.svg',
             'cols' => min(3, $n),
             'rows' => ceil($n / 3),   // 本家と同じ(float)
-            'gold' => Scoring::GOLD_CHARS,
-            'xnine' => Scoring::X_CHARS,
-            'goldlbl' => Settings::get('gold_label'),
-            'xninelbl' => Settings::get('x_label'),
+            'gold' => Settings::tieChars(1),
+            'xnine' => Settings::tieChars(2),
+            'goldlbl' => Settings::tieLabel(1),
+            'xninelbl' => Settings::tieLabel(2),
             'letterPoint' => $d['letters'],
         ];
         if ($withImage) {

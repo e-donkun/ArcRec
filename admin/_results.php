@@ -1,6 +1,6 @@
 <?php
 // 結果一覧の画面(ianseo 本体のスマホモード「ライブ得点集計」と同じ画面構成)。
-//   ランキング/的順のチップ、検索、自動更新(30秒)、部門ごとの見出し、カードをタップするとスコアカード(ゴールド・X の数も)
+//   ランキング/的順のチップ、検索、自動更新(30秒)、部門ごとの見出し、カードをタップするとスコアカード(第1・第2優先順位の本数も)
 // 管理画面の admin/results.php と、参加者向けのトップの results.php(大会設定で公開にした大会だけ)から使う。
 
 use Lite\Entries;
@@ -54,7 +54,7 @@ function results_data()
     $p = Results::progress();
     return [
         'sections' => $sections, 'per' => $per, 'total' => Settings::totalArrows(),
-        'goldLabel' => Settings::get('gold_label'), 'xLabel' => Settings::get('x_label'),
+        'goldLabel' => Settings::tieLabel(1), 'xLabel' => Settings::tieLabel(2),
         'round' => Settings::roundLabel(), 'updated' => Results::lastUpdateText(),
         'finished' => $p['finished'], 'archers' => $p['archers'],
     ];
@@ -88,7 +88,7 @@ function results_page($code, $public)
 	</div>
 </div>
 <div class="sp-list" id="SpList"></div>
-<p class="sp-note">カードをタップするとスコアカードを表示します。* は 合計・<?php echo h(Settings::get('gold_label')); ?>・<?php echo h(Settings::get('x_label')); ?> がすべて同じ(シュートオフ等で決める)選手です。</p>
+<p class="sp-note">カードをタップするとスコアカードを表示します。* は 合計・<?php echo h(Settings::tieLabel(1)); ?>・<?php echo h(Settings::tieLabel(2)); ?> がすべて同じ(シュートオフ等で決める)選手です。</p>
 <div class="actions noprint">
 	<a class="sp-btn sub" href="<?php echo $adm; ?>pdf.php?type=results&c=<?php echo h($code); ?>" target="_blank"><?php echo icon('print'); ?>結果PDF</a>
 	<a class="sp-btn sub" href="<?php echo $adm; ?>export.php?what=results&c=<?php echo h($code); ?>">結果CSV</a>

@@ -55,7 +55,8 @@ $r = call([$upd + ['distance' => 2, 'refKey' => '1.1A', 'arrowstring' => str_rep
 ok(strlen(rtrim(Entries::find($a)['arrowstring2'])) === 18 && (Entries::find($a)['signed'] & 4) === 4 && (Entries::find($a)['signed'] & 2) === 0, '距離2の署名は 2^2 のビット(距離1は立たない)');
 $cfg = call([['action' => 'getconfig', 'device' => 'd1']])['responses'][0];
 $sc = $cfg['archers'][0]['scoring'];
-ok($sc[0]['previous'] === '0' && $sc[1]['previous'] === '360' && $sc[1]['previousGold'] === '36' && $sc[1]['previousXnine'] === '0', '距離2の previous = 距離1の合計(360点・10が36本)。本家と同じ文字列');
+ok($sc[0]['previous'] === '0' && $sc[1]['previous'] === '360' && $sc[1]['previousGold'] === '0' && $sc[1]['previousXnine'] === '36', '距離2の previous = 距離1の合計(360点。第1優先 X が0本、第2優先 10 が36本)。本家と同じ文字列');
+ok($sc[0]['gold'] === 'K' && $sc[0]['xnine'] === 'L' && $cfg['targetFaces'][0]['goldlbl'] === 'X' && $cfg['targetFaces'][0]['xninelbl'] === '10', '端末へ送る優先順位: 屋外の初期値は 第1=X・第2=10');
 
 $r = call([['action' => 'sendall', 'device' => 'd1', 'tocode' => 'WA2', 'type' => 'Q', 'session' => 1, 'archers' => [
     ['refKey' => '1.1B', 'scoring' => [
@@ -67,7 +68,7 @@ $eb = Entries::find($b);
 ok($r['responses'][0]['action'] === 'sendall' && $eb['arrowstring'] === str_repeat('K', 36) && $eb['arrowstring2'] === str_repeat('J', 36), 'sendall で2距離まとめて保存');
 ok(Entries::fullName($eb) === '佐藤 花子', '選手名');
 
-echo "# 順位(合計 → 10+X → X)\n";
+echo "# 順位(合計 → 第1優先順位 → 第2優先順位)\n";
 call([array_merge($upd, ['distance' => 1, 'refKey' => '1.1A', 'arrowstring' => str_repeat('L', 36)])]);
 Entries::applyArrows($a, str_repeat('J', 36), 't', null, 'admin', 2);   // 山田: 360 + 324 = 684
 Entries::applyArrows($c, str_repeat('K', 36), 't', null, 'admin', 1);   // 鈴木: 360(X36) + 324 = 684 → X が多い
@@ -75,13 +76,21 @@ Entries::applyArrows($c, str_repeat('J', 36), 't', null, 'admin', 2);
 $g = Results::byCategory();
 $men = $g[0]['rows'];
 ok($g[0]['category']['name'] === 'リカーブ男子' && count($men) === 2, '男子の部');
-ok($men[0]['id'] == $c && $men[0]['score'] === 684 && $men[0]['xs'] === 36 && $men[0]['rank'] === 1, '同点684 → X が多い鈴木が1位');
+ok($men[0]['id'] == $c && $men[0]['score'] === 684 && $men[0]['golds'] === 36 && $men[0]['rank'] === 1, '同点684 → 第1優先(X)が多い鈴木が1位');
 ok($men[1]['id'] == $a && $men[1]['rank'] === 2 && !$men[1]['tie'], '山田は2位(同順位ではない)');
 ok($men[0]['dist_scores'] === [1 => 360, 2 => 324], '距離ごとの合計');
-ok($g[1]['rows'][0]['score'] === 360 + 324 && $g[1]['rows'][0]['golds'] === 36, '女子: 佐藤 684 / 10+X 36');
+ok($g[1]['rows'][0]['score'] === 360 + 324 && $g[1]['rows'][0]['golds'] === 36, '女子: 佐藤 684 / X 36');
+// 優先順位を 第1=10・第2=X にすると、10 の多い山田が上
+Settings::setMany(['tie1' => '10', 'tie2' => 'X']);
+$men = Results::byCategory()[0]['rows'];
+ok($men[0]['id'] == $a && $men[0]['golds'] === 36 && $men[1]['xs'] === 36, '第1優先を 10 にすると、10 の多い山田が1位');
+Settings::setMany(['tie1' => '10,X', 'tie2' => 'X']);
+$men = Results::byCategory()[0]['rows'];
+ok(Settings::tieLabel(1) === '10+X' && $men[0]['golds'] === 36 && $men[1]['golds'] === 36 && $men[0]['id'] == $c, '第1=10+X(同数)→ 第2=X で鈴木が1位');
+Settings::setMany(['tie1' => '', 'tie2' => '']);
 Entries::applyArrows($a, str_repeat('K', 36), 't', null, 'admin', 1);   // 山田も X36 → 鈴木と全部同じ
 $men = Results::byCategory()[0]['rows'];
-ok($men[0]['rank'] === 1 && $men[1]['rank'] === 1 && $men[0]['tie'] && $men[1]['tie'], '合計・10+X・Xが全部同じなら同順位(*)');
+ok($men[0]['rank'] === 1 && $men[1]['rank'] === 1 && $men[0]['tie'] && $men[1]['tie'], '合計・第1優先・第2優先が全部同じなら同順位(*)');
 $p = Results::progress();
 ok($p['all_arrows'] === 3 * 72, '進行の分母は 人数 x 72射');
 
@@ -112,12 +121,24 @@ Settings::setMany(['preset' => 'indoor30']);
 ok(Settings::distances() === 1 && Settings::totalArrows() === 30, '屋内30: 1距離');
 $cfg = call([['action' => 'manual', 'device' => 'd1', 'tocode' => 'WA2', 'type' => 'Q', 'sesstarget' => '10001']])['responses'][0];
 ok(count($cfg['archers'][0]['scoring']) === 1 && $cfg['schedule'] === 'Q11', '屋内30: scoring は1つ、schedule=Q11');
-// 距離ごとに別の的面
-Settings::setMany(['preset' => 'outdoor72', 'target_face1' => '5', 'target_face2' => '10']);
-ok(Settings::targetFace(1) === 5 && Settings::targetFace(2) === 10, '屋外: 距離1=10リング、距離2=6リング');
+ok(Settings::tieLabel(1) === '10' && Settings::tieLabel(2) === '9' && Settings::tieChars(1) === 'L' && Settings::tieChars(2) === 'J', '屋内の優先順位の初期値: 第1=10・第2=9');
+// 的の種類は前半・後半で同じ
+Settings::setMany(['preset' => 'outdoor72', 'target_face1' => '10', 'target_face2' => '5']);
+ok(Settings::targetFace(1) === 10 && Settings::targetFace(2) === 10, '屋外: 的の種類は前半・後半とも同じ(6リング)');
 $cfg = call([['action' => 'manual', 'device' => 'd1', 'tocode' => 'WA2', 'type' => 'Q', 'sesstarget' => '10001']])['responses'][0];
 $sc = $cfg['archers'][0]['scoring'];
-ok($sc[0]['targetface'] === '5' && $sc[1]['targetface'] === '10' && array_column($cfg['targetFaces'], 'code') === ['5', '10'], '距離ごとの targetface と、両方の的面を端末へ送る');
+ok($sc[0]['targetface'] === '10' && $sc[1]['targetface'] === '10' && array_column($cfg['targetFaces'], 'code') === ['10'], '端末へは同じ的面を1つ送る');
+ok(Settings::tieLabel(1) === 'X' && Settings::tieLabel(2) === '10', '屋外に戻すと優先順位も屋外の初期値');
+// 入力の読み取り
+ok(Settings::parseTie(' 10, x ') === ['10', 'X'] && Settings::parseTie('１０，Ｘ') === ['10', 'X'] && Settings::parseTie('10+X,10') === ['10', 'X'], '優先順位の入力: カンマ区切り(全角・+ も可、重複は1つ)');
+foreach (['', '11', 'Q,10'] as $bad) {
+    try {
+        Settings::parseTie($bad);
+        ok(false, '不正な優先順位を受け付けた: ' . $bad);
+    } catch (InvalidArgumentException $e) {
+        ok(true, '不正な優先順位は拒否: "' . $bad . '"');
+    }
+}
 Settings::setMany(['target_face1' => '1', 'target_face2' => '2']);   // 屋外で使えない的面(屋内用)は選択肢の先頭に戻る
 ok(Settings::targetFace(1) === 5 && Settings::targetFace(2) === 5, '競技形式に合わない的面は使わない');
 
