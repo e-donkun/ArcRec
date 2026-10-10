@@ -111,7 +111,7 @@ echo "# 屋内 30射 x 2距離 / 1距離\n";
 Settings::setMany(['preset' => 'indoor60', 'distance_name' => '', 'distance_name2' => '', 'target_face1' => '2', 'target_face2' => '']);
 ok(Settings::distances() === 2 && Settings::ends() === 10 && Settings::arrowsPerEnd() === 3 && Settings::totalArrows() === 60 && Settings::isIndoor(), '屋内60: 3射 x 10エンド x 2距離');
 ok(Settings::distanceName(1) === '前半' && Settings::distanceName(2) === '後半' && Settings::distanceSummary() === '' && Settings::roundLabel() === '60射', '距離名の初期値は 前半/後半(見出しには出さない)');
-ok(Settings::targetFace(1) === 2 && Settings::targetFace(2) === 2, '屋内の的面: 距離1=三つ目、距離2は未設定なら距離1と同じ');
+ok(Settings::targetFace(1) === 2 && Settings::targetFace(2) === 2, '屋内の的面: 距離1=三ツ目、距離2は未設定なら距離1と同じ');
 $cfg = call([['action' => 'manual', 'device' => 'd1', 'tocode' => 'WA2', 'type' => 'Q', 'sesstarget' => '10001']])['responses'][0];
 ok($cfg['ctype'] === 'I' && count($cfg['archers'][0]['scoring']) === 2 && $cfg['archers'][0]['scoring'][0]['arrows'] === '3' && $cfg['targetFaces'][0]['code'] === '2' && count($cfg['targetFaces']) === 1, '屋内: ctype=I, 3射, 的面2');
 ok(strlen($cfg['archers'][0]['scoring'][0]['arrowstring']) === 30, '屋内: 距離ごと30文字');
@@ -121,6 +121,9 @@ Settings::setMany(['preset' => 'indoor30']);
 ok(Settings::distances() === 1 && Settings::totalArrows() === 30, '屋内30: 1距離');
 $cfg = call([['action' => 'manual', 'device' => 'd1', 'tocode' => 'WA2', 'type' => 'Q', 'sesstarget' => '10001']])['responses'][0];
 ok(count($cfg['archers'][0]['scoring']) === 1 && $cfg['schedule'] === 'Q11', '屋内30: scoring は1つ、schedule=Q11');
+Settings::setMany(['target_face1' => '']);
+ok(Settings::targetFace() === 2 && array_key_first(Settings::faceOptions()) === 2, '屋内の的の種類の既定は三ツ目');
+Settings::setMany(['target_face1' => '2']);
 ok(Settings::tieLabel(1) === '10' && Settings::tieLabel(2) === '9' && Settings::tieChars(1) === 'L' && Settings::tieChars(2) === 'J', '屋内の優先順位の初期値: 第1=10・第2=9');
 // 的の種類は前半・後半で同じ
 Settings::setMany(['preset' => 'outdoor72', 'target_face1' => '10', 'target_face2' => '5']);
@@ -166,7 +169,7 @@ ok(Settings::distanceName(1) === '前半' && Settings::distanceName(2) === '後�
 Settings::setMany(['distance_name' => '70m', 'distance_name2' => '60m']);
 ok(Settings::roundLabel() === '70m + 60m 72射', '入力した距離名は見出しに出す');
 Settings::setMany(['preset' => 'indoor30']);
-ok(Settings::category() === 2 && array_keys(Settings::faceOptions()) === [1, 2] && Settings::targetFace(1) === 1, '屋内の的面の選択肢と既定(40cm 10リング)');
+ok(Settings::category() === 2 && array_keys(Settings::faceOptions()) === [2, 1] && Settings::targetFace(1) === 2, '屋内の的面の選択肢と既定(40cm 三ツ目)');
 $code = Settings::code();
 call([['action' => 'handshake', 'uuid' => 'x1', 'version' => '1.10.0', 'iskType' => 11, 'tournament' => strtolower($code)]]);
 $comp = call([['action' => 'comp', 'device' => 'x1', 'tocode' => $code]])['responses'][0];
