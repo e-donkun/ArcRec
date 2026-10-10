@@ -235,9 +235,8 @@ function spTgtCard(e) {
 		+ '<input type="text" class="sp-pos-input' + (e.t ? '' : ' none') + '" value="' + spEsc(spPos(e)) + '" placeholder="-" maxlength="8" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false"'
 		+ (e.lock ? ' readonly title="点数が入っているため変更できません"' : '') + ' aria-label="的番号">'
 		+ '<div class="sp-card-main">'
-		+ '<div class="sp-name">' + spEsc(e.name) + '</div>'
+		+ '<div class="sp-name">' + spEsc(e.name) + (e.lock ? '<span class="sp-tag danger">🔒 点数入力済み</span>' : '') + '</div>'
 		+ '<div class="sp-sub">' + spEsc([e.aff, e.cat].filter(x => x).join(' / ')) + '</div>'
-		+ (e.lock ? '<div style="margin-top:4px"><span class="sp-tag danger">🔒 点数入力済み</span></div>' : '')
 		+ '</div></div></div>';
 }
 
