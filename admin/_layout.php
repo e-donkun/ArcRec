@@ -117,6 +117,7 @@ function icon($name)
         'login' => '<path d="M11 7 9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5zm9 12h-8v2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-8v2h8z"/>',
         'logout' => '<path d="M10 3h9a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-9v-2h9V5h-9zm-1 5l1.4 1.4L8.8 11H16v2H8.8l1.6 1.6L9 16l-4-4z"/>',
         'list' => '<path d="M4 5h2v2H4zm4 0h12v2H8zM4 11h2v2H4zm4 0h12v2H8zm-4 6h2v2H4zm4 0h12v2H8z"/>',
+        'trash' => '<path d="M9 3h6l1 1h4v2H4V4h4zM6 8h12l-1 13H7zm4 2v9h1.5v-9zm2.5 0v9H14v-9z"/>',
         'plus' => '<path d="M11 4h2v7h7v2h-7v7h-2v-7H4v-2h7z"/>',
         'copy' => '<path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11z"/>',
         'history' => '<path d="M13 3a9 9 0 0 0-9 9H1l4 4 4-4H6a7 7 0 1 1 2 4.9l-1.4 1.4A9 9 0 1 0 13 3zm-1 5v5l4.3 2.5.7-1.2-3.5-2.1V8z"/>',

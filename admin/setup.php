@@ -155,13 +155,13 @@ foreach ($catsAll as $c) {
         . '<td><input type="text" name="cname[' . $id . ']" value="' . h($c['name']) . '" required></td>'
         . '<td><input type="text" inputmode="numeric" pattern="-?[0-9]*" name="sort[' . $id . ']" value="' . (int)$c['sort'] . '"></td>'
         . '<td>' . (count($catsAll) > 1
-            ? '<button class="sub" name="del" value="' . $id . '" formnovalidate onclick="return window.confirm(\'部門「' . h(addslashes($c['name'])) . '」を削除しますか?\')">削除</button>'
+            ? '<button class="sub sp-icon-btn" name="del" value="' . $id . '" formnovalidate title="削除" aria-label="部門「' . h($c['name']) . '」を削除" onclick="return window.confirm(\'部門「' . h(addslashes($c['name'])) . '」を削除しますか?\')">' . icon('trash') . '</button>'
             : '') . '</td></tr>';
 }
 echo '</tbody><tfoot><tr><td><input type="text" name="new_code" maxlength="8" autocapitalize="characters" placeholder="例 RX"></td>'
     . '<td><input type="text" name="new_name" placeholder="部門名"></td>'
     . '<td><input type="text" inputmode="numeric" pattern="-?[0-9]*" name="new_sort" placeholder="最後"></td>'
-    . '<td><button class="sub" name="add" value="1">追加</button></td></tr></tfoot></table>'
+    . '<td><button class="sub sp-icon-btn" name="add" value="1" title="追加" aria-label="部門を追加">' . icon('plus') . '</button></td></tr></tfoot></table>'
     . '<p class="sp-note">コードは英数字 8 文字まで</p>'
     . '<p><button>部門を保存</button></p></form>';
 
