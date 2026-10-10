@@ -95,6 +95,6 @@ if (!isset($_GET['code']) && ($bc = bare_code()) !== null) {
 if (!Auth::check() || Competitions::open(Auth::current()) === false) {
     Db::unselect();
 }
-page_head('管理者メニュー', 'home', ['logout' => true, 'notabs' => true, 'back' => ['../?list=1', '記録会一覧に戻る']]);
+page_head(Auth::isAdmin() ? '全体管理者メニュー' : '管理者メニュー', 'home', ['logout' => true, 'notabs' => true, 'back' => ['../?list=1', '記録会一覧に戻る']]);
 render_competitions($next);
 page_foot();

@@ -23,7 +23,7 @@ foreach ($devices as $d) {
 $code = Settings::code();
 // 左上の「<」: 全体管理者は管理者メニュー(記録会を閉じる)、個別管理者は記録会一覧(公開ページ)へ
 if (Lite\Auth::isAdmin()) {
-    $back = ['close.php', '管理者メニューに戻る'];
+    $back = ['close.php', '全体管理者メニューに戻る'];
 } else {
     $back = ['../?list=1', '記録会一覧に戻る'];
 }
