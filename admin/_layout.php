@@ -204,8 +204,10 @@ function render_competitions($next = 'home.php')
         return '<label class="sp-field"><span>' . $label . '</span><input type="password" name="' . $name . '" required' . ($min ? ' minlength="' . $min . '"' : '') . ' autocomplete="' . $auto . '"></label>';
     };
 
-    // 新しい記録会(一覧の上)
-    echo '<p><button type="button" class="sp-btn block" id="CompNewBtn">' . icon('plus') . '新しい記録会を作成</button></p>';
+    // 新しい記録会(一覧の上)。管理者としてログインしているときだけ
+    if ($isAdmin) {
+        echo '<p><button type="button" class="sp-btn block" id="CompNewBtn">' . icon('plus') . '新しい記録会を作成</button></p>';
+    }
 
     $list = Competitions::all();
     echo '<div class="sp-list" id="CompList">';
@@ -231,7 +233,7 @@ function render_competitions($next = 'home.php')
             . '<a class="sp-card tap" href="#" id="AdminPwBtn">' . icon('edit') . '<div class="sp-card-main"><div class="sp-name">管理者パスワードの変更</div></div></a>';
     } elseif ($adminSet) {
         echo '<a class="sp-card tap" href="#" id="AdminLoginBtn">' . icon('gear') . '<div class="sp-card-main"><div class="sp-name">管理者ログイン</div>'
-            . '<div class="sp-sub">管理者パスワードで、どの記録会も開けます</div></div></a>';
+            . '<div class="sp-sub">管理者パスワードで、どの記録会も開け、新しい記録会を作成できます</div></div></a>';
     } else {
         echo '<a class="sp-card tap" href="#" id="AdminSetupBtn">' . icon('gear') . '<div class="sp-card-main"><div class="sp-name">管理者パスワードを設定</div>'
             . '<div class="sp-sub">記録会ごとのパスワードとは別の、すべての記録会に共通のパスワード</div></div></a>';
@@ -250,17 +252,13 @@ function render_competitions($next = 'home.php')
     foreach (Settings::PRESETS as $k => $p) {
         $opts .= '<option value="' . $k . '"' . ($k === Settings::DEFAULTS['preset'] ? ' selected' : '') . '>' . h($p['label']) . '</option>';
     }
-    if ($isAdmin || $adminSet) {
+    if ($isAdmin) {
         echo '<template id="CompNewTpl">' . $form('<input type="hidden" name="do" value="create"><h2>新しい記録会</h2>'
             . '<div class="sp-sub">記録会コード(8桁の16進数)は自動で付きます。パスワードはこの記録会だけのもので、記録会の DB に保存します。</div>'
             . '<label class="sp-field"><span>記録会名</span><input type="text" name="name"></label>'
             . '<label class="sp-field"><span>競技形式</span><select name="preset">' . $opts . '</select></label>'
             . '<div class="sp-row">' . $pw('password', 'パスワード', 'new-password', 4) . $pw('password2', 'パスワード(確認)', 'new-password', 4) . '</div>'
-            . ($isAdmin ? '' : $pw('admin_password', '管理者パスワード'))
             . $actions('作成')) . '</template>';
-    } else {
-        echo '<template id="CompNewTpl"><h2>新しい記録会</h2><p>記録会を作るには、先に「管理者パスワードを設定」してください。</p>'
-            . '<div class="sp-sheet-actions"><button type="button" class="sp-btn sub" onclick="spSheet.close()">閉じる</button></div></template>';
     }
     echo '<template id="AdminLoginTpl">' . $form('<input type="hidden" name="do" value="admin_login"><h2>管理者ログイン</h2>'
         . $pw('admin_password', '管理者パスワード') . $actions('ログイン')) . '</template>';

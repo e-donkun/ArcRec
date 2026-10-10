@@ -425,8 +425,8 @@ details.card summary { cursor: pointer; font-weight: bold; }
 details.sp-advanced { margin: 16px 0 8px; border: 1px solid var(--sp-border); border-radius: 10px; padding: 0 12px; background: #fafbfc; }
 details.sp-advanced > summary { cursor: pointer; font-weight: bold; padding: 12px 0; color: var(--sp-primary-dark); list-style: none; }
 details.sp-advanced > summary::-webkit-details-marker { display: none; }
-details.sp-advanced > summary::before { content: "▸"; display: inline-block; width: 1.2em; transition: transform .15s; }
-details.sp-advanced[open] > summary::before { transform: rotate(90deg); }
+details.sp-advanced > summary::before { content: "▸"; display: inline-block; width: 1.2em; }
+details.sp-advanced[open] > summary::before { content: "▾"; }
 details.sp-advanced[open] { padding-bottom: 8px; }
 
 /* 結果の公開(ホーム)のトグルボタン */
@@ -449,3 +449,6 @@ details.sp-advanced[open] { padding-bottom: 8px; }
 /* 記録会結果の自動更新(カウントダウン)は1行に */
 .sp-live-bar .sp-switch { white-space: nowrap; flex: none; }
 #SpAutoSec { display: inline-block; min-width: 4.4em; text-align: center; font-variant-numeric: tabular-nums; }
+/* 記録会設定の「管理」: アコーディオンを縦に並べる */
+.sp-main > details.sp-advanced { background: var(--sp-card, #fff); margin: 8px 0; }
+details.sp-advanced input:not([type=checkbox]):not([type=radio]) { width: 100%; box-sizing: border-box; }

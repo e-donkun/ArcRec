@@ -24,13 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 flash((Lite\Competitions::readSetting(Auth::current(), 'name') ?: Auth::current()) . ' を開きました');
                 redirect($next);
             case 'create':
-                if (!Auth::isAdmin()) {
-                    if (!Auth::adminIsSet()) {
-                        throw new InvalidArgumentException('記録会を作るには、先に管理者パスワードを設定してください');
-                    }
-                    if (!Auth::adminLogin((string)($_POST['admin_password'] ?? ''))) {
-                        throw new InvalidArgumentException('管理者パスワードが違います');
-                    }
+                if (!Auth::isAdmin()) {   // 新しい記録会を作れるのは、管理者としてログインしているときだけ
+                    throw new InvalidArgumentException('新しい記録会を作成するには、管理者としてログインしてください');
                 }
                 if (($_POST['password'] ?? '') !== ($_POST['password2'] ?? '')) {
                     throw new InvalidArgumentException('確認用パスワードが一致しません');
