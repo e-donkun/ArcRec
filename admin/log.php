@@ -30,7 +30,7 @@ echo '<p class="muted small">端末が「どこまで進んで、どこで止ま
     . '<code>data/api-日付.jsonl</code> に記録します(的面画像などの長い値は短くします)。原因がわかったらオフにして、ログを消してください。</p>';
 echo '<div class="actions"><form method="post" class="inline">' . csrf_field() . '<input type="hidden" name="do" value="' . ($on ? 'off' : 'on') . '"><button class="' . ($on ? 'sub' : '') . '">'
     . ($on ? '記録を止める(今: オン)' : '記録を始める(今: オフ)') . '</button></form>'
-    . '<form method="post" class="inline" onsubmit="return confirm(\'ログを全部消しますか?\')">' . csrf_field() . '<input type="hidden" name="do" value="clear"><button class="sub">ログを消す</button></form>'
+    . '<form method="post" class="inline" onsubmit="return window.confirm(\'ログを全部消しますか?\')">' . csrf_field() . '<input type="hidden" name="do" value="clear"><button class="sub">ログを消す</button></form>'
     . '<a class="btn sub" href="log.php">再読み込み</a></div>';
 
 $rows = ApiLog::recent(40);

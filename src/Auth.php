@@ -200,6 +200,13 @@ class Auth
         return self::isAdmin();
     }
 
+    /** 開いている記録会を閉じる(管理者のログインはそのまま) */
+    public static function closeCompetition()
+    {
+        self::start();
+        unset($_SESSION['comp']);
+    }
+
     public static function logout()
     {
         self::start();

@@ -38,7 +38,7 @@ foreach (Devices::all() as $d) {
         . '<td>' . ($b ? abs($b) . '%' . ($b < 0 ? ' 充電中' : '') : '-') . '</td><td class="small">' . h($d['version']) . '</td>'
         . '<td class="small ' . ($age < 120 ? 'ok' : 'muted') . '">' . h($d['last_seen']) . ($age < 120 ? ' ●' : '') . '</td>'
         . '<td>' . ($d['setup_confirmed'] ? '済' : '-') . '</td>'
-        . '<td><form method="post" class="inline" onsubmit="return confirm(\'この端末の登録を削除しますか?\')">' . csrf_field() . '<input type="hidden" name="do" value="forget"><input type="hidden" name="uuid" value="' . h($d['uuid']) . '"><button class="sm sub">削除</button></form></td></tr>';
+        . '<td><form method="post" class="inline" onsubmit="return window.confirm(\'この端末の登録を削除しますか?\')">' . csrf_field() . '<input type="hidden" name="do" value="forget"><input type="hidden" name="uuid" value="' . h($d['uuid']) . '"><button class="sm sub">削除</button></form></td></tr>';
 }
 if (!Devices::all()) {
     echo '<tr><td colspan="7" class="muted">まだ端末が接続していません</td></tr>';

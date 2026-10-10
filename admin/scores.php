@@ -80,7 +80,7 @@ foreach (Entries::all() as $e) {
 <div class="actions noprint">
 	<a class="sp-btn sub" href="pdf.php?type=scorecard_filled" target="_blank"><?php echo icon('print'); ?>スコアカード(得点入り)PDF</a>
 	<a class="sp-btn sub" href="export.php?what=arrows">全矢CSV</a>
-	<form method="post" class="inline" onsubmit="return confirm('全員のスコアカードを確定します。以後、端末からの更新は拒否されます。')"><?php echo csrf_field(); ?><input type="hidden" name="do" value="lock_all"><input type="hidden" name="value" value="1"><button class="sp-btn sub">全員を確定</button></form>
+	<form method="post" class="inline" onsubmit="return window.confirm('全員のスコアカードを確定します。以後、端末からの更新は拒否されます。')"><?php echo csrf_field(); ?><input type="hidden" name="do" value="lock_all"><input type="hidden" name="value" value="1"><button class="sp-btn sub">全員を確定</button></form>
 	<form method="post" class="inline"><?php echo csrf_field(); ?><input type="hidden" name="do" value="lock_all"><input type="hidden" name="value" value="0"><button class="sp-btn sub">全員の確定を解除</button></form>
 </div>
 <script>

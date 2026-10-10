@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($old['distances'] !== $new['distances'] || $old['ends'] !== $new['ends'] || $old['arrows'] !== $new['arrows']) {
                     foreach (Entries::all() as $e) {
                         if (Entries::hasScore($e)) {
-                            throw new InvalidArgumentException('得点が入力済みのため、競技形式(射数・距離数)は変更できません(先に「得点の全消去」を行ってください)');
+                            throw new InvalidArgumentException('得点が入力済みのため、競技形式(射数・距離数)は変更できません(先に「この記録会の点数を全消去」を行ってください)');
                         }
                     }
                 }
@@ -52,8 +52,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 Db::pdo()->exec("UPDATE entries SET arrowstring = '', arrowstring2 = '', signed = 0, locked = 0, updated_at = ''");
                 Db::pdo()->exec('DELETE FROM score_log');
-                flash('得点を全消去しました', 'warn');
+                flash('この記録会の点数を全消去しました', 'warn');
                 break;
+
+            case 'delete':
+                // この記録会の DB ファイルを削除して、記録会の選択へ
+                if (($_POST['confirm'] ?? '') !== 'yes') {
+                    throw new InvalidArgumentException('確認のチェックを入れてください');
+                }
+                $name = Settings::title();
+                Lite\Competitions::delete(Settings::code());
+                Lite\Auth::closeCompetition();
+                flash('記録会「' . $name . '」を削除しました', 'warn');
+                redirect('index.php');
 
             case 'password':
                 if (($_POST['password'] ?? '') !== ($_POST['password2'] ?? '')) {
@@ -63,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 flash('管理パスワードを変更しました');
                 break;
         }
-    } catch (InvalidArgumentException $e) {
+    } catch (InvalidArgumentException | RuntimeException $e) {
         flash($e->getMessage(), 'err');
     }
     redirect('setup.php');
@@ -93,25 +104,26 @@ echo '<label>距離の名称</label><div class="row nowrap wide">';
 foreach ([1, 2] as $d) {
     echo '<div id="dist' . $d . '"><input type="text" name="distance_name' . ($d === 2 ? '2' : '') . '" id="dname' . $d . '" value="' . h(Settings::distanceName($d)) . '" placeholder="距離' . $d . '" aria-label="距離' . $d . 'の名称"></div>';
 }
-echo '</div><p class="sp-note">距離が1つなら空欄、2つなら 前半・後半 が初期値です。</p>';
+echo '</div>';
 echo '<div class="row nowrap wide">';
 foreach ([1 => '第1優先順位', 2 => '第2優先順位'] as $n => $label) {
     echo '<div><label>' . $label . '</label><input type="text" name="tie' . $n . '" id="tie' . $n . '" value="' . h(implode(',', Settings::tiePoints($n))) . '" autocapitalize="characters">'
         . '<div class="sp-sub">見出し: <b id="tielbl' . $n . '">' . h(Settings::tieLabel($n)) . '</b></div></div>';
 }
-echo '</div><p class="sp-note">合計点が同じときは、第1優先順位の点の本数 → 第2優先順位の点の本数 の多い順にします。点はカンマ区切りで入力します(例 <code>10,X</code> → 見出しは 10+X)。'
-    . '初期値は アウトドア 第1=X・第2=10、インドア 第1=10・第2=9 です。</p>';
+echo '</div><p class="sp-note">カンマ区切りで入力(例 <code>10,X</code> → 見出しは 10+X)。</p>';
 echo '</details>';
 echo '<input type="hidden" name="archers_per_target" value="' . h($s['archers_per_target']) . '">';
-echo '<p class="muted small">記録会コード <code>' . h(Settings::code()) . '</code> は自動で決まります(端末の接続は「端末接続」のQRで行います)。</p>';
 echo '<p><button>保存</button></p></form>';
 
 // ---- 管理
 echo '<h2>管理</h2><div class="row"><form method="post" class="card" style="flex:1 1 20rem">' . csrf_field() . '<input type="hidden" name="do" value="password">'
-    . '<b>この記録会のパスワードの変更</b><p class="sp-note">パスワードはこの記録会の DB に保存します。</p><label>新しいパスワード</label><input type="password" name="password" required><label>確認</label><input type="password" name="password2" required><p><button class="sub">変更</button></p></form>';
-echo '<form method="post" class="card" style="flex:1 1 20rem" onsubmit="return confirm(\'全員の得点を消します。よろしいですか?\')">' . csrf_field() . '<input type="hidden" name="do" value="clear_scores">'
-    . '<b>得点の全消去</b><p class="muted small">リハーサル後などに、選手名簿はそのままで得点だけを消します。</p>'
-    . '<label style="font-weight:400"><input type="checkbox" name="confirm" value="yes"> 本当に消す</label><p><button class="danger">得点を全消去</button></p></form></div>';
+    . '<b>この記録会のパスワードの変更</b><label>新しいパスワード</label><input type="password" name="password" required><label>確認</label><input type="password" name="password2" required><p><button class="sub">変更</button></p></form>';
+echo '<form method="post" class="card" style="flex:1 1 20rem" onsubmit="return window.confirm(\'この記録会の全員の点数を消します。よろしいですか?\')">' . csrf_field() . '<input type="hidden" name="do" value="clear_scores">'
+    . '<b>この記録会の点数を全消去</b><p class="muted small">リハーサル後などに、選手名簿はそのままで点数だけを消します。</p>'
+    . '<label style="font-weight:400"><input type="checkbox" name="confirm" value="yes"> 本当に消す</label><p><button class="danger">点数を全消去</button></p></form>';
+echo '<form method="post" class="card" style="flex:1 1 20rem" onsubmit="return window.confirm(\'この記録会を削除します。選手名簿・点数・設定がすべて消え、元に戻せません。よろしいですか?\')">' . csrf_field() . '<input type="hidden" name="do" value="delete">'
+    . '<b>この記録会を削除</b><p class="muted small">この記録会のデータベースファイルを削除します。選手名簿・点数・設定がすべて消え、元に戻せません。削除すると記録会の一覧に戻ります。</p>'
+    . '<label style="font-weight:400"><input type="checkbox" name="confirm" value="yes"> 本当に削除する</label><p><button class="danger">この記録会を削除</button></p></form></div>';
 echo '<script>(function(){'
     . 'var faces=' . json_encode(array_map(function ($o) {
         $r = [];

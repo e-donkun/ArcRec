@@ -107,6 +107,12 @@ ok($num !== null && Competitions::find('12345678')['code'] === '12345678' && Com
 unlink("$dataDir/competitions/12345678.sqlite");
 Db::unselect();
 
+// 記録会の削除(DB ファイルごと)
+$tmpCode = Competitions::create('消す記録会', 'outdoor36', 'keshi1');
+Entries::save(['family_name' => '削', 'category_id' => (int)Categories::byCode('RM')['id']]);
+Competitions::delete($tmpCode);
+ok(!Competitions::exists($tmpCode) && !glob("$dataDir/competitions/$tmpCode.sqlite*") && !Db::hasSelection(), '記録会の削除: DB ファイル(-wal/-shm も)が消え、選択も外れる');
+
 echo "# 管理者パスワード(すべての記録会に共通)\n";
 ok(!Auth::adminIsSet() && !Auth::verifyAdmin(''), '最初は管理者パスワードなし');
 ok(!Auth::canSetupAdmin() && !Auth::canSetupAdmin('wrong') && !Auth::canSetupAdmin('sample') && Auth::canSetupAdmin('passA1'),

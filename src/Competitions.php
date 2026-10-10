@@ -195,6 +195,24 @@ class Competitions
         return $code;
     }
 
+    /**
+     * 記録会の DB ファイルを削除する(-wal / -shm も)。元に戻せない。
+     * 同梱のサンプルを消した場合は、次のアクセスで samples/ から作り直される。
+     */
+    public static function delete($code)
+    {
+        $f = self::find($code);
+        if (!$f) {
+            throw new \InvalidArgumentException('記録会が見つかりません');
+        }
+        Db::unselect();   // 開いている接続を閉じてから消す
+        foreach (['', '-wal', '-shm'] as $ext) {
+            if (is_file($f['path'] . $ext) && !@unlink($f['path'] . $ext)) {
+                throw new \RuntimeException('記録会のファイルを削除できません: ' . basename($f['path'] . $ext));
+            }
+        }
+    }
+
     // ------------------------------------------------------------ 起動時の準備(旧データの移行・サンプル)
 
     /** 1リクエストにつき1回だけ($force はテスト用) */

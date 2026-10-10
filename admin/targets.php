@@ -89,13 +89,13 @@ if (!$state['entries']) {
 	<p class="sp-note">的番号と位置をプルダウンで選ぶと保存されます。位置を選ばないときは、その的の空いている最初の位置に入ります。選手のいる位置を選ぶと入れ替えます。<br>点数が入っている選手(🔒)は動かせません。点数が入っている選手のいる位置へも移せません。</p>
 	<details class="card noprint">
 		<summary>自動で割り当てる</summary>
-		<form method="post" class="inline-form" style="margin-top:8px" onsubmit="return confirm('点数のない選手の的番号を、部門順・登録順に付け直します。よろしいですか?')">
+		<form method="post" class="inline-form" style="margin-top:8px" onsubmit="return window.confirm('点数のない選手の的番号を、部門順・登録順に付け直します。よろしいですか?')">
 			<?php echo csrf_field(); ?><input type="hidden" name="do" value="auto">
 			<label class="inline-label">1的あたり <input type="number" name="per_target" min="1" max="4" value="<?php echo (int)$state['per']; ?>" style="width:4.5rem"> 人</label>
 			<label class="inline-label">開始の的 <input type="number" name="first" min="1" value="1" style="width:5rem"></label>
 			<button class="sp-btn sub">自動で割り当てる</button>
 		</form>
-		<form method="post" class="inline-form" onsubmit="return confirm('点数のない選手を、すべて未割当に戻します。よろしいですか?')">
+		<form method="post" class="inline-form" onsubmit="return window.confirm('点数のない選手を、すべて未割当に戻します。よろしいですか?')">
 			<?php echo csrf_field(); ?><input type="hidden" name="do" value="clear"><button class="sp-btn sub">割り当てをすべて外す</button>
 		</form>
 		<p class="sp-note">点数のある選手は動かしません。</p>
