@@ -199,13 +199,13 @@ ok(preg_match('/^\d\d\/\d\d \d\d:\d\d:\d\d\(\d+秒前\)$/', Results::lastUpdateT
 ok(strtotime(Results::lastUpdate()) >= time() - 5, '最終更新は直近の更新時刻');
 
 echo "# PDF\n";
-$pdf = Lite\Pdf::scorecards(Entries::all(), true, 'http://192.168.0.10/ianseo-lite/');
+$pdf = Lite\Pdf::scorecards(Entries::all(), true, 'http://192.168.0.10/arcrec/');
 ok(substr($pdf, 0, 4) === '%PDF' && strlen($pdf) > 20000, 'スコアカードPDF(QR付き)');
 $pdf = Lite\Pdf::scorecards(Entries::all(), false);
 ok(substr($pdf, 0, 4) === '%PDF', 'スコアカードPDF(白紙)');
 $pdf = Lite\Pdf::results(Results::byCategory());
 ok(substr($pdf, 0, 4) === '%PDF', '結果PDF');
-$pdf = Lite\Pdf::qrSheet('http://192.168.0.10/ianseo-lite/');
+$pdf = Lite\Pdf::qrSheet('http://192.168.0.10/arcrec/');
 ok(substr($pdf, 0, 4) === '%PDF', '的QR PDF');
 ok(json_decode(Lite\Connect::targetPayload('http://x/', 12), true) === ['u' => 'http://x/', 'c' => 'KYT26', 's' => '1', 't' => '0012', 'st' => 'Q'], '的QRの中身');
 

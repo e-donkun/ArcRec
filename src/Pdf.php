@@ -23,7 +23,7 @@ class Pdf extends \TCPDF
         $this->setPrintFooter(true);
         $this->SetMargins(15, 12, 15);
         $this->SetAutoPageBreak(false);
-        $this->SetCreator('ianseo-lite');
+        $this->SetCreator('ArcRec');
         $this->SetTitle($title);
         $this->footerText = Settings::title() . '  /  出力 ' . date('Y-m-d H:i');
         $this->setFontSubsetting(true);

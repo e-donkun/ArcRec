@@ -109,7 +109,7 @@ class IskApi
                 $this->one($req);
             }
         } catch (\Throwable $e) {
-            error_log('ianseo-lite: ' . $e->getMessage() . ' @' . $e->getFile() . ':' . $e->getLine());
+            error_log('ArcRec: ' . $e->getMessage() . ' @' . $e->getFile() . ':' . $e->getLine());
             $this->json['error'] = true;
             $this->json['errorMsg'] = 'Throwable error!';
         }

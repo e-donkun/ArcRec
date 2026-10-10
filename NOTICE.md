@@ -1,24 +1,24 @@
 # NOTICE
 
-## ianseo-lite
+## ArcRec
 
 Copyright (C) 2026 e-donkun
 
-ianseo-lite is free software: you can redistribute it and/or modify it under the terms of the
+ArcRec is free software: you can redistribute it and/or modify it under the terms of the
 GNU General Public License as published by the Free Software Foundation, version 3.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the GNU General Public License (`LICENSE.txt`) for more details.
 
-ianseo-lite は、ianseo 2023-04-01 版(GNU GPL v3)のファイルを含む派生物として、**GNU GPL v3** で配布します。
+ArcRec は、ianseo 2023-04-01 版(GNU GPL v3)のファイルを含む派生物として、**GNU GPL v3** で配布します。
 全文は `LICENSE.txt` です(ianseo 2023-04-01 版に同梱のものと同一)。
 
 ## ianseo 2023-04-01 版(GNU GPL v3)から取り込んだもの
 
 ianseo(https://www.ianseo.net/)の 2023-04-01 版(`Ianseo_20230401.zip`)は GNU GPL v3 で配布されていました。
-ianseo-lite には、その版の次のファイルを含みます(本家の作者・著作権者に帰属します)。
+ArcRec には、その版の次のファイルを含みます(本家の作者・著作権者に帰属します)。
 
-| ianseo-lite | ianseo 2023-04-01 版の元 | 変更 |
+| ArcRec | ianseo 2023-04-01 版の元 | 変更 |
 |---|---|---|
 | `assets/targets/{1,2,3,4,5,9,10}.svgz` | `Common/Images/Targets/{1,2,3,4,5,9,10}.svg` | gzip で圧縮(2026-10-10) |
 | `src/LetterPoint.php` | `Common/Lib/ArrTargets.inc.php` の `$LetterPoint`(A〜L) | 必要な文字だけを抜き出し、書式を変更(2026-10-10) |
@@ -28,7 +28,7 @@ ianseo-lite には、その版の次のファイルを含みます(本家の作�
 
 ianseo の 2023-04-01 版より後の版(FSL-1.1-ALv2 で配布)のファイルは含めていません。
 
-「ianseo」は本家の名称です。ianseo-lite は本家 ianseo の公式なものではなく、本家とは関係なく作られています。
+「ianseo」は本家の名称です。ArcRec は本家 ianseo の公式なものではなく、本家とは関係なく作られています。
 
 ## TCPDF
 

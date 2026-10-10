@@ -1,8 +1,8 @@
 /*
-ianseo-lite 管理画面のスタイル。
+ArcRec 管理画面のスタイル。
 ianseo 本体のカスタムモジュール「スマホモード」(Modules/Custom/SmartphoneMode/sp.css)と同じ画面構成・見た目にしている:
 上部バー(記録会名と画面名)、下部タブ、検索とチップ、カード一覧、下から出る編集シート、割り当て表と未割当トレイ。
-後半は、フォームや表など ianseo-lite の画面だけで使う部品。
+後半は、フォームや表など ArcRec の画面だけで使う部品。
 */
 :root {
 	--sp-primary: #1e4d8c;
@@ -358,7 +358,7 @@ body.sp-has-keypad .sp-toast { bottom: calc(var(--sp-tabbar-h) + 190px + env(saf
 .sp-tour-item .sp-sub { white-space: normal; }
 
 
-/* ===================================================================== ianseo-lite の部品 */
+/* ===================================================================== ArcRec の部品 */
 .sp-main.wide { max-width: 1080px; }
 .sp-appbar-title a.sp-tour:hover { text-decoration: underline; }
 .sp-flash { border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; font-size: 14px; border: 1px solid; background: #fff; }

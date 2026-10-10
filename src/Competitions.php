@@ -98,7 +98,7 @@ class Competitions
             try {
                 $list[] = self::summary((string)$code, $path);
             } catch (\Throwable $e) {
-                error_log('ianseo-lite: ' . $path . ' を読めません: ' . $e->getMessage());
+                error_log('ArcRec: ' . $path . ' を読めません: ' . $e->getMessage());
             }
         }
         usort($list, function ($a, $b) {
@@ -234,7 +234,7 @@ class Competitions
         try {
             self::seedSample();
         } catch (\Throwable $e) {
-            error_log('ianseo-lite: 起動時の準備に失敗: ' . $e->getMessage());
+            error_log('ArcRec: 起動時の準備に失敗: ' . $e->getMessage());
         }
     }
 

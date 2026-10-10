@@ -1,4 +1,6 @@
-# ianseo-lite
+# ArcRec
+
+**ArcRec(アークレック)— アーチェリー記録会管理**(Archery Record の略。旧名 ianseo-lite)
 
 ScorekeeperNG(ISK-NG)で得点を入力できる、**予選だけ・1セッションだけ**の記録会向けの簡易システムです。
 本家 ianseo とは独立した単体のシステムで(本家の DB・`Common/` などには依存しません)、このフォルダだけで動きます。
@@ -21,7 +23,7 @@ Web サーバー(PHP が動く場所)の公開フォルダに置きます。
 
 ```sh
 cd <公開フォルダ>
-git clone https://github.com/e-donkun/ianseo-lite
+git clone https://github.com/e-donkun/arcrec
 ```
 
 更新するときは `git pull`(`data/` と `config.local.php` は Git 管理外なので残ります)。
@@ -33,13 +35,13 @@ git clone https://github.com/e-donkun/ianseo-lite
 
 ## 起動
 
-Web サーバー(XAMPP など)に置いた場合は、`http://<サーバー>/<置いたパス>/ianseo-lite/`(参加者向け)と
-`…/ianseo-lite/admin/`(管理画面)を開きます。
+Web サーバー(XAMPP など)に置いた場合は、`http://<サーバー>/<置いたパス>/arcrec/`(参加者向け)と
+`…/arcrec/admin/`(管理画面)を開きます。
 
 手元で試すだけなら、PHP の組み込みサーバーで足ります。
 
 ```sh
-cd ianseo-lite
+cd arcrec
 php -S 0.0.0.0:8080 -t .
 # → http://<このPCのIP>:8080/        参加者向けの記録会一覧(右上の「ログイン」、各記録会の結果の右上の「設定」から管理画面へ)
 # → http://<このPCのIP>:8080/admin/  管理画面(管理者メニュー)
@@ -50,12 +52,12 @@ php -S 0.0.0.0:8080 -t .
 
 記録会のデータは記録会ごとに1つの SQLite ファイルで、`data/competitions/<記録会コード>.sqlite` に作られます。
 `data/` は Web から見えないようにしてください(Apache は同梱の `data/.htaccess` で拒否。
-nginx は `location ~ /ianseo-lite/data/ { deny all; }`)。
+nginx は `location ~ /arcrec/data/ { deny all; }`)。
 場所を変えたいときは、環境変数 `LITE_DATA_DIR` か、`config.local.php` を使います。
 
 ```php
 <?php // config.local.php (任意)
-return ['data_dir' => '/var/lib/ianseo-lite', 'timezone' => 'Asia/Tokyo', 'admin_password' => '固定したいパスワード'];
+return ['data_dir' => '/var/lib/arcrec', 'timezone' => 'Asia/Tokyo', 'admin_password' => '固定したいパスワード'];
 ```
 
 ## 使い方
@@ -87,8 +89,8 @@ return ['data_dir' => '/var/lib/ianseo-lite', 'timezone' => 'Asia/Tokyo', 'admin
    的のQR(またはアプリ内の的番号選択)でその的の選手が表示され、入力した得点が随時サーバーに保存されます。
 5. **点数管理** — 参加者ごとのカードで進行(最終入力からの時間・エンド数・距離ごとの合計)を確認。「編集」で**素点の編集**(ScorekeeperNG と同じく、矢の枠をタップして的面の色のボタンで入力。素点削除・エンド削除。「編集内容を保存」で保存し、更新履歴は右上のボタンから)。確定は「全員を確定」でまとめて行い、確定すると端末からの入力をブロックします(確定を解除しても、端末は QR から読み込み直します)。
 6. **結果** — スマホモードの速報と同じ作り。部門別の順位(合計 → 第1優先 → 第2優先)と的順の切り替え、カードをタップでスコアカード(エンドごとの 計・第1優先と第2優先の本数・累計と、距離ごとの小計)を表示。結果 PDF / CSV を出力。
-   参加者向けの公開ページは管理画面(`admin/`)ではなく**トップ**(例 `https://<サーバー>/ianseo-lite/`)です。公開している記録会の一覧(1つだけならその記録会)が出て、
-   `?c=<記録会コード>`(例 `https://<サーバー>/ianseo-lite/?c=5A4D0001`。`?5A4D0001` でも同じ。管理画面は `admin/?5A4D0001` でその記録会のパスワード入力)でその記録会の「記録会結果」。ログイン不要です。自動更新は開くたびにオフから始まり、チェックを入れると「30秒」から数字が減り、0 で更新します。右上の歯車「設定」から、個別パスワード(または全体管理者)でその記録会の記録会管理ホームを開けます。
+   参加者向けの公開ページは管理画面(`admin/`)ではなく**トップ**(例 `https://<サーバー>/arcrec/`)です。公開している記録会の一覧(1つだけならその記録会)が出て、
+   `?c=<記録会コード>`(例 `https://<サーバー>/arcrec/?c=5A4D0001`。`?5A4D0001` でも同じ。管理画面は `admin/?5A4D0001` でその記録会のパスワード入力)でその記録会の「記録会結果」。ログイン不要です。自動更新は開くたびにオフから始まり、チェックを入れると「30秒」から数字が減り、0 で更新します。右上の歯車「設定」から、個別パスワード(または全体管理者)でその記録会の記録会管理ホームを開けます。
    ホームのトグルで**公開にした記録会だけ**見られます(非公開の記録会は、管理者がこの URL を開いても一般と同じく 403。非公開のあいだは、管理画面の「結果」タブで確認できます)。一般向けのページには結果PDFだけを出し、結果CSVと説明文は出しません。
 
 ### 端末(ScorekeeperNG)と記録会
@@ -131,7 +133,7 @@ php tests/run.php        # (このフォルダで実行) ScorekeeperNG との通
 ## 構成
 
 ```
-ianseo-lite/
+arcrec/
 ├─ LICENSE.txt / NOTICE.md  ライセンス(GPL v3)と、本家 ianseo 2023-04-01 版由来のファイル・TCPDF の表示
 ├─ CHANGELOG.md           版ごとの変更の履歴(いまの版は src/bootstrap.php の LITE_VERSION)
 ├─ index.php              入口(端末のPOSTはAPI、ブラウザには公開ページ=記録会一覧・記録会結果。admin/_public.php)
@@ -167,10 +169,10 @@ ianseo-lite/
 
 ## ライセンス
 
-ianseo-lite は **GNU General Public License version 3(GPL v3)** で配布します。全文は `LICENSE.txt` です。
+ArcRec は **GNU General Public License version 3(GPL v3)** で配布します。全文は `LICENSE.txt` です。
 
 ```
-ianseo-lite  Copyright (C) 2026 e-donkun
+ArcRec  Copyright (C) 2026 e-donkun
 This program comes with ABSOLUTELY NO WARRANTY.
 This is free software, and you are welcome to redistribute it under the terms of the GNU GPL v3.
 ```
@@ -186,7 +188,7 @@ This is free software, and you are welcome to redistribute it under the terms of
 
 | 部分 | ライセンス | 内容 |
 |---|---|---|
-| ianseo-lite のコード(`src/`、`admin/`、`index.php` など) | GPL v3 | 独自に書いたもの |
+| ArcRec のコード(`src/`、`admin/`、`index.php` など) | GPL v3 | 独自に書いたもの |
 | 本家 ianseo 2023-04-01 版のファイル | GPL v3 | 的面の画像、矢の文字と点数の表、的面の定義(一覧は `NOTICE.md`) |
 | TCPDF(`lib/tcpdf/`) | GNU LGPL v3 | PDF の作成。全文は `lib/tcpdf/LICENSE.TXT`。変更したファイルは `NOTICE.md` に記載 |
 
@@ -195,4 +197,4 @@ This is free software, and you are welcome to redistribute it under the terms of
 - 小塚ゴシックのフォント本体は同梱していません(PDF に埋め込まず、表示する側のフォントを使います)。
 - 端末アプリ(ScorekeeperNG)用の言語ファイルは持っていません。端末からの言語の要求には空で返し、アプリ内蔵の文言(英語など)を使います。
 
-「ianseo」は本家の名称です。ianseo-lite は本家 ianseo の公式なものではありません。
+「ianseo」は本家の名称です。ArcRec は本家 ianseo の公式なものではありません。

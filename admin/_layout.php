@@ -75,7 +75,7 @@ function csrf_field()
     return '<input type="hidden" name="_csrf" value="' . h(Auth::csrf()) . '">';
 }
 
-/** タブレットが接続するときの URL(…/ianseo-lite/)。いま開いている URL から作る(設定は不要) */
+/** タブレットが接続するときの URL(…/arcrec/)。いま開いている URL から作る(設定は不要) */
 function server_base_url()
 {
     $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
@@ -99,7 +99,7 @@ function json_out($data)
     exit;
 }
 
-/** アイコン(SVG)。スマホモードと同じもの + ianseo-lite で使うもの */
+/** アイコン(SVG)。スマホモードと同じもの + ArcRec で使うもの */
 function icon($name)
 {
     $paths = [
@@ -150,14 +150,14 @@ function page_head($title, $tab = '', array $opts = [])
     $admin = Auth::check() && $inComp && empty($opts['public']);
     $GLOBALS['LITE_PUBLIC_PAGE'] = !empty($opts['public']);
     $GLOBALS['LITE_NO_TABS'] = !empty($opts['notabs']);   // 下部タブを出さない(素点の編集など)
-    $name = $inComp ? (Settings::get('name') ?: Settings::code()) : 'ianseo-lite';
+    $name = $inComp ? (Settings::get('name') ?: Settings::code()) : 'ArcRec';
     $js = array_merge(['LITE_CSRF' => Auth::csrf()], $opts['js'] ?? []);
     $base = $opts['base'] ?? '';
     $ver = '?v=' . filemtime(__DIR__ . '/style.css') . '-' . filemtime(__DIR__ . '/app.js');
     $superAdmin = Auth::isAdmin() && empty($opts['public']);   // 全体管理者でログイン中の管理画面は、上部バーを黒に
     echo '<!DOCTYPE html><html lang="ja" translate="no"><head><meta charset="UTF-8">'
         . '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
-        . '<meta name="theme-color" content="' . ($superAdmin ? '#111111' : '#1e4d8c') . '"><title>' . h($title) . ' - ianseo-lite</title>'
+        . '<meta name="theme-color" content="' . ($superAdmin ? '#111111' : '#1e4d8c') . '"><title>' . h($title) . ' - ArcRec</title>'
         . '<link rel="stylesheet" href="' . $base . 'style.css' . $ver . '"><script>';
     foreach ($js as $k => $v) {
         echo 'var ' . $k . '=' . json_encode($v, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE) . ';';

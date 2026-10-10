@@ -102,7 +102,7 @@ ok($log[0]['distance'] == 2 && $log[0]['source'] === 'admin', '履歴に距離�
 
 echo "# 設定変更の保護と PDF\n";
 ok(Entries::hasScore(Entries::find($c)), 'hasScore');
-$pdf = Pdf::scorecards(Entries::all(), true, 'http://192.168.0.10/ianseo-lite/');
+$pdf = Pdf::scorecards(Entries::all(), true, 'http://192.168.0.10/arcrec/');
 ok(substr($pdf, 0, 4) === '%PDF', 'スコアカードPDF 2距離(得点入り)');
 ok(substr(Pdf::scorecards(Entries::all(), false), 0, 4) === '%PDF', 'スコアカードPDF 2距離(白紙)');
 ok(substr(Pdf::results(Results::byCategory()), 0, 4) === '%PDF', '結果PDF 2距離');

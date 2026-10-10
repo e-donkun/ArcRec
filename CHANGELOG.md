@@ -1,6 +1,11 @@
 # 変更履歴
 
-ianseo-lite の版ごとの変更です(新しい順)。いまの版は `src/bootstrap.php` の `LITE_VERSION`。
+ArcRec(旧名 ianseo-lite)の版ごとの変更です(新しい順)。いまの版は `src/bootstrap.php` の `LITE_VERSION`。
+
+## 0.17.0 (2026-10-10)
+
+- 名称を ianseo-lite から **ArcRec**(アーチェリー記録会管理)に変更。画面のタイトル・PDF の作成者・README・NOTICE の表記を変更(内部のコード名 `Lite` / `LITE_*` はそのまま)
+- 端末アプリの言語ファイルを持たない(言語の要求には空で返し、アプリ内蔵の文言を使う)
 
 ## 0.16.0 (2026-10-10)
 
