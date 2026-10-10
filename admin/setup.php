@@ -162,7 +162,7 @@ echo '</tbody><tfoot><tr><td><input type="text" name="new_code" maxlength="8" au
     . '<td><input type="text" name="new_name" placeholder="部門名"></td>'
     . '<td><input type="text" inputmode="numeric" pattern="-?[0-9]*" name="new_sort" placeholder="最後"></td>'
     . '<td><button class="sub" name="add" value="1">追加</button></td></tr></tfoot></table>'
-    . '<p class="sp-note">コードは英数字 8 文字まで(端末にも送られます)。並び順の小さい順に並べます。最後の 1 つと、参加者のいる部門は削除できません。</p>'
+    . '<p class="sp-note">コードは英数字 8 文字まで</p>'
     . '<p><button>部門を保存</button></p></form>';
 
 // ---- 管理(詳細設定と同じく、タップで開くアコーディオン。開くと3項目が縦に並ぶ)
