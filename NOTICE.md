@@ -27,7 +27,7 @@ ianseo-lite に含む、本家 ianseo 由来のもの:
 |---|---|---|
 | `assets/targets/*.svgz` | `Common/Images/Targets/` | なし |
 | `assets/lang/en/` | `Common/Languages/en/`(`ISK-App.php`, `en.txt`, `en.png`) | なし |
-| `assets/lang/ja/` | `Common/Languages/ja/`(`ISK-App.php`, `ja.txt`, `ja.png`) | `ISK-App.php` の「大会」を「記録会」に(2行) |
+| `assets/lang/ja/` | `Common/Languages/ja/`(`ISK-App.php`, `ja.txt`, `ja.png`) | なし |
 | `src/LetterPoint.php` | `Common/Lib/ArrTargets.inc.php` の `$LetterPoint` | 書式のみ |
 | `src/TargetFaces.data.php` | `Install/install.sql` の Targets 表 | `tools/gen_targets.php` で必要な的面だけを変換 |
 
