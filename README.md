@@ -139,7 +139,7 @@ ianseo-lite/
 ├─ admin/                 管理画面(管理者メニュー/ホーム/記録会設定/選手登録/立順/入力状況/結果/端末設定/PDF/CSV)
 ├─ src/                   ロジック(Db, Settings, Entries, Scoring, Results, IskApi, Pdf ...)
 ├─ lib/tcpdf/             PDF 生成(TCPDF 同梱。LGPL v3)。日本語は小塚ゴシック(kozgopromedium。PDF に埋め込まない CID フォント)
-├─ assets/                的面画像、アプリ用言語ファイル(ja/en)
+├─ assets/                的面画像
 ├─ tools/                 的面定義の生成(gen_targets.php)とサンプル記録会の作成(make_sample.php)。実行時は不要
 ├─ samples/               サンプル記録会の DB 2つ(5A4D0001 屋外 / 5A4D0002 屋内。初回に data/competitions/ へコピー、版が変わると置き換え。パスワード sample)
 ├─ tests/                 run.php(全部を実行)、two_distances.php、multi.php
@@ -187,13 +187,12 @@ This is free software, and you are welcome to redistribute it under the terms of
 | 部分 | ライセンス | 内容 |
 |---|---|---|
 | ianseo-lite のコード(`src/`、`admin/`、`index.php` など) | GPL v3 | 独自に書いたもの |
-| 本家 ianseo 2023-04-01 版のファイル | GPL v3 | 的面の画像、英語の言語ファイル、国旗画像、矢の文字と点数の表、的面の定義(一覧は `NOTICE.md`) |
-| 日本語の言語ファイル(`assets/lang/ja/ISK-App.php`) | GPL v3 | 英語の文言から独自に訳したもの |
+| 本家 ianseo 2023-04-01 版のファイル | GPL v3 | 的面の画像、矢の文字と点数の表、的面の定義(一覧は `NOTICE.md`) |
 | TCPDF(`lib/tcpdf/`) | GNU LGPL v3 | PDF の作成。全文は `lib/tcpdf/LICENSE.TXT`。変更したファイルは `NOTICE.md` に記載 |
 
 - 本家 ianseo の 2023-04-01 版より後の版(FSL-1.1-ALv2 で配布)のファイルは含めていません。
 - ScorekeeperNG との通信とスコアカードPDFの寸法は、本家と同じ形式・同じ考え方で独自に書いたもので、本家のコードは含みません。
 - 小塚ゴシックのフォント本体は同梱していません(PDF に埋め込まず、表示する側のフォントを使います)。
-- 全体管理者メニューの「本家の翻訳を取得」を押すと、そのサーバーが本家 ianseo の翻訳サイト(`translations.ianseo.net`)から端末アプリ用の訳を取得し、`data/lang/` に保存して使います(取得した訳は Git・配布物には入りません)。取得した訳は本家の条件(いまの本家は FSL-1.1-ALv2)に従うので、本家と競合する商用のサービスでは使わないでください。「同梱の訳に戻す」で、同梱の訳(GPL v3)に戻ります。
+- 端末アプリ(ScorekeeperNG)用の言語ファイルは持っていません。端末からの言語の要求には空で返し、アプリ内蔵の文言(英語など)を使います。
 
 「ianseo」は本家の名称です。ianseo-lite は本家 ianseo の公式なものではありません。

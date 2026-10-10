@@ -21,16 +21,12 @@ ianseo-lite には、その版の次のファイルを含みます(本家の作�
 | ianseo-lite | ianseo 2023-04-01 版の元 | 変更 |
 |---|---|---|
 | `assets/targets/{1,2,3,4,5,9,10}.svgz` | `Common/Images/Targets/{1,2,3,4,5,9,10}.svg` | gzip で圧縮(2026-10-10) |
-| `assets/lang/en/` | `Common/Languages/en/`(`ISK-App.php`, `en.txt`, `en.png`) | なし |
-| `assets/lang/ja/ja.txt`, `ja.png` | `Common/Languages/ja/`(`ja.txt`, `ja.png`) | なし |
 | `src/LetterPoint.php` | `Common/Lib/ArrTargets.inc.php` の `$LetterPoint`(A〜L) | 必要な文字だけを抜き出し、書式を変更(2026-10-10) |
 | `src/TargetFaces.data.php` | `Install/install.sql` の Targets 表 | `tools/gen_targets.php` で必要な的面だけを変換(2026-10-10) |
 
-`assets/lang/ja/ISK-App.php`(ScorekeeperNG 用の日本語の文言)は、英語の `ISK-App.php` の項目をもとに ianseo-lite で新しく訳したものです(本家の日本語訳は使っていません)。
+端末アプリ(ScorekeeperNG)用の言語ファイル(`ISK-App.php`)は持っていません(端末からの言語の要求には空で返し、アプリ内蔵の文言を使います)。
 
 ianseo の 2023-04-01 版より後の版(FSL-1.1-ALv2 で配布)のファイルは含めていません。
-全体管理者が「本家の翻訳を取得」を使うと、そのサーバーが本家の翻訳サイト(https://translations.ianseo.net/)から端末アプリ用の訳を取得して `data/lang/` に保存します。
-取得した訳は ianseo-lite には含まれず(配布物にも入りません)、本家の条件に従います。
 
 「ianseo」は本家の名称です。ianseo-lite は本家 ianseo の公式なものではなく、本家とは関係なく作られています。
 

@@ -495,17 +495,13 @@ class IskApi
         if (!$this->device($req)) {
             return $this->unknownDevice($req);
         }
-        // 言語ファイルは LangPacks(同梱のもの、または全体管理者が本家の翻訳サイトから取得したもの)
+        // 言語ファイル(ISK-App)は持たない。どの言語を求められても空で返し、端末アプリは内蔵の文言を使う
         if (empty($req->lang)) {
-            return ['action' => $req->action, 'device' => $req->device, 'languageList' => LangPacks::languageList()];
-        }
-        $l = LangPacks::load((string)$req->lang);
-        if (!$l) {
-            return $this->fail('Unknown language');
+            return ['action' => $req->action, 'device' => $req->device, 'languageList' => []];
         }
         return [
-            'action' => $req->action, 'device' => $req->device, 'language' => $req->lang,
-            'languageName' => $l['name'], 'md5' => $l['md5'], 'translations' => $l['translations'],
+            'action' => $req->action, 'device' => $req->device, 'language' => (string)$req->lang,
+            'languageName' => '', 'md5' => md5(''), 'translations' => new \stdClass(),
         ];
     }
 

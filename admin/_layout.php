@@ -253,16 +253,6 @@ function render_competitions($next = 'home.php')
     if ($isAdmin) {
         echo '<div class="sp-section-title">全体管理者</div><div class="sp-menu">'
             . '<a class="sp-card tap" href="#" id="AdminPwBtn">' . icon('edit') . '<div class="sp-card-main"><div class="sp-name">全体管理者パスワードの変更</div></div></a>';
-        // 端末アプリ(ScorekeeperNG)の言語: 同梱の訳 / 本家の翻訳サイトから取得した訳
-        $fetched = Lite\LangPacks::fetched();
-        $sub = $fetched
-            ? '本家の翻訳を使用中(' . h(implode('・', array_keys($fetched))) . '、取得 ' . date('Y-m-d H:i', (int)max(array_column($fetched, 'fetched_at'))) . ')'
-            : '同梱の訳を使用中(英語・日本語)';
-        echo '<div class="sp-card">' . icon('reload') . '<div class="sp-card-main"><div class="sp-name">端末アプリの言語</div>'
-            . '<div class="sp-sub">' . $sub . '</div><div class="actions">'
-            . $form('<input type="hidden" name="do" value="langpack_fetch"><button class="sp-btn sub">本家の翻訳を取得</button>')
-            . ($fetched ? $form('<input type="hidden" name="do" value="langpack_clear"><button class="sp-btn sub">同梱の訳に戻す</button>') : '')
-            . '</div></div></div>';
         echo '</div>';
     }
 

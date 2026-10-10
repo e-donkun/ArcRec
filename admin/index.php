@@ -66,20 +66,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Auth::adminLogin((string)$_POST['admin_password']);
                 flash('全体管理者パスワードを設定しました');
                 redirect('index.php');
-            case 'langpack_fetch':
-            case 'langpack_clear':
-                // 端末アプリの言語: 本家 ianseo の翻訳サイトから取得 / 同梱の訳に戻す(全体管理者だけ)
-                if (!Auth::isAdmin()) {
-                    throw new InvalidArgumentException('全体管理者としてログインしてください');
-                }
-                if ($_POST['do'] === 'langpack_clear') {
-                    Lite\LangPacks::clear();
-                    flash('端末アプリの言語を同梱の訳に戻しました');
-                } else {
-                    $got = Lite\LangPacks::fetch();
-                    flash('本家の翻訳を取得しました(' . implode('・', $got) . ')。端末アプリで「言語を更新」すると反映されます');
-                }
-                redirect('index.php');
             case 'admin_password':
                 if (!Auth::isAdmin()) {
                     throw new InvalidArgumentException('管理者としてログインしてください');
