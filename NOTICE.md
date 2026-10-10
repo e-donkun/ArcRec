@@ -2,34 +2,34 @@
 
 ## ianseo-lite
 
-Copyright 2026 e-donkun
+Copyright (C) 2026 e-donkun
 
-ianseo-lite は、本家 ianseo のファイルを含む派生物として、本家と同じ
-**Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2)** で配布します。
-全文はこのフォルダの `LICENSE.txt`(本家 ianseo のものと同一)、または
-https://ianseo.net/IanseoLicense-FSL-1.1-ALv2.html を参照してください。
+ianseo-lite is free software: you can redistribute it and/or modify it under the terms of the
+GNU General Public License as published by the Free Software Foundation, version 3.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License (`LICENSE.txt`) for more details.
 
-## ianseo
+ianseo-lite は、ianseo 2023-04-01 版(GNU GPL v3)のファイルを含む派生物として、**GNU GPL v3** で配布します。
+全文は `LICENSE.txt` です(ianseo 2023-04-01 版に同梱のものと同一)。
 
-IANSEO is released under «Functional Source License, Version 1.1, ALv2 Future License» (FSL-1.1-ALv2).
-This program is free software: you can redistribute it and/or modify it under the terms of the
-Functional Source License, Version 1.1, ALv2 Future License.
-This program is distributed in the hope that it will be useful, AS IS, WITHOUT WARRANTIES OR
-CONDITIONS OF ANY KIND, either express or implied.
-You should have received a copy of the License along with this program.
-If not, see https://ianseo.net/IanseoLicense-FSL-1.1-ALv2.html.
+## ianseo 2023-04-01 版(GNU GPL v3)から取り込んだもの
 
-Copyright 2025 Ianseo
+ianseo(https://www.ianseo.net/)の 2023-04-01 版(`Ianseo_20230401.zip`)は GNU GPL v3 で配布されていました。
+ianseo-lite には、その版の次のファイルを含みます(本家の作者・著作権者に帰属します)。
 
-ianseo-lite に含む、本家 ianseo 由来のもの:
-
-| ianseo-lite | 本家 ianseo の元 | 変更 |
+| ianseo-lite | ianseo 2023-04-01 版の元 | 変更 |
 |---|---|---|
-| `assets/targets/*.svgz` | `Common/Images/Targets/` | なし |
-| `assets/lang/en/` | `Common/Languages/en/`(`ISK-App.php`, `en.txt`, `en.png`) | なし |
-| `assets/lang/ja/` | `Common/Languages/ja/`(`ISK-App.php`, `ja.txt`, `ja.png`) | なし |
-| `src/LetterPoint.php` | `Common/Lib/ArrTargets.inc.php` の `$LetterPoint` | 書式のみ |
-| `src/TargetFaces.data.php` | `Install/install.sql` の Targets 表 | `tools/gen_targets.php` で必要な的面だけを変換 |
+| `assets/targets/{1,2,3,4,5,9,10}.svgz` | `Common/Images/Targets/{1,2,3,4,5,9,10}.svg` | gzip で圧縮(2026-10-10) |
+| `assets/lang/en/ISK-App.php` | `Common/Languages/en/ISK-App.php` | なし |
+| `assets/lang/ja/ja.txt` | `Common/Languages/ja/ja.txt` | なし |
+| `src/LetterPoint.php` | `Common/Lib/ArrTargets.inc.php` の `$LetterPoint`(A〜L) | 必要な文字だけを抜き出し、書式を変更(2026-10-10) |
+| `src/TargetFaces.data.php` | `Install/install.sql` の Targets 表 | `tools/gen_targets.php` で必要な的面だけを変換(2026-10-10) |
+
+ianseo の 2023-04-01 版より後の版(FSL-1.1-ALv2 で配布)のファイルは含めていません。
+
+**作業中(未差し替え)**: 次の4ファイルは、まだ ianseo の後の版(FSL-1.1-ALv2)のものです。2023-04-01 版のものに差し替えるか、独自に作り直すまで、ianseo-lite を公開・再配布しないでください。
+`assets/lang/ja/ISK-App.php`、`assets/lang/ja/ja.png`、`assets/lang/en/en.png`、`assets/lang/en/en.txt`
 
 「ianseo」は本家の名称です。ianseo-lite は本家 ianseo の公式なものではなく、本家とは関係なく作られています。
 

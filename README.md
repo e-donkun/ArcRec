@@ -132,7 +132,7 @@ php tests/run.php        # (このフォルダで実行) ScorekeeperNG との通
 
 ```
 ianseo-lite/
-├─ LICENSE.txt / NOTICE.md  ライセンス(FSL-1.1-ALv2)と、本家 ianseo 由来のファイル・TCPDF の表示
+├─ LICENSE.txt / NOTICE.md  ライセンス(GPL v3)と、本家 ianseo 2023-04-01 版由来のファイル・TCPDF の表示
 ├─ CHANGELOG.md           版ごとの変更の履歴(いまの版は src/bootstrap.php の LITE_VERSION)
 ├─ index.php              入口(端末のPOSTはAPI、ブラウザには公開ページ=記録会一覧・記録会結果。admin/_public.php)
 ├─ Api/ISK-NG/index.php   ScorekeeperNG の接続先
@@ -167,18 +167,16 @@ ianseo-lite/
 
 ## ライセンス
 
-ianseo-lite は本家 ianseo のファイルを含む派生物として、本家と同じ
-**Functional Source License, Version 1.1, ALv2 Future License(FSL-1.1-ALv2)** で配布します。
-全文は `LICENSE.txt`(本家と同一。https://ianseo.net/IanseoLicense-FSL-1.1-ALv2.html)、
-本家から取り込んだファイルと同梱ライブラリの一覧・著作権表示は `NOTICE.md` にあります。
+ianseo-lite は **GNU General Public License version 3(GPL v3)** で配布します。全文は `LICENSE.txt` です。
+本家 ianseo の 2023-04-01 版(GPL v3)のファイル(的面の画像、言語ファイル、矢の文字と点数の表、的面の定義)を含む派生物です。
+取り込んだファイルの一覧と、同梱ライブラリの著作権表示は `NOTICE.md` にあります。
+ianseo のそれより後の版(FSL-1.1-ALv2)のファイルは含めていません。(作業中: 一部の言語ファイルがまだ差し替え前です。`NOTICE.md` を参照)
 
-- 自分たちの記録会の運営、非営利の教育・研究などに使えます。改変・再配布もできます。
-- 本家 ianseo と競合する**商用の製品・サービスとして提供すること**はできません(有料で売る・有料の記録会システムとして提供する など)。
-- 再配布するときは `LICENSE.txt` と `NOTICE.md` を一緒に配り、著作権表示を消さないでください。
-- 各版は、公開から2年たつと Apache License 2.0 でも使えるようになります。
+- 誰でも、商用を含めて、使う・改変する・再配布することができます。
+- 再配布するときは、`LICENSE.txt` と `NOTICE.md` を一緒に配り、著作権表示を消さず、ソースを付けてください(PHP のソースのまま配れば満たします)。
+- 改変したものを配るときも GPL v3 で配り、改変したファイルには変更したことと日付を書いてください。
 - 無保証です。
 
 PDF の作成に使う **TCPDF**(`lib/tcpdf/`)は **GNU LGPL v3** です(全文は `lib/tcpdf/LICENSE.TXT`)。
-PHP のソースのまま同梱しているので、差し替えて使えます。変更したファイルは `NOTICE.md` に記載しています。
 
 「ianseo」は本家の名称です。ianseo-lite は本家 ianseo の公式なものではありません。

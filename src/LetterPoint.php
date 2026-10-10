@@ -1,5 +1,5 @@
 <?php
-// 矢の文字 -> [P:表示, N:点数, W:並び順の重み]。ianseo の Common/Lib/ArrTargets.inc.php の $LetterPoint と同じ。
+// 矢の文字 -> [P:表示, N:点数, W:並び順の重み]。ianseo 2023-04-01 版(GPL v3)の Common/Lib/ArrTargets.inc.php の $LetterPoint(A〜L)と同じ。
 // 大文字小文字は同じ点(小文字は「境界の疑義」)として扱う。
 return [
     'A' => ['P' => 'M', 'N' => '0', 'W' => 0],

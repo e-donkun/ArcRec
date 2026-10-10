@@ -1,5 +1,5 @@
 <?php
-// tools/gen_targets.php で生成 (Install/install.sql の Targets 表より)
+// tools/gen_targets.php で生成(ianseo 2023-04-01 版(GPL v3)の Install/install.sql の Targets 表より)
 return array (
   1 => 
   array (
