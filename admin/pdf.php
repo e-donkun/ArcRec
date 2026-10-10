@@ -13,10 +13,11 @@ if ($type === 'results') {
     require_admin();
 }
 
+$stamp = Lite\Settings::code() . '-' . date('Ymd-His');   // ファイル名: 種類-記録会コード-日付-時刻.pdf
 switch ($type) {
     case 'results':
         $data = Pdf::results(Results::byCategory());
-        $name = 'results.pdf';
+        $name = 'results-' . $stamp . '.pdf';
         break;
     case 'scorecard_blank':
     case 'scorecard_filled':
@@ -34,11 +35,11 @@ switch ($type) {
         }));
         $qr = empty($_GET['noqr']) ? server_base_url() : null;
         $data = Pdf::scorecards($entries, $type === 'scorecard_filled', $qr);
-        $name = 'scorecards.pdf';
+        $name = ($type === 'scorecard_filled' ? 'scorecards-filled-' : 'scorecards-blank-') . $stamp . '.pdf';
         break;
     case 'qr':
         $data = Pdf::qrSheet(server_base_url(), Lite\Connect::mode($_GET['d'] ?? Lite\Connect::defaultMode()));
-        $name = 'target-qr.pdf';
+        $name = 'target-qr-' . $stamp . '.pdf';
         break;
     default:
         http_response_code(404);

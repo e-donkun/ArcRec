@@ -29,7 +29,7 @@ switch ($what) {
         foreach (Entries::all() as $e) {
             $rows[] = [$e['family_name'], $e['given_name'], $e['affiliation'], $e['category_name'], $e['target'] ? $e['target'] . $e['letter'] : ''];
         }
-        csv_out('entries.csv', $rows);
+        csv_out('entries-' . Settings::code() . '.csv', $rows);
     case 'results':
         // 部門コード | 部門名 | 順位 | 的番号 | 選手氏名 | 所属 | 総合計 | 第1優先 | 第2優先 | (空) | 距離1のエンド 1〜n | 距離1の計 | (空) | 距離2 …
         $ends = Settings::ends();
