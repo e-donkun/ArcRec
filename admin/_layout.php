@@ -197,11 +197,11 @@ function page_foot($tab = '')
     echo '<div id="sp-toast" class="sp-toast" role="status"></div></body></html>';
 }
 
-/** 記録会選択の上部バー右上のボタン: 全体管理者ログイン(未設定なら最初の設定)/ ログイン中はパスワードの変更。シートは render_competitions() が用意する */
+/** 記録会選択の上部バー右上のボタン: 全体管理者ログイン(未設定なら最初の設定)。シートは render_competitions() が用意する */
 function admin_header_buttons()
 {
     if (Auth::isAdmin()) {
-        return '<a class="sp-appbar-btn" href="#" id="AdminPwBtn" title="全体管理者パスワードの変更">' . icon('edit') . '<span>パスワード変更</span></a>';
+        return '';   // ログイン中は、ログアウトのボタンだけ(パスワードの変更は一覧の下)
     }
     return '<a class="sp-appbar-btn" href="#" id="' . (Auth::adminIsSet() ? 'AdminLoginBtn' : 'AdminSetupBtn') . '" title="全体管理者ログイン">'
         . icon('gear') . '<span>全体管理者ログイン</span></a>';
@@ -228,7 +228,6 @@ function render_competitions($next = 'home.php')
 
     // 新しい記録会(一覧の上)。管理者としてログインしているときだけ
     if ($isAdmin) {
-        echo '<p class="sp-note">全体管理者としてログイン中です(どの記録会もパスワードなしで開けます)。</p>';
         echo '<p><button type="button" class="sp-btn block" id="CompNewBtn">' . icon('plus') . '新しい記録会を作成</button></p>';
     }
 
@@ -248,6 +247,12 @@ function render_competitions($next = 'home.php')
         echo '<div class="sp-empty">記録会がありません</div>';
     }
     echo '</div>';
+
+    // 全体管理者(一覧の下。ログイン中だけ)
+    if ($isAdmin) {
+        echo '<div class="sp-section-title">全体管理者</div><div class="sp-menu">'
+            . '<a class="sp-card tap" href="#" id="AdminPwBtn">' . icon('edit') . '<div class="sp-card-main"><div class="sp-name">全体管理者パスワードの変更</div></div></a></div>';
+    }
 
     // シートの中身(JavaScript で開く)
     echo '<template id="CompOpenTpl">' . $form('<input type="hidden" name="do" value="open"><input type="hidden" name="code">'
@@ -274,14 +279,14 @@ function render_competitions($next = 'home.php')
         . $pw('admin_password', '管理者パスワード') . $actions('ログイン')) . '</template>';
     if (!$adminSet) {
         $needProof = !Auth::canSetupAdmin();
-        echo '<template id="AdminSetupTpl">' . $form('<input type="hidden" name="do" value="admin_setup"><h2>管理者パスワードを設定</h2>'
+        echo '<template id="AdminSetupTpl">' . $form('<input type="hidden" name="do" value="admin_setup"><h2>全体管理者パスワードを設定</h2>'
             . '<div class="sp-sub">すべての記録会に共通のパスワードです。管理者としてログインすると、どの記録会も開け、新しい記録会を作れます。</div>'
             . '<div class="sp-row">' . $pw('admin_password', '管理者パスワード', 'new-password', 4) . $pw('admin_password2', '確認', 'new-password', 4) . '</div>'
             . ($needProof ? $pw('proof', 'いずれかの記録会のパスワード(サンプル以外)') . '<div class="sp-sub">最初の設定だけ、記録会を作った人であることを確かめます。</div>' : '')
             . $actions('設定する')) . '</template>';
     }
     if ($isAdmin) {
-        echo '<template id="AdminPwTpl">' . $form('<input type="hidden" name="do" value="admin_password"><h2>管理者パスワードの変更</h2>'
+        echo '<template id="AdminPwTpl">' . $form('<input type="hidden" name="do" value="admin_password"><h2>全体管理者パスワードの変更</h2>'
             . '<div class="sp-row">' . $pw('admin_password', '新しいパスワード', 'new-password', 4) . $pw('admin_password2', '確認', 'new-password', 4) . '</div>'
             . $actions('変更')) . '</template>';
     }

@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!Auth::adminLogin((string)($_POST['admin_password'] ?? ''))) {
                     throw new InvalidArgumentException('管理者パスワードが違います');
                 }
-                flash('管理者としてログインしました');
+                flash('全体管理者としてログインしました');
                 redirect('index.php');
             case 'admin_setup':
                 if (Auth::adminIsSet()) {
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 Auth::setAdminPassword((string)$_POST['admin_password']);
                 Auth::adminLogin((string)$_POST['admin_password']);
-                flash('管理者パスワードを設定しました');
+                flash('全体管理者パスワードを設定しました');
                 redirect('index.php');
             case 'admin_password':
                 if (!Auth::isAdmin()) {
@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new InvalidArgumentException('確認用パスワードが一致しません');
                 }
                 Auth::setAdminPassword((string)$_POST['admin_password']);
-                flash('管理者パスワードを変更しました');
+                flash('全体管理者パスワードを変更しました');
                 redirect('index.php');
         }
     } catch (InvalidArgumentException | RuntimeException $e) {
