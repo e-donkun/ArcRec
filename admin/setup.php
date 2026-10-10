@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ], $faces, $ties));
                 // 端末に保存した選手一覧・的面・距離の設定は、次の接続で作り直させる
                 Db::pdo()->exec("UPDATE devices SET setup = '', setup_confirmed = 0");
-                flash('大会設定を保存しました');
+                flash('記録会設定を保存しました');
                 break;
 
             case 'clear_scores':
@@ -73,9 +73,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $s = Settings::all();
 $cat = Settings::category();
 $nd = Settings::distances();
-page_head('大会設定', 'home');
+page_head('記録会設定', 'home');
 echo '<form method="post" class="card wideform">' . csrf_field() . '<input type="hidden" name="do" value="settings">';
-echo '<label>大会名</label><input type="text" name="name" value="' . h($s['name']) . '">';
+echo '<label>記録会名</label><input type="text" name="name" value="' . h($s['name']) . '">';
 
 echo '<label>競技形式</label><select name="preset" id="preset">';
 foreach (Settings::PRESETS as $k => $p) {
@@ -91,7 +91,7 @@ foreach (Settings::faceOptions() as $id => $label) {
 echo '</select>';
 
 echo '<label>結果の公開</label><label class="sp-switch"><input type="checkbox" name="results_public" value="1"' . (Settings::resultsPublic() ? ' checked' : '') . '> 結果を公開する(ログインなしで見られる)</label>'
-    . '<p class="sp-note">公開用のURL: <code>' . h(server_base_url() . 'results.php?c=' . Settings::code()) . '</code>(非公開のときは、この大会を開いている管理者だけが見られます)</p>';
+    . '<p class="sp-note">公開用のURL: <code>' . h(server_base_url() . 'results.php?c=' . Settings::code()) . '</code>(非公開のときは、この記録会を開いている管理者だけが見られます)</p>';
 
 // 詳細設定(ふだんは閉じておく): 距離の名称、同点のときの優先順位
 echo '<details class="sp-advanced"><summary>詳細設定</summary>';
@@ -109,12 +109,12 @@ echo '</div><p class="sp-note">合計点が同じときは、第1優先順位の
     . '初期値は アウトドア 第1=X・第2=10、インドア 第1=10・第2=9 です。</p>';
 echo '</details>';
 echo '<input type="hidden" name="archers_per_target" value="' . h($s['archers_per_target']) . '">';
-echo '<p class="muted small">大会コード <code>' . h(Settings::code()) . '</code> は自動で決まります(端末の接続は「端末接続」のQRで行います)。</p>';
+echo '<p class="muted small">記録会コード <code>' . h(Settings::code()) . '</code> は自動で決まります(端末の接続は「端末接続」のQRで行います)。</p>';
 echo '<p><button>保存</button></p></form>';
 
 // ---- 管理
 echo '<h2>管理</h2><div class="row"><form method="post" class="card" style="flex:1 1 20rem">' . csrf_field() . '<input type="hidden" name="do" value="password">'
-    . '<b>この大会のパスワードの変更</b><p class="sp-note">パスワードはこの大会の DB に保存します。</p><label>新しいパスワード</label><input type="password" name="password" required><label>確認</label><input type="password" name="password2" required><p><button class="sub">変更</button></p></form>';
+    . '<b>この記録会のパスワードの変更</b><p class="sp-note">パスワードはこの記録会の DB に保存します。</p><label>新しいパスワード</label><input type="password" name="password" required><label>確認</label><input type="password" name="password2" required><p><button class="sub">変更</button></p></form>';
 echo '<form method="post" class="card" style="flex:1 1 20rem" onsubmit="return confirm(\'全員の得点を消します。よろしいですか?\')">' . csrf_field() . '<input type="hidden" name="do" value="clear_scores">'
     . '<b>得点の全消去</b><p class="muted small">リハーサル後などに、選手名簿はそのままで得点だけを消します。</p>'
     . '<label style="font-weight:400"><input type="checkbox" name="confirm" value="yes"> 本当に消す</label><p><button class="danger">得点を全消去</button></p></form></div>';

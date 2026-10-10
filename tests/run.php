@@ -22,8 +22,8 @@ function call(array $reqs)
     return (new IskApi())->process(json_decode(json_encode($reqs)));
 }
 
-echo "# 大会設定と選手\n";
-Settings::setMany(['code' => 'KYT26', 'name' => '京都テスト大会', 'preset' => 'outdoor36']);
+echo "# 記録会設定と選手\n";
+Settings::setMany(['code' => 'KYT26', 'name' => '京都テスト記録会', 'preset' => 'outdoor36']);
 $rm = (int)Categories::byCode('RM')['id'];
 $rw = (int)Categories::byCode('RW')['id'];
 ok(count(Categories::all()) === 2, '部門はリカーブ男子・女子の2つだけ');
@@ -49,9 +49,9 @@ try {
 echo "# handshake\n";
 $h = ['action' => 'handshake', 'uuid' => 'dev-1', 'version' => '1.10.0', 'iskType' => 11];
 $r = call([$h + ['tournament' => 'WRONG']]);
-ok($r['error'] === true && $r['responses'][0]['error'] === 1, '違う大会コードの登録は拒否');
+ok($r['error'] === true && $r['responses'][0]['error'] === 1, '違う記録会コードの登録は拒否');
 $r = call([$h + ['tournament' => 'KYT26']]);
-ok($r['error'] === false && $r['responses'][0]['error'] === 0 && $r['responses'][0]['devCode'] === '0001', '大会コードで登録 devCode=0001');
+ok($r['error'] === false && $r['responses'][0]['error'] === 0 && $r['responses'][0]['devCode'] === '0001', '記録会コードで登録 devCode=0001');
 $r = call([array_merge($h, ['uuid' => 'dev-pin', 'tournament' => 'KYT26|1234'])]);
 ok($r['responses'][0]['error'] === 0, '本家の "コード|PIN" の形で来ても、PINは無視して登録できる');
 Devices::forget('dev-pin');
@@ -65,7 +65,7 @@ $r = call([['action' => 'comp', 'device' => 'nobody', 'tocode' => 'KYT26']]);
 ok($r['responses'][0]['action'] === 'handshake' && $r['responses'][0]['error'] === 2, '未登録端末は handshake error 2');
 $r = call([['action' => 'comp', 'device' => 'dev-1', 'tocode' => 'KYT26|1234']]);
 $comp = $r['responses'][0];
-ok($comp['toname'] === '京都テスト大会' && $comp['stages'] === ['Q'], 'comp: 大会名と stages');
+ok($comp['toname'] === '京都テスト記録会' && $comp['stages'] === ['Q'], 'comp: 記録会名と stages');
 ok(array_column($comp['sessions'][0]['sesstargets'], 'id') === ['0001', '0002'], 'comp: 的一覧');
 $r = call([['action' => 'manual', 'device' => 'dev-1', 'tocode' => 'KYT26', 'type' => 'Q', 'sesstarget' => '10001']]);
 $cfg = $r['responses'][0];

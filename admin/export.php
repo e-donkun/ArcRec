@@ -8,7 +8,7 @@ use Lite\Settings;
 
 $what = $_GET['what'] ?? '';
 if ($what === 'results') {
-    public_comp();   // 結果は公開(?c=大会コード)
+    public_comp();   // 結果は公開(?c=記録会コード)
 } else {
     require_admin();
 }

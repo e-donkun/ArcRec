@@ -145,14 +145,14 @@ ok(Settings::targetFace(1) === 5 && Settings::targetFace(2) === 5, '競技形式
 Settings::setMany(['preset' => 'bogus']);
 ok(Settings::distances() === 2 && Settings::totalArrows() === 72, '不明な形式は既定(屋外 36x2)に戻る');
 
-echo "# 大会コード・距離名・セッション名\n";
+echo "# 記録会コード・距離名・セッション名\n";
 $origDb = getenv('LITE_DB');
 putenv('LITE_DB=' . sys_get_temp_dir() . '/lite-test3-' . getmypid() . '.sqlite');
 Lite\Db::reset();
 Settings::reset();
-ok(Settings::get('code') === '', '作成直後は大会コードが空');
+ok(Settings::get('code') === '', '作成直後は記録会コードが空');
 $c1 = Settings::code();
-ok(preg_match('/^[0-9A-F]{8}$/', $c1) === 1, '大会コードは8桁の16進数: ' . $c1);
+ok(preg_match('/^[0-9A-F]{8}$/', $c1) === 1, '記録会コードは8桁の16進数: ' . $c1);
 ok(Settings::code() === $c1 && Settings::get('code') === $c1, '一度作ったら変わらない(保存される)');
 Settings::set('code', 'LITE');
 ok(Settings::code() !== 'LITE' && preg_match('/^[0-9A-F]{8}$/', Settings::code()) === 1, '以前の既定値 LITE は作り直す');
@@ -170,8 +170,8 @@ ok(Settings::category() === 2 && array_keys(Settings::faceOptions()) === [1, 2] 
 $code = Settings::code();
 call([['action' => 'handshake', 'uuid' => 'x1', 'version' => '1.10.0', 'iskType' => 11, 'tournament' => strtolower($code)]]);
 $comp = call([['action' => 'comp', 'device' => 'x1', 'tocode' => $code]])['responses'][0];
-ok($comp['tocode'] === $code && $comp['sessions'][0]['sessdesc'] === 'Session 1', '自動の大会コードで接続でき、セッション名は固定');
-ok($comp['toname'] === $code, '大会名が空なら大会コードを表示');
+ok($comp['tocode'] === $code && $comp['sessions'][0]['sessdesc'] === 'Session 1', '自動の記録会コードで接続でき、セッション名は固定');
+ok($comp['toname'] === $code, '記録会名が空なら記録会コードを表示');
 foreach (['', '-wal', '-shm'] as $x) {
     @unlink(getenv('LITE_DB') . $x);
 }

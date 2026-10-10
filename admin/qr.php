@@ -23,7 +23,7 @@ if (in_array($host, ['localhost', '127.0.0.1', '::1'], true)) {
 echo '<div class="row"><div class="card"><h2 style="margin-top:0">1. 接続設定のQR</h2>'
     . '<p class="muted small">ScorekeeperNG の設定画面(モード: <b>Lite</b>)でこの QR を読み取ります。</p>'
     . '<div style="max-width:240px;background:#fff;padding:8px;border-radius:8px">' . Connect::svg(Connect::setupPayload($base)) . '</div>'
-    . '<p>サーバーURL: <code>' . h($base) . '</code><br>大会コード: <code>' . h(Settings::code()) . '</code></p>'
+    . '<p>サーバーURL: <code>' . h($base) . '</code><br>記録会コード: <code>' . h(Settings::code()) . '</code></p>'
     . '<p class="muted small">QRが使えないときは、アプリの設定に上の2項目を手入力します。</p></div>';
 echo '<div class="card"><h2 style="margin-top:0">2. 的のQR</h2>'
     . '<p class="muted small">各的に貼っておくと、読み取るだけでその的の選手が端末に出ます。スコアカードにも的のQRを印刷しています。(手入力でも的番号を選べます)</p>'

@@ -1,7 +1,7 @@
 /*
 ianseo-lite 管理画面のスタイル。
 ianseo 本体のカスタムモジュール「スマホモード」(Modules/Custom/SmartphoneMode/sp.css)と同じ画面構成・見た目にしている:
-上部バー(大会名と画面名)、下部タブ、検索とチップ、カード一覧、下から出る編集シート、割り当て表と未割当トレイ。
+上部バー(記録会名と画面名)、下部タブ、検索とチップ、カード一覧、下から出る編集シート、割り当て表と未割当トレイ。
 後半は、フォームや表など ianseo-lite の画面だけで使う部品。
 */
 :root {
@@ -162,6 +162,7 @@ select, input[type=text], input[type=number], input[type=email], textarea {
 	padding: 10px 12px;
 }
 .sp-card.tap { cursor: pointer; }
+a.sp-card { display: block; color: inherit; text-decoration: none; }
 .sp-card.tap:active { background: var(--sp-primary-light); }
 .sp-card-head { display: flex; align-items: center; gap: 10px; }
 .sp-card-main { flex: 1; min-width: 0; }
@@ -420,7 +421,7 @@ code { background: #eef0f3; padding: 1px 5px; border-radius: 4px; word-break: br
 details.card summary { cursor: pointer; font-weight: bold; }
 @media print { .sp-appbar, .sp-tabbar, .noprint { display: none !important; } body { background: #fff; } .sp-main { padding: 0; max-width: none; } }
 
-/* 大会設定の「詳細設定」(タップで開く) */
+/* 記録会設定の「詳細設定」(タップで開く) */
 details.sp-advanced { margin: 16px 0 8px; border: 1px solid var(--sp-border); border-radius: 10px; padding: 0 12px; background: #fafbfc; }
 details.sp-advanced > summary { cursor: pointer; font-weight: bold; padding: 12px 0; color: var(--sp-primary-dark); list-style: none; }
 details.sp-advanced > summary::-webkit-details-marker { display: none; }

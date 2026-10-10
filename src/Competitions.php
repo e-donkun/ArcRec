@@ -4,12 +4,12 @@ namespace Lite;
 use PDO;
 
 /**
- * 大会の一覧と切り替え。大会 1 つ = SQLite ファイル 1 つ(data/competitions/<大会コード>.sqlite)。
- * 管理パスワードも、その大会の DB の中(settings.admin_hash)にある。
+ * 記録会の一覧と切り替え。記録会 1 つ = SQLite ファイル 1 つ(data/competitions/<記録会コード>.sqlite)。
+ * 管理パスワードも、その記録会の DB の中(settings.admin_hash)にある。
  */
 class Competitions
 {
-    /** 同梱のサンプル大会(samples/ からコピーして使う): 屋外(Outdoor 36射×2)と屋内(Indoor 30射×2)。パスワードはどちらも sample */
+    /** 同梱のサンプル記録会(samples/ からコピーして使う): 屋外(Outdoor 36射×2)と屋内(Indoor 30射×2)。パスワードはどちらも sample */
     const SAMPLE_CODE = '5A4D0001';
     const SAMPLE_CODES = ['5A4D0001', '5A4D0002'];
     const SAMPLE_PASSWORD = 'sample';
@@ -28,7 +28,10 @@ class Competitions
 
     // ------------------------------------------------------------ 一覧・検索
 
-    /** @return string[] 大会コード => DB のパス */
+    /**
+     * @return string[] 記録会コード => DB のパス
+     * 注意: コードが数字だけ(例 84247516)だと、PHP の配列のキーは整数になる。使うときは (string) にすること
+     */
     public static function files()
     {
         $out = [];
@@ -39,7 +42,7 @@ class Competitions
         return $out;
     }
 
-    /** 大会コード(大文字小文字は区別しない)から DB のパスと正式なコードを探す。無ければ null */
+    /** 記録会コード(大文字小文字は区別しない)から DB のパスと正式なコードを探す。無ければ null */
     public static function find($code)
     {
         $code = trim((string)$code);
@@ -47,6 +50,7 @@ class Competitions
             return null;
         }
         foreach (self::files() as $c => $path) {
+            $c = (string)$c;
             if (strcasecmp($c, $code) === 0) {
                 return ['code' => $c, 'path' => $path];
             }
@@ -59,7 +63,7 @@ class Competitions
         return self::find($code) !== null;
     }
 
-    /** 一覧用の概要(他の大会の DB を、いま使っている大会とは別の接続で読む) */
+    /** 一覧用の概要(他の記録会の DB を、いま使っている記録会とは別の接続で読む) */
     public static function summary($code, $path)
     {
         $pdo = Db::connect($path);
@@ -83,14 +87,14 @@ class Competitions
         ];
     }
 
-    /** 大会の一覧。新しい順(サンプルは最後) */
+    /** 記録会の一覧。新しい順(サンプルは最後) */
     public static function all()
     {
         self::bootstrap();
         $list = [];
         foreach (self::files() as $code => $path) {
             try {
-                $list[] = self::summary($code, $path);
+                $list[] = self::summary((string)$code, $path);
             } catch (\Throwable $e) {
                 error_log('ianseo-lite: ' . $path . ' を読めません: ' . $e->getMessage());
             }
@@ -104,8 +108,8 @@ class Competitions
     // ------------------------------------------------------------ 切り替え
 
     /**
-     * 大会の DB を使うようにする。なければ false。
-     * DB に入っている大会コードが、ファイル名のコードと違えば、ファイル名に合わせる(端末はファイル名のコードで探す)。
+     * 記録会の DB を使うようにする。なければ false。
+     * DB に入っている記録会コードが、ファイル名のコードと違えば、ファイル名に合わせる(端末はファイル名のコードで探す)。
      */
     public static function open($code)
     {
@@ -121,7 +125,7 @@ class Competitions
         return $f['code'];
     }
 
-    /** 別の大会の設定値を、いま使っている大会を変えずに読む */
+    /** 別の記録会の設定値を、いま使っている記録会を変えずに読む */
     public static function readSetting($code, $key)
     {
         $f = self::find($code);
@@ -134,7 +138,7 @@ class Competitions
         return $v === false ? null : (string)$v;
     }
 
-    /** 端末(uuid)が登録されている大会のうち、最後に通信したもの。無ければ null */
+    /** 端末(uuid)が登録されている記録会のうち、最後に通信したもの。無ければ null */
     public static function byDevice($uuid)
     {
         self::bootstrap();
@@ -149,7 +153,7 @@ class Competitions
                 continue;
             }
             if ($seen !== false && ($best === null || $seen > $bestSeen)) {
-                $best = $code;
+                $best = (string)$code;
                 $bestSeen = $seen;
             }
         }
@@ -158,7 +162,7 @@ class Competitions
 
     // ------------------------------------------------------------ 作成
 
-    /** 8桁の16進数(大文字)で、まだ使われていない大会コードを作る */
+    /** 8桁の16進数(大文字)で、まだ使われていない記録会コードを作る */
     public static function newCode()
     {
         do {
@@ -168,8 +172,8 @@ class Competitions
     }
 
     /**
-     * 大会を作る。大会コードは自動。パスワードは大会の DB の中に持つ。
-     * @return string 大会コード
+     * 記録会を作る。記録会コードは自動。パスワードは記録会の DB の中に持つ。
+     * @return string 記録会コード
      */
     public static function create($name, $preset, $password)
     {
@@ -208,7 +212,7 @@ class Competitions
         }
     }
 
-    /** 1大会だけだった頃の data/lite.sqlite を、大会のフォルダへ移す(パスワードも DB の中なのでそのまま) */
+    /** 1記録会だけだった頃の data/lite.sqlite を、記録会のフォルダへ移す(パスワードも DB の中なのでそのまま) */
     private static function migrateLegacy()
     {
         if (getenv('LITE_DB')) {
@@ -245,7 +249,7 @@ class Competitions
         }
     }
 
-    /** 同梱のサンプル大会を、まだ無ければコピーする */
+    /** 同梱のサンプル記録会を、まだ無ければコピーする */
     private static function seedSample()
     {
         foreach (self::SAMPLE_CODES as $code) {
@@ -253,6 +257,10 @@ class Competitions
             $dest = Db::competitionsDir() . '/' . $code . '.sqlite';
             if (is_file($src) && !is_file($dest)) {
                 @copy($src, $dest);
+            } elseif (strpos((string)self::readSetting($code, 'name'), 'サンプル大会') === 0) {
+                // 以前の版の「サンプル大会」という名前を「サンプル記録会」に直す
+                $pdo = Db::connect($dest);
+                $pdo->exec("UPDATE settings SET v = REPLACE(v, 'サンプル大会', 'サンプル記録会') WHERE k = 'name' AND v LIKE 'サンプル大会%'");
             }
         }
     }

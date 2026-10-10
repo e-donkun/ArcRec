@@ -101,7 +101,7 @@ class IskApi
         if (!empty($req->extra) && is_string($req->extra)) {
             $req->extra = json_decode($req->extra);
         }
-        // 本家は大会コードに "|PIN" を付けて送ることがあるが、このシステムに PIN は無い(大会コードがランダムな
+        // 本家は記録会コードに "|PIN" を付けて送ることがあるが、このシステムに PIN は無い(記録会コードがランダムな
         // 8桁の16進数なので、それが合言葉になる)。付いていれば無視して、コードだけにする
         foreach (['tournament', 'tocode'] as $f) {
             if (!empty($req->$f) && strpos($req->$f, '|') !== false) {
@@ -120,7 +120,7 @@ class IskApi
         } elseif (!in_array($req->action, self::ACTIONS, true)) {
             $this->fail('Incorrect action or API version: ' . $req->action . ', ' . $req->apiVersion);
         } else {
-            // 端末が指定した大会(旧大会でも)の DB を使う
+            // 端末が指定した記録会(旧記録会でも)の DB を使う
             $bound = $this->bind($req);
             if ($bound === true) {
                 $res = $this->{'do' . ucfirst($req->action)}($req);
@@ -128,7 +128,7 @@ class IskApi
                     Devices::touch($dev);
                 }
             } else {
-                $res = $bound;   // 該当する大会が無い・端末がどの大会にも登録されていない、の返事(または null)
+                $res = $bound;   // 該当する記録会が無い・端末がどの記録会にも登録されていない、の返事(または null)
             }
         }
 
@@ -144,9 +144,9 @@ class IskApi
         }
     }
 
-    // ------------------------------------------------------------------ 大会(DB)の選択
+    // ------------------------------------------------------------------ 記録会(DB)の選択
 
-    /** このリクエストで使った大会のコード */
+    /** このリクエストで使った記録会のコード */
     private $codes = [];
 
     public function usedCodes()
@@ -155,9 +155,9 @@ class IskApi
     }
 
     /**
-     * リクエストを処理する大会の DB を選ぶ。
-     *   大会コード(tocode / handshake の tournament)があれば、その大会。端末が古い大会のコードで来たら、その大会の DB を読む。
-     *   コードが無いリクエスト(info, getconfig, lang ...)は、その端末が登録されている大会のうち、最後に通信した大会。
+     * リクエストを処理する記録会の DB を選ぶ。
+     *   記録会コード(tocode / handshake の tournament)があれば、その記録会。端末が古い記録会のコードで来たら、その記録会の DB を読む。
+     *   コードが無いリクエスト(info, getconfig, lang ...)は、その端末が登録されている記録会のうち、最後に通信した記録会。
      *
      * @return true|array|null true: 選んだ / 配列: そのまま返す返事 / null: エラー(errorMsg 設定済み)
      */

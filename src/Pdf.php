@@ -275,7 +275,7 @@ class Pdf extends \TCPDF
             $pdf->f(22);
             $pdf->SetXY($x, $y + 48);
             $pdf->Cell($cw, 10, self::targetLabel($t), 0, 0, 'C');
-            // 切り離して的に貼っても、どの大会のQRかわかるように
+            // 切り離して的に貼っても、どの記録会のQRかわかるように
             $pdf->f(8);
             $pdf->SetXY($x + 2, $y + 58.5);
             $pdf->Cell($cw - 4, 5, mb_strimwidth(Settings::title(), 0, 44, '…'), 0, 0, 'C');
@@ -309,7 +309,7 @@ class Pdf extends \TCPDF
         $this->SetXY(15, 12);
         $this->Cell(180, 8, Settings::title(), 0, 1, 'C');
         $this->f(12);
-        $this->Cell(180, 8, '予選結果 ' . Settings::roundLabel(), 0, 1, 'C');
+        $this->Cell(180, 8, '記録会結果 ' . Settings::roundLabel(), 0, 1, 'C');
         $this->Ln(2);
     }
 

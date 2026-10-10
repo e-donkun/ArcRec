@@ -1,5 +1,5 @@
 <?php
-// ホーム: 大会の状況と、メニュー(大会設定・端末接続・印刷)。ログアウトは上部バーの右上(ホームだけ)。大会の切り替え・新しい大会は、ログアウトして「大会の選択」(index.php)で
+// ホーム: 記録会の状況と、メニュー(記録会設定・端末接続・印刷)。ログアウトは上部バーの右上(ホームだけ)。記録会の切り替え・新しい記録会は、ログアウトして「記録会の選択」(index.php)で
 require __DIR__ . '/_layout.php';
 require_admin();
 
@@ -25,7 +25,7 @@ foreach (Entries::all() as $e) {
 $code = Settings::code();
 page_head('ホーム', 'home', ['logout' => true]);
 if (!Settings::get('name')) {
-    echo '<div class="sp-flash warn">大会名がまだありません。<a href="setup.php">大会設定</a> で入れてください。</div>';
+    echo '<div class="sp-flash warn">記録会名がまだありません。<a href="setup.php">記録会設定</a> で入れてください。</div>';
 }
 echo '<div class="sp-stats">'
     . '<div><small>選手(的に配置)</small><b>' . $p['archers'] . '</b> <span class="sp-sub">(' . $placed . ')</span></div>'
@@ -39,8 +39,8 @@ $item = function ($href, $icon, $title, $sub = '', $attr = '') {
     return '<a class="sp-card tap" href="' . $href . '"' . $attr . '>' . icon($icon) . '<div class="sp-card-main"><div class="sp-name">' . $title . '</div>'
         . ($sub !== '' ? '<div class="sp-sub">' . $sub . '</div>' : '') . '</div></a>';
 };
-echo '<div class="sp-section-title">大会の準備</div><div class="sp-menu">'
-    . $item('setup.php', 'gear', '大会設定')
+echo '<div class="sp-section-title">記録会の準備</div><div class="sp-menu">'
+    . $item('setup.php', 'gear', '記録会設定')
     . $item('entries.php', 'users', '選手登録')
     . $item('targets.php', 'target', '立順')
     . $item('qr.php', 'qr', '端末接続')

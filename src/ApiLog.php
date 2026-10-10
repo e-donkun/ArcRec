@@ -12,7 +12,7 @@ class ApiLog
         return Settings::get('api_log') === '1';
     }
 
-    /** 大会ごとのログファイル */
+    /** 記録会ごとのログファイル */
     public static function file($code, $day = null)
     {
         return Db::dataDir() . '/api-' . preg_replace('/[^A-Za-z0-9_-]/', '', $code) . '-' . ($day ?: date('Y-m-d')) . '.jsonl';
@@ -34,7 +34,7 @@ class ApiLog
         return $v;
     }
 
-    /** @param string[] $codes このやりとりで使った大会のコード。ログをオンにしている大会のファイルにだけ書く */
+    /** @param string[] $codes このやりとりで使った記録会のコード。ログをオンにしている記録会のファイルにだけ書く */
     public static function write($requests, array $response, array $codes = [])
     {
         try {
@@ -63,7 +63,7 @@ class ApiLog
         }
     }
 
-    /** いま使っている大会の、新しい順に最大 $limit 件(今日のファイルから) */
+    /** いま使っている記録会の、新しい順に最大 $limit 件(今日のファイルから) */
     public static function recent($limit = 40)
     {
         $f = self::file(Settings::code());
@@ -80,7 +80,7 @@ class ApiLog
         return $out;
     }
 
-    /** いま使っている大会のログを消す */
+    /** いま使っている記録会のログを消す */
     public static function clear()
     {
         $code = preg_replace('/[^A-Za-z0-9_-]/', '', Settings::code());

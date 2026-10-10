@@ -4,13 +4,13 @@ namespace Lite;
 use PDO;
 
 /**
- * SQLite への接続とスキーマ。1 つの DB ファイル = 1 つの大会(パスワードも DB の中の settings に持つ)。
- * 大会の DB は data/competitions/<大会コード>.sqlite。いま使う大会は select() で切り替える。
+ * SQLite への接続とスキーマ。1 つの DB ファイル = 1 つの記録会(パスワードも DB の中の settings に持つ)。
+ * 記録会の DB は data/competitions/<記録会コード>.sqlite。いま使う記録会は select() で切り替える。
  */
 class Db
 {
     private static $pdo;
-    /** いま使っている大会 DB のパス */
+    /** いま使っている記録会 DB のパス */
     private static $selected;
 
     public static function dataDir()
@@ -22,7 +22,7 @@ class Db
         return rtrim($dir, '/');
     }
 
-    /** 大会の DB を置くフォルダ */
+    /** 記録会の DB を置くフォルダ */
     public static function competitionsDir()
     {
         $dir = self::dataDir() . '/competitions';
@@ -39,7 +39,7 @@ class Db
             return $p;
         }
         if (!self::$selected) {
-            throw new \RuntimeException('大会が選ばれていません');
+            throw new \RuntimeException('記録会が選ばれていません');
         }
         return self::$selected;
     }
@@ -49,7 +49,7 @@ class Db
         return (bool)(getenv('LITE_DB') ?: self::$selected);
     }
 
-    /** 使う大会の DB を切り替える */
+    /** 使う記録会の DB を切り替える */
     public static function select($path)
     {
         if ($path !== self::$selected) {

@@ -7,11 +7,11 @@ use Lite\Competitions;
 use Lite\Settings;
 
 Auth::start();
-Competitions::bootstrap();   // 旧データの移行・サンプル大会の用意(1リクエストにつき1回)
+Competitions::bootstrap();   // 旧データの移行・サンプル記録会の用意(1リクエストにつき1回)
 
 /**
- * ログイン必須のページの冒頭で呼ぶ。パスワードを通した大会が選ばれていなければ、大会の一覧(index.php)へ。
- * 通っていれば、その大会の DB を使うようにする。
+ * ログイン必須のページの冒頭で呼ぶ。パスワードを通した記録会が選ばれていなければ、記録会の一覧(index.php)へ。
+ * 通っていれば、その記録会の DB を使うようにする。
  */
 function require_admin()
 {
@@ -26,21 +26,21 @@ function require_admin()
 }
 
 /**
- * ログイン不要の公開ページ(結果・結果PDF/CSV)で、どの大会かを決めて DB を開く。
- * ?c=大会コード があればその大会、なければ管理中の大会。
- * 大会設定で「結果を公開」にしている大会だけ見せる(その大会を開いている管理者は、非公開でも見られる)。
+ * ログイン不要の公開ページ(結果・結果PDF/CSV)で、どの記録会かを決めて DB を開く。
+ * ?c=記録会コード があればその記録会、なければ管理中の記録会。
+ * 記録会設定で「結果を公開」にしている記録会だけ見せる(その記録会を開いている管理者は、非公開でも見られる)。
  */
 function public_comp()
 {
     $code = $_GET['c'] ?? Auth::current();
     if (!$code || Competitions::open($code) === false) {
         http_response_code(404);
-        exit('大会が見つかりません');
+        exit('記録会が見つかりません');
     }
     $code = Competitions::find($code)['code'];
     if (!Settings::resultsPublic() && !Auth::isCurrent($code)) {
         http_response_code(403);
-        exit('この大会の結果は公開されていません');
+        exit('この記録会の結果は公開されていません');
     }
     return $code;
 }
@@ -113,7 +113,7 @@ function icon($name)
     return '<svg class="sp-icon" viewBox="0 0 24 24" aria-hidden="true">' . ($paths[$name] ?? '') . '</svg>';
 }
 
-/** 下部タブ(スマホモードと同じ並び方。大会設定・端末接続などはホームのメニュー、大会の切り替えは大会の選択画面) */
+/** 下部タブ(スマホモードと同じ並び方。記録会設定・端末接続などはホームのメニュー、記録会の切り替えは記録会の選択画面) */
 function tabs()
 {
     return [
@@ -126,8 +126,9 @@ function tabs()
 }
 
 /**
- * 画面の上部(スマホモードと同じ: 上部バーに大会名と画面名)。
- * $opts: 'public' => 参加者向けの公開ページ(管理用のリンク・タブを出さない), 'logout' => 右上にログアウトボタン(ホームだけ), 'base' => style.css などの場所(トップのページから使うとき 'admin/'),
+ * 画面の上部(スマホモードと同じ: 上部バーに記録会名と画面名)。
+ * $opts: 'public' => 参加者向けの公開ページ(管理用のリンク・タブを出さない), 'logout' => 右上にログアウトボタン(ホーム・記録会の選択),
+ *        'gear' => 右上に歯車の「管理者設定」ボタン(リンク先。公開の結果ページ), 'base' => style.css などの場所(トップのページから使うとき 'admin/'),
  *        'wide' => 表の多い画面で横幅を広げる, 'js' => JavaScript に渡す変数, 'body' => body の class
  */
 function page_head($title, $tab = '', array $opts = [])
@@ -148,11 +149,14 @@ function page_head($title, $tab = '', array $opts = [])
     }
     echo '</script><script src="' . $base . 'app.js' . $ver . '"></script></head>'
         . '<body class="' . h($opts['body'] ?? '') . '"><header class="sp-appbar"><div class="sp-appbar-title">';
-    // 大会名は表示だけ(ここから大会は切り替えない。切り替えはログアウトして大会の選択で)
+    // 記録会名は表示だけ(ここから記録会は切り替えない。切り替えはログアウトして記録会の選択で)
     echo '<span class="sp-tour">' . h($name) . '</span>';
     echo '<h1>' . h($title) . '</h1></div>';
-    if ($admin && !empty($opts['logout'])) {
-        echo '<a class="sp-appbar-btn" href="logout.php" title="この大会を閉じて、大会の選択に戻る">' . icon('logout') . '<span>ログアウト</span></a>';
+    if (($admin || (Auth::isAdmin() && empty($opts['public']))) && !empty($opts['logout'])) {
+        echo '<a class="sp-appbar-btn" href="logout.php" title="ログアウトして、記録会の選択に戻る">' . icon('logout') . '<span>ログアウト</span></a>';
+    }
+    if (!empty($opts['gear'])) {
+        echo '<a class="sp-appbar-btn" href="' . h($opts['gear']) . '" title="管理者設定">' . icon('gear') . '<span>管理者設定</span></a>';
     }
     echo '</header><main class="sp-main' . (!empty($opts['wide']) ? ' wide' : '') . '">';
     foreach ((array)flash() as $f) {
@@ -160,7 +164,7 @@ function page_head($title, $tab = '', array $opts = [])
     }
 }
 
-/** 画面の下部(下部タブ。大会を開いている管理者だけ) */
+/** 画面の下部(下部タブ。記録会を開いている管理者だけ) */
 function page_foot($tab = '')
 {
     echo '</main>';
@@ -175,63 +179,107 @@ function page_foot($tab = '')
 }
 
 /**
- * 大会の一覧(スマホモードの「試合の選択」と同じカード)。タップすると、パスワードを入れて開くシートが出る。
- * 切り替えるときは毎回パスワードを入れる(前に開いた大会のパスワードは覚えない)。
+ * 記録会の一覧(スマホモードの「試合の選択」と同じカード)と、新しい記録会・管理者ログインのシート。
+ * 記録会をタップすると、その記録会のパスワード(管理者パスワードでも可)を入れるシートが出る。管理者としてログインしていれば、そのまま開く。
+ * 切り替えるときは毎回パスワードを入れる(前に開いた記録会のパスワードは覚えない)。
  */
 function render_competitions($next = 'home.php')
 {
+    $isAdmin = Auth::isAdmin();
+    $adminSet = Auth::adminIsSet();
+    $form = function ($inner, $id = '') use ($next) {
+        return '<form method="post" action="index.php?next=' . h(rawurlencode($next)) . '"' . ($id ? ' id="' . $id . '"' : '') . '>' . csrf_field() . $inner . '</form>';
+    };
+    $actions = function ($label) {
+        return '<div class="sp-sheet-actions"><button type="button" class="sp-btn sub" onclick="spSheet.close()">やめる</button><button class="sp-btn">' . $label . '</button></div>';
+    };
+    $pw = function ($name, $label, $auto = 'current-password', $min = '') {
+        return '<label class="sp-field"><span>' . $label . '</span><input type="password" name="' . $name . '" required' . ($min ? ' minlength="' . $min . '"' : '') . ' autocomplete="' . $auto . '"></label>';
+    };
+
+    // 新しい記録会(一覧の上)
+    echo '<p><button type="button" class="sp-btn block" id="CompNewBtn">' . icon('plus') . '新しい記録会を作成</button></p>';
+
     $list = Competitions::all();
     echo '<div class="sp-list" id="CompList">';
     foreach ($list as $c) {
         $cur = Auth::isCurrent($c['code']);
-        echo '<div class="sp-card tap sp-tour-item' . ($cur ? ' current' : '') . '" data-code="' . h($c['code']) . '" data-name="' . h($c['name'] ?: '(大会名未設定)') . '"'
+        echo '<div class="sp-card tap sp-tour-item' . ($cur ? ' current' : '') . '" data-code="' . h($c['code']) . '" data-name="' . h($c['name'] ?: '(記録会名未設定)') . '"'
             . ($c['sample'] ? ' data-hint="' . h(Competitions::SAMPLE_PASSWORD) . '"' : '') . ($cur ? ' data-current="1"' : '') . '>'
-            . '<div class="sp-name">' . h($c['name'] ?: '(大会名未設定)')
-            . ($cur ? '<span class="sp-tag pri">開いている大会</span>' : '') . ($c['sample'] ? '<span class="sp-tag">サンプル</span>' : '') . '</div>'
+            . '<div class="sp-name">' . h($c['name'] ?: '(記録会名未設定)')
+            . ($cur ? '<span class="sp-tag pri">開いている記録会</span>' : '') . ($c['sample'] ? '<span class="sp-tag">サンプル</span>' : '') . '</div>'
             . '<div class="sp-sub">' . h(implode(' / ', array_filter([$c['code'], $c['preset_label'], $c['entries'] . '人',
                 $c['last_score'] ? '最終更新 ' . substr($c['last_score'], 0, 16) : '']))) . '</div></div>';
     }
     if (!$list) {
-        echo '<div class="sp-empty">大会がありません</div>';
+        echo '<div class="sp-empty">記録会がありません</div>';
     }
     echo '</div>';
-    $presets = [];
-    foreach (Settings::PRESETS as $k => $p) {
-        $presets[] = [$k, $p['label']];
+
+    // 管理者(一覧の下)
+    echo '<div class="sp-section-title">管理者</div><div class="sp-menu">';
+    if ($isAdmin) {
+        echo '<div class="sp-card">' . icon('gear') . '<div class="sp-card-main"><div class="sp-name">管理者としてログイン中</div>'
+            . '<div class="sp-sub">どの記録会もパスワードなしで開けます</div></div></div>'
+            . '<a class="sp-card tap" href="#" id="AdminPwBtn">' . icon('edit') . '<div class="sp-card-main"><div class="sp-name">管理者パスワードの変更</div></div></a>';
+    } elseif ($adminSet) {
+        echo '<a class="sp-card tap" href="#" id="AdminLoginBtn">' . icon('gear') . '<div class="sp-card-main"><div class="sp-name">管理者ログイン</div>'
+            . '<div class="sp-sub">管理者パスワードで、どの記録会も開けます</div></div></a>';
+    } else {
+        echo '<a class="sp-card tap" href="#" id="AdminSetupBtn">' . icon('gear') . '<div class="sp-card-main"><div class="sp-name">管理者パスワードを設定</div>'
+            . '<div class="sp-sub">記録会ごとのパスワードとは別の、すべての記録会に共通のパスワード</div></div></a>';
     }
-    $form = function ($inner) use ($next) {
-        return '<form method="post" action="index.php?next=' . h(rawurlencode($next)) . '">' . csrf_field() . $inner . '</form>';
-    };
+    echo '</div>';
+
     // シートの中身(JavaScript で開く)
     echo '<template id="CompOpenTpl">' . $form('<input type="hidden" name="do" value="open"><input type="hidden" name="code">'
         . '<h2 data-role="title"></h2><div class="sp-sub" data-role="sub"></div>'
-        . '<label class="sp-field"><span>この大会のパスワード</span><input type="password" name="password" required autocomplete="current-password"></label>'
-        . '<div class="sp-sheet-actions"><button type="button" class="sp-btn sub" onclick="spSheet.close()">やめる</button><button class="sp-btn">開く</button></div>') . '</template>';
-    if (Auth::canCreate()) {
-        $opts = '';
-        foreach ($presets as $p) {
-            $opts .= '<option value="' . $p[0] . '"' . ($p[0] === Settings::DEFAULTS['preset'] ? ' selected' : '') . '>' . h($p[1]) . '</option>';
-        }
-        echo '<p><button type="button" class="sp-btn sub block" id="CompNewBtn">' . icon('plus') . '新しい大会を作る</button></p>';
-    } else {
-        echo '<p class="sp-note">新しい大会は、どれかの大会をパスワードで開いたあと、この画面から作れます。</p>';
+        . $pw('password', 'この記録会のパスワード(管理者パスワードでも可)')
+        . $actions('開く')) . '</template>';
+    // 管理者は、パスワードを聞かずに開く
+    echo $form('<input type="hidden" name="do" value="open"><input type="hidden" name="code"><input type="hidden" name="password" value="">', 'CompOpenDirect');
+
+    $opts = '';
+    foreach (Settings::PRESETS as $k => $p) {
+        $opts .= '<option value="' . $k . '"' . ($k === Settings::DEFAULTS['preset'] ? ' selected' : '') . '>' . h($p['label']) . '</option>';
     }
-    if (Auth::canCreate()) {
-        echo '<template id="CompNewTpl">' . $form('<input type="hidden" name="do" value="create"><h2>新しい大会</h2>'
-            . '<div class="sp-sub">大会コード(8桁の16進数)は自動で付きます。パスワードはこの大会だけのもので、大会の DB に保存します。</div>'
-            . '<label class="sp-field"><span>大会名</span><input type="text" name="name"></label>'
+    if ($isAdmin || $adminSet) {
+        echo '<template id="CompNewTpl">' . $form('<input type="hidden" name="do" value="create"><h2>新しい記録会</h2>'
+            . '<div class="sp-sub">記録会コード(8桁の16進数)は自動で付きます。パスワードはこの記録会だけのもので、記録会の DB に保存します。</div>'
+            . '<label class="sp-field"><span>記録会名</span><input type="text" name="name"></label>'
             . '<label class="sp-field"><span>競技形式</span><select name="preset">' . $opts . '</select></label>'
-            . '<div class="sp-row"><label class="sp-field"><span>パスワード</span><input type="password" name="password" required minlength="4" autocomplete="new-password"></label>'
-            . '<label class="sp-field"><span>パスワード(確認)</span><input type="password" name="password2" required minlength="4" autocomplete="new-password"></label></div>'
-            . '<div class="sp-sheet-actions"><button type="button" class="sp-btn sub" onclick="spSheet.close()">やめる</button><button class="sp-btn">作成</button></div>') . '</template>';
+            . '<div class="sp-row">' . $pw('password', 'パスワード', 'new-password', 4) . $pw('password2', 'パスワード(確認)', 'new-password', 4) . '</div>'
+            . ($isAdmin ? '' : $pw('admin_password', '管理者パスワード'))
+            . $actions('作成')) . '</template>';
+    } else {
+        echo '<template id="CompNewTpl"><h2>新しい記録会</h2><p>記録会を作るには、先に「管理者パスワードを設定」してください。</p>'
+            . '<div class="sp-sheet-actions"><button type="button" class="sp-btn sub" onclick="spSheet.close()">閉じる</button></div></template>';
+    }
+    echo '<template id="AdminLoginTpl">' . $form('<input type="hidden" name="do" value="admin_login"><h2>管理者ログイン</h2>'
+        . $pw('admin_password', '管理者パスワード') . $actions('ログイン')) . '</template>';
+    if (!$adminSet) {
+        $needProof = !Auth::canSetupAdmin();
+        echo '<template id="AdminSetupTpl">' . $form('<input type="hidden" name="do" value="admin_setup"><h2>管理者パスワードを設定</h2>'
+            . '<div class="sp-sub">すべての記録会に共通のパスワードです。管理者としてログインすると、どの記録会も開け、新しい記録会を作れます。</div>'
+            . '<div class="sp-row">' . $pw('admin_password', '管理者パスワード', 'new-password', 4) . $pw('admin_password2', '確認', 'new-password', 4) . '</div>'
+            . ($needProof ? $pw('proof', 'いずれかの記録会のパスワード(サンプル以外)') . '<div class="sp-sub">最初の設定だけ、記録会を作った人であることを確かめます。</div>' : '')
+            . $actions('設定する')) . '</template>';
+    }
+    if ($isAdmin) {
+        echo '<template id="AdminPwTpl">' . $form('<input type="hidden" name="do" value="admin_password"><h2>管理者パスワードの変更</h2>'
+            . '<div class="sp-row">' . $pw('admin_password', '新しいパスワード', 'new-password', 4) . $pw('admin_password2', '確認', 'new-password', 4) . '</div>'
+            . $actions('変更')) . '</template>';
     }
     echo '<script>(function(){'
+        . 'var isAdmin=' . ($isAdmin ? 'true' : 'false') . ';'
+        . 'function sheet(id){var t=document.getElementById(id);if(!t)return;var el=spSheet.open(t.innerHTML);var f=el.querySelector("input:not([type=hidden])");if(f)setTimeout(function(){f.focus()},250);return el}'
         . 'document.getElementById("CompList").addEventListener("click",function(ev){var c=ev.target.closest("[data-code]");if(!c)return;'
         . 'if(c.dataset.current){location.href="home.php";return}'
-        . 'var el=spSheet.open(document.getElementById("CompOpenTpl").innerHTML);'
+        . 'if(isAdmin){var d=document.getElementById("CompOpenDirect");d.querySelector("[name=code]").value=c.dataset.code;d.submit();return}'
+        . 'var el=sheet("CompOpenTpl");'
         . 'el.querySelector("[name=code]").value=c.dataset.code;el.querySelector("[data-role=title]").textContent=c.dataset.name;'
-        . 'el.querySelector("[data-role=sub]").textContent=c.dataset.code+(c.dataset.hint?"(サンプル: パスワードは "+c.dataset.hint+")":"");'
-        . 'setTimeout(function(){el.querySelector("[name=password]").focus()},250)});'
-        . 'var nb=document.getElementById("CompNewBtn");if(nb)nb.onclick=function(){spSheet.open(document.getElementById("CompNewTpl").innerHTML)};'
+        . 'el.querySelector("[data-role=sub]").textContent=c.dataset.code+(c.dataset.hint?"(サンプル: パスワードは "+c.dataset.hint+")":"")});'
+        . '[["CompNewBtn","CompNewTpl"],["AdminLoginBtn","AdminLoginTpl"],["AdminSetupBtn","AdminSetupTpl"],["AdminPwBtn","AdminPwTpl"]].forEach(function(x){'
+        . 'var b=document.getElementById(x[0]);if(b)b.onclick=function(ev){ev.preventDefault();sheet(x[1])}});'
         . '})()</script>';
 }

@@ -20,7 +20,7 @@ class Scoring
     }
 
     /**
-     * @param string|null $gold 第1優先順位の文字(省略時は大会設定の Settings::tieChars(1))
+     * @param string|null $gold 第1優先順位の文字(省略時は記録会設定の Settings::tieChars(1))
      * @param string|null $x    第2優先順位の文字(省略時は Settings::tieChars(2))
      * @return int[] [合計点, 第1優先順位の本数, 第2優先順位の本数, 射数]
      */

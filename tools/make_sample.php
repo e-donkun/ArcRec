@@ -1,12 +1,12 @@
 <?php
-// 同梱のサンプル大会(samples/5A4D0001.sqlite 屋外、samples/5A4D0002.sqlite 屋内)を作る開発用スクリプト。結果は毎回同じ内容になる。
+// 同梱のサンプル記録会(samples/5A4D0001.sqlite 屋外、samples/5A4D0002.sqlite 屋内)を作る開発用スクリプト。結果は毎回同じ内容になる。
 //   php tools/make_sample.php            … 2つとも作る
 //   php tools/make_sample.php 5A4D0002   … 1つだけ作る
-// アプリは、大会のフォルダにサンプルが無いときだけ、samples/ からコピーして使う。パスワードは sample。
-// 1つの PHP プロセスでは1つの DB しか扱わないので、2つ作るときは自分を大会ごとに呼び直す。
+// アプリは、記録会のフォルダにサンプルが無いときだけ、samples/ からコピーして使う。パスワードは sample。
+// 1つの PHP プロセスでは1つの DB しか扱わないので、2つ作るときは自分を記録会ごとに呼び直す。
 $samples = [
-    '5A4D0001' => ['name' => 'サンプル大会（Outdoor 36射×2）', 'preset' => 'outdoor72', 'faces' => ['5', '5'], 'seed' => 20261010],
-    '5A4D0002' => ['name' => 'サンプル大会（Indoor 30射×2）', 'preset' => 'indoor60', 'faces' => ['1', '1'], 'seed' => 20261011],
+    '5A4D0001' => ['name' => 'サンプル記録会（Outdoor 36射×2）', 'preset' => 'outdoor72', 'faces' => ['5', '5'], 'seed' => 20261010],
+    '5A4D0002' => ['name' => 'サンプル記録会（Indoor 30射×2）', 'preset' => 'indoor60', 'faces' => ['1', '1'], 'seed' => 20261011],
 ];
 $only = $argv[1] ?? null;
 if ($only === null) {

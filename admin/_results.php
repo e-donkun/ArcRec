@@ -1,7 +1,7 @@
 <?php
 // 結果一覧の画面(ianseo 本体のスマホモード「ライブ得点集計」と同じ画面構成)。
 //   ランキング/的順のチップ、検索、自動更新(30秒)、部門ごとの見出し、カードをタップするとスコアカード(第1・第2優先順位の本数も)
-// 管理画面の admin/results.php と、参加者向けのトップの results.php(大会設定で公開にした大会だけ)から使う。
+// 管理画面の admin/results.php と、参加者向けのトップの results.php(記録会設定で公開にした記録会だけ)から使う。
 
 use Lite\Entries;
 use Lite\Results;
@@ -68,11 +68,11 @@ function results_page($code, $public)
     if (isset($_GET['json'])) {
         json_out(results_data());
     }
-    page_head('予選結果', 'results', ['public' => $public, 'base' => $public ? 'admin/' : '',
+    page_head('記録会結果', 'results', ['public' => $public, 'base' => $public ? 'admin/' : '', 'gear' => $public ? 'admin/index.php' : '',
         'js' => ['LiteRes' => results_data(), 'LiteCode' => $code, 'LitePublic' => $public]]);
     $adm = $public ? 'admin/' : '';
     if (!Settings::resultsPublic()) {
-        echo '<div class="sp-flash warn">この大会の結果は<b>非公開</b>です(この大会を開いている管理者だけが見られます)。' . ($public ? '' : '<a href="setup.php">大会設定</a>で公開にできます。') . '</div>';
+        echo '<div class="sp-flash warn">この記録会の結果は<b>非公開</b>です(この記録会を開いている管理者だけが見られます)。' . ($public ? '' : '<a href="setup.php">記録会設定</a>で公開にできます。') . '</div>';
     }
 ?>
 <div class="sp-toolbar">
