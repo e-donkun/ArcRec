@@ -71,9 +71,11 @@ class Pdf extends \TCPDF
             foreach ($entries as $e) {
                 $pdf->AddPage($lay['o']);
                 $pdf->pageHeader();
+                $prev = 0;   // 前の距離までの合計(2 距離のときは「総計」の列に通しの合計を出す)
                 for ($d = 1; $d <= $nd; $d++) {
                     list($x, $y, $w, $h) = $lay['slots'][$d - 1];
-                    $pdf->card($x, $y, $w, $h, $e, $d, true);
+                    $pdf->card($x, $y, $w, $h, $e, $d, true, $nd > 1 ? $prev : null);
+                    $prev += Scoring::total(Entries::arrows($e, $d))[0];
                 }
             }
         } else {
@@ -166,9 +168,12 @@ class Pdf extends \TCPDF
      * スコアカード 1 枚(1 距離)。寸法は本体の DrawScoreNew と同じ考え方:
      * 列の幅 CW = 幅 / (1 行の矢数 + 5)。6 射のエンドは 3 射ずつ 2 行にして、エンド番号を 2 行ぶんにまとめる。
      * 列: エンド 0.8 | 矢 1 × n | 小計 | 累計 | 第1優先 0.7 | 第2優先 0.7
+     * $prev(前の距離までの合計)を渡すと、本体の「総計の列つき」と同じ形: 矢 0.9、小計・累計を詰めて、ピンクの「総計」列 1.1
+     * (距離をまたいだ通しの合計)を足し、右上に前の距離までの総計の枠を出す。
      */
-    private function card($x0, $y0, $W, $H, array $e, $d, $filled)
+    private function card($x0, $y0, $W, $H, array $e, $d, $filled, $prev = null)
     {
+        $grand = $prev !== null;
         $per = Settings::arrowsPerEnd();
         $ends = Settings::ends();
         $split = $per === 6 && $ends <= 7;
@@ -178,7 +183,9 @@ class Pdf extends \TCPDF
         $CW = floor(10 * $W / ($cols + 5)) / 10;
         $W = $CW * ($cols + 5);
         $endW = 0.8 * $CW;
-        $totCellW = 1.4 * $CW;
+        $arW = ($grand ? 0.9 : 1) * $CW;
+        $grandW = 1.1 * $CW;
+        $totCellW = ($grand ? 1 : 1.4) * $CW;
         $sumW = $totCellW * ($per >= 6 ? 3 / 4 : 1);
         $totW = $totCellW * ($per >= 6 ? 5 / 4 : 1);
         $tieW = 0.7 * $CW;
@@ -199,7 +206,18 @@ class Pdf extends \TCPDF
         $this->SetXY($x0 + $W - $boxW, $y0 + 9);
         $this->n(7, 'B');
         $this->Cell($boxW, 4, (string)($e['category_code'] ?: $e['category_name']), 0, 0, 'C', true);
-        $lineW = $W - $boxW - 4;
+        $lineW = $W - $boxW - 4 - ($grand ? $grandW + 1 : 0);
+        if ($grand && $d > 1) {
+            // 前の距離までの総計
+            $gx = $x0 + $W - $boxW - $grandW - 0.5;
+            $this->SetFillColor(255, 232, 232);
+            $this->SetXY($gx, $y0 + 2);
+            $this->f(6.5);
+            $this->Cell($grandW, 4.5, '総計', 1, 0, 'C', true);
+            $this->SetXY($gx, $y0 + 6.5);
+            $this->n(8);
+            $this->Cell($grandW, 5, (string)$prev, 1, 0, 'C', true);
+        }
         foreach ([[2, '選手名:', Entries::fullName($e), 11], [8.6, '所属先:', (string)$e['affiliation'], 9]] as $r) {
             $this->SetXY($x0 + 2, $y0 + $r[0]);
             $this->f(6.5);
@@ -217,15 +235,20 @@ class Pdf extends \TCPDF
         $fill();
         $this->n($std, 'B');
         for ($a = 1; $a <= $cols; $a++) {
-            $this->Cell($CW, $CH, (string)$a, 1, 0, 'C', true);
+            $this->Cell($arW, $CH, (string)$a, 1, 0, 'C', true);
         }
         $rx = $this->GetX();
-        $restW = $sumW + $totW + 2 * $tieW;
+        $restW = $sumW + $totW + ($grand ? $grandW : 0) + 2 * $tieW;
         $this->Cell($restW, $CH / 2, '', 1, 0, 'C', true);
         $this->SetXY($rx, $y + $CH / 2);
         $this->f(max(5, $std * 0.65));
         $this->Cell($sumW, $CH / 2, '小計', 1, 0, 'C', true);
         $this->Cell($totW, $CH / 2, '累計', 1, 0, 'C', true);
+        if ($grand) {
+            $this->SetFillColor(255, 232, 232);
+            $this->Cell($grandW, $CH / 2, '総計', 1, 0, 'C', true);
+            $fill();
+        }
         $this->n(max(5, $std * 0.65));
         $this->Cell($tieW, $CH / 2, Settings::tieLabel(1), 1, 0, 'C', true);
         $this->Cell($tieW, $CH / 2, Settings::tieLabel(2), 1, 0, 'C', true);
@@ -254,7 +277,7 @@ class Pdf extends \TCPDF
             $this->n($std * 0.9);
             for ($a = 0; $a < $cols; $a++) {
                 $ch = $part[$a] ?? ' ';
-                $this->Cell($CW, $CH, $has && trim($ch) !== '' ? Scoring::display($ch) : '', 1, 0, 'C');
+                $this->Cell($arW, $CH, $has && trim($ch) !== '' ? Scoring::display($ch) : '', 1, 0, 'C');
             }
             list($sc, $g, $xx) = $has ? Scoring::total($part) : [0, 0, 0];
             $this->Cell($sumW, $CH, $has ? (string)$sc : '', 1, 0, 'C');
@@ -276,6 +299,17 @@ class Pdf extends \TCPDF
             } else {
                 $this->Cell($totW, $CH, $endDone ? (string)$run : '', 1, 0, 'C');
             }
+            if ($grand) {
+                // 総計(前の距離からの通しの合計)。6 射のエンドの 1 行目は斜線
+                $this->SetFillColor(255, 232, 232);
+                $cx = $this->GetX();
+                $this->Cell($grandW, $CH, $endDone ? (string)($prev + $run) : '', 1, 0, 'C', true);
+                if ($split && $half === 0) {
+                    $this->Line($cx, $y, $cx + $grandW, $y + $CH);
+                    $this->Line($cx, $y + $CH, $cx + $grandW, $y);
+                }
+                $fill();
+            }
             $this->n($std * 0.8);
             $this->Cell($tieW, $CH, $show($has ? $g : null), 1, 0, 'C');
             $this->Cell($tieW, $CH, $show($has ? $xx : null), 1, 0, 'C');
@@ -285,7 +319,7 @@ class Pdf extends \TCPDF
         // ---- 総計の行(累計の列の下に合計、第1/第2優先の下にそれぞれの数)
         list($tScore, $tGold, $tX, $hits) = Scoring::total($arrows);
         $boxTotW = $split ? $totCellW * 3 / 4 : $totW;
-        $bx = $x0 + $W - 2 * $tieW - $boxTotW;
+        $bx = $x0 + $W - 2 * $tieW - ($grand ? $grandW : 0) - $boxTotW;
         $this->SetXY($x0, $y);
         $this->f(11);
         $this->Cell($bx - $x0 - 2, $CH, '総計', 0, 0, 'R');
@@ -293,6 +327,10 @@ class Pdf extends \TCPDF
         $this->n(11, 'B');
         $has = $filled && $hits;
         $this->Cell($boxTotW, $CH, $has ? (string)$tScore : '', 1, 0, 'C');
+        if ($grand) {
+            $this->SetFillColor(255, 232, 232);
+            $this->Cell($grandW, $CH, $has ? (string)($prev + $tScore) : '', 1, 0, 'C', true);
+        }
         $this->n(9, 'B');
         $this->Cell($tieW, $CH, $has ? (string)$tGold : '', 1, 0, 'C');
         $this->Cell($tieW, $CH, $has ? (string)$tX : '', 1, 0, 'C');
