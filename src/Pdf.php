@@ -379,7 +379,6 @@ class Pdf extends \TCPDF
         $pdf->f(9);
         $pdf->Cell(190, 5, Settings::roundLabel(), 0, 1, 'C');
         $pdf->SetY($pdf->GetY() + 3);
-        $pdf->resultsHead();
         foreach ($groups as $g) {
             $pdf->resultsCategory($g);
         }
@@ -399,7 +398,7 @@ class Pdf extends \TCPDF
         $y = $this->GetY();
         $this->f(10);
         $this->SetXY(10, $y);
-        $this->Cell($c['rank'], 2 * $h, '順位', 1, 0, 'C');
+        $this->Cell($c['rank'], 2 * $h, '', 1, 0, 'C');
         $this->Cell($c['name'], 2 * $h, '選手氏名', 1, 0, 'C');
         $this->Cell($c['aff'], 2 * $h, '所　属', 1, 0, 'C');
         $gw = array_sum($c['grp']);
@@ -426,23 +425,23 @@ class Pdf extends \TCPDF
         $nd = Settings::distances();
         $c = $this->cols;
         $h = self::RES_ROW;
-        // 部門名の行(部門名だけ表の下に残らないよう、2 行入らなければ次のページへ)
-        if ($this->GetY() + 3 * $h > self::RES_BOTTOM) {
+        // 部門名と表の見出し(部門名・見出しだけページの下に残らないよう、2 行入らなければ次のページへ)
+        $title = function ($cont) use ($g, $h) {
+            $this->f(11);
+            $this->SetX(10);
+            $this->Cell(190, $h + 1, $g['category']['name'] . ($cont ? '(続き)' : ''), 0, 1, 'L');
+            $this->resultsHead();
+        };
+        if ($this->GetY() + 10 + 3 * $h > self::RES_BOTTOM) {
             $this->AddPage();
             $this->SetY(10);
-            $this->resultsHead();
         }
-        $this->f(10);
-        $this->SetX(10);
-        $this->Cell(190, $h, $g['category']['name'], 0, 1, 'L');
+        $title(false);
         foreach ($rows as $r) {
             if ($this->GetY() + $h > self::RES_BOTTOM) {
                 $this->AddPage();
                 $this->SetY(10);
-                $this->resultsHead();
-                $this->f(10);
-                $this->SetX(10);
-                $this->Cell(190, $h, $g['category']['name'] . '(続き)', 0, 1, 'L');
+                $title(true);
             }
             $this->SetX(10);
             $this->n(10);
@@ -460,10 +459,11 @@ class Pdf extends \TCPDF
             $this->n(10);
             foreach ($vals as $v) {
                 foreach ([0, 1, 2] as $k) {
-                    $this->Cell($c['grp'][$k], $h, $v[3] ? (string)$v[$k] : '', 1, 0, 'R');
+                    $this->Cell($c['grp'][$k], $h, $v[3] ? (string)$v[$k] : '', 1, 0, 'C');
                 }
             }
             $this->Ln($h);
         }
+        $this->Ln(4);
     }
 }
