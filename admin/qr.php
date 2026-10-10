@@ -31,10 +31,10 @@ if (in_array($host, ['localhost', '127.0.0.1', '::1'], true)) {
 $targets = Entries::targets();
 $modes = Connect::distanceModes();
 $mode = Connect::defaultMode();
-// サーバーURL・記録会コード(一番上)と、QR のカード(1 列に縦に並べる)
+// サーバーURL・記録会コード(一番上)と、QR のカード(広い画面は横に 2 列、スマホは 1 列)
 echo '<div class="card"><p style="margin:0">サーバーURL: <code style="word-break:break-all">' . h($base) . '</code></p>'
     . '<p style="margin:6px 0 0">記録会コード: <code>' . h(Settings::code()) . '</code></p></div>';
-echo '<div class="card"><h2 style="margin-top:0">設定用QRコード</h2>'
+echo '<div class="row"><div class="card"><h2 style="margin-top:0">設定用QRコード</h2>'
     . '<p class="muted small">ScorekeeperNG の設定画面(モード: <b>Lite</b>)でこの QR を読み取ります。</p>'
     . '<div class="sp-qr">' . Connect::svg(Connect::setupPayload($base)) . '</div></div>';
 echo '<div class="card"><h2 style="margin-top:0">設定用(的ごと)QRコード</h2>';
@@ -58,7 +58,7 @@ if ($targets) {
     echo '<div class="sp-empty">立順が決まった的がまだありません</div>';
 }
 echo '<p><a class="sp-btn" id="QrPdf" href="pdf.php?type=qr&amp;d=' . $mode . '" target="_blank">' . icon('print') . '的QR一覧 PDF</a></p>'
-    . '</div>';
+    . '</div></div>';
 ?>
 <script>
 (function () {
