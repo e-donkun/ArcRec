@@ -1,12 +1,12 @@
 <?php
-// 立順(的番号と位置)の設定(ianseo 本体のスマホモード「的番号設定」と同じ画面構成)。登録した選手を、的番号と位置(A〜F)に割り当てる。
+// 立順(的番号と位置)の設定(ianseo 本体のスマホモード「的番号設定」と同じ画面構成)。登録した参加者を、的番号と位置(A〜F)に割り当てる。
 // 表示は「一覧」と「割り当て表」を切り替えられる(どちらも同じ処理 Entries::place を呼ぶ):
-//   ・一覧: 選手のカードの的番号(1A など)を直接入力する(001a → 1A。位置を省くと空いている最初の位置)。
+//   ・一覧: 参加者のカードの的番号(1A など)を直接入力する(001a → 1A。位置を省くと空いている最初の位置)。
 //     的数・選手数より大きい番号を入れると、的数・選手数を自動で広げる(選手数は 6 = F まで)
 //   ・割り当て表: 的数と選手数(1的あたりの人数、A〜F)を ＋/− で変える
 //   ・的番号自動設定(両方に表示): 未割当の参加者に自動割当 / 割当をすべて解除 / 同じ部門でシャッフル
-//   ・割り当て表: 下の未割当の選手(または枠の選手)をタップしてから、空いている枠をタップする。選手のいる枠なら入れ替え
-// 点数が入っている選手は動かせない(端末は「的+位置」で選手を見分けるため)。
+//   ・割り当て表: 下の未割当の参加者(または枠の参加者)をタップしてから、空いている枠をタップする。参加者のいる枠なら入れ替え
+// 点数が入っている参加者は動かせない(端末は「的+位置」で参加者を見分けるため)。
 require __DIR__ . '/_layout.php';
 require_admin();
 
@@ -14,16 +14,16 @@ use Lite\Categories;
 use Lite\Entries;
 use Lite\Settings;
 
-/** 画面が使う状態(選手と的の数・立ち数) */
+/** 画面が使う状態(参加者と的の数・立ち数) */
 function targets_state()
 {
     $per = Settings::perTarget();
     $entries = [];
     $maxT = 0;
-    $maxL = 0;   // 選手のいるいちばん後ろの位置(A=1 … F=6)
+    $maxL = 0;   // 参加者のいるいちばん後ろの位置(A=1 … F=6)
     foreach (Entries::all(false) as $e) {
         if ($e['status']) {
-            continue;   // 欠場の選手は出さない
+            continue;   // 欠場の参加者は出さない
         }
         $maxT = max($maxT, (int)$e['target']);
         if ($e['target'] && $e['letter'] !== '') {
@@ -41,7 +41,7 @@ function targets_state()
             'lock' => Entries::hasScore($e),
         ];
     }
-    $count = (int)Settings::get('target_count');   // 0 = 選手の人数から決める
+    $count = (int)Settings::get('target_count');   // 0 = 参加者の人数から決める
     return [
         'per' => $per,
         'letters' => Settings::letters(),
@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         json_out($r + ['state' => targets_state()]);
     }
     if ($do === 'targets' || $do === 'per') {
-        // 的の数・立ち数の ＋/−。選手のいる的・位置より小さくはできない
+        // 的の数・立ち数の ＋/−。参加者のいる的・位置より小さくはできない
         $st = targets_state();
         $delta = (int)($_POST['delta'] ?? 0) < 0 ? -1 : 1;
         if ($do === 'targets') {
@@ -127,7 +127,7 @@ foreach (Categories::all() as $c) {
 }
 page_head('的番号設定', 'targets', ['js' => ['LiteState' => $state, 'LiteCats' => $cats]]);
 if (!$state['entries']) {
-    echo '<div class="sp-empty">選手がいません。先に <a href="entries.php">選手登録</a> をしてください。</div>';
+    echo '<div class="sp-empty">参加者がいません。先に <a href="entries.php">参加者登録</a> をしてください。</div>';
 }
 ?>
 <div class="sp-toolbar">
@@ -143,7 +143,7 @@ if (!$state['entries']) {
 	</div>
 	<div class="sp-count" id="SpCount"></div>
 	<div class="sp-list" id="SpList"></div>
-	<p class="sp-note">点数が入っている選手(🔒)は動かせません。</p>
+	<p class="sp-note">点数が入っている参加者(🔒)は動かせません。</p>
 </div>
 <div id="SpGridView" class="sp-hide">
 	<div class="sp-steppers">
@@ -151,7 +151,7 @@ if (!$state['entries']) {
 		<div class="sp-stepper"><span>選手数</span><button type="button" class="sp-btn sub" data-step="per" data-delta="-1" aria-label="選手数を減らす">−</button><b id="SpNumPer"></b><button type="button" class="sp-btn sub" data-step="per" data-delta="1" aria-label="選手数を増やす">＋</button></div>
 	</div>
 	<div id="SpGrid"></div>
-	<p class="sp-note">下の未割当の選手をタップしてから、空いている枠をタップすると割り当てます。枠の選手をタップすると、別の空き枠へ移したり、割り当てを外したりできます(選手のいる枠をタップすると入れ替え)。🔒の選手(点数が入っている)は動かせません。</p>
+	<p class="sp-note">下の未割当の参加者をタップしてから、空いている枠をタップすると割り当てます。枠の参加者をタップすると、別の空き枠へ移したり、割り当てを外したりできます(参加者のいる枠をタップすると入れ替え)。🔒の参加者(点数が入っている)は動かせません。</p>
 </div>
 <details class="card noprint sp-auto">
 	<summary>的番号自動設定</summary>
@@ -243,7 +243,7 @@ function spTgtCard(e) {
 
 function spListRender() {
 	const list = document.getElementById('SpList');
-	list.innerHTML = LiteState.entries.length ? LiteState.entries.map(spTgtCard).join('') : '<div class="sp-empty">選手がいません</div>';
+	list.innerHTML = LiteState.entries.length ? LiteState.entries.map(spTgtCard).join('') : '<div class="sp-empty">参加者がいません</div>';
 	spListFilter();
 }
 
@@ -288,7 +288,7 @@ function spTrayRender() {
 	document.getElementById('SpTrayInfo').textContent = '未割当 ' + all.length + '人';
 	document.getElementById('SpTrayList').innerHTML = items.length
 		? items.map(e => '<button type="button" class="sp-tray-chip' + (SpGrid.sel == e.id ? ' sel' : '') + '" data-id="' + e.id + '"><b>' + spEsc(e.name) + '</b><i>' + spEsc(e.code + (e.aff ? '　' + e.aff : '')) + '</i></button>').join('')
-		: '<span class="sp-sub">未割当の選手はいません</span>';
+		: '<span class="sp-sub">未割当の参加者はいません</span>';
 	const sel = SpGrid.sel ? spRow(SpGrid.sel) : null;
 	document.getElementById('SpTraySel').classList.toggle('sp-hide', !sel);
 	document.getElementById('SpTrayInfo').parentNode.classList.toggle('sp-hide', !!sel);
@@ -356,11 +356,11 @@ document.addEventListener('DOMContentLoaded', () => {
 		const t = +b.dataset.t, l = b.dataset.l;
 		if (!b.hasAttribute('data-id')) {
 			if (SpGrid.sel) spPlace(SpGrid.sel, t, l);
-			else spToast('先に下の未割当の選手をタップしてください');
+			else spToast('先に下の未割当の参加者をタップしてください');
 			return;
 		}
 		const r = spRow(b.dataset.id);
-		if (SpGrid.sel && SpGrid.sel != r.id) { spPlace(SpGrid.sel, t, l); return; }   // 選手のいる枠: 入れ替え
+		if (SpGrid.sel && SpGrid.sel != r.id) { spPlace(SpGrid.sel, t, l); return; }   // 参加者のいる枠: 入れ替え
 		if (r.lock) { spToast('点数が入っているため動かせません', true); return; }
 		SpGrid.sel = (SpGrid.sel == r.id ? null : r.id);
 		spGridRender();

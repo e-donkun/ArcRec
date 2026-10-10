@@ -156,14 +156,14 @@ function spResRender() {
 		all.sort((a, b) => (a[0].t || 9999) - (b[0].t || 9999) || a[0].l.localeCompare(b[0].l));
 		all.forEach(x => html += spResCard(x[0], x[1]));
 	}
-	document.getElementById('SpList').innerHTML = html || '<div class="sp-empty">表示する選手がいません</div>';
+	document.getElementById('SpList').innerHTML = html || '<div class="sp-empty">表示する参加者がいません</div>';
 	document.getElementById('SpInfo').textContent = LiteRes.round + ' / ' + LiteRes.finished + '/' + LiteRes.archers + '人終了 / 更新 ' + LiteRes.updated;
 	spResFilter();
 }
 
 function spResFilter() {
 	spFilterCards(document.getElementById('SpList'), document.getElementById('SpSearch').value);
-	// 選手が1人も見えない部門の見出しは隠す
+	// 参加者が1人も見えない部門の見出しは隠す
 	document.querySelectorAll('#SpList [data-section]').forEach(h => {
 		let n = h.nextElementSibling, any = false;
 		while (n && !n.hasAttribute('data-section')) {

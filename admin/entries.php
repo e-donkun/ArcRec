@@ -1,6 +1,6 @@
 <?php
-// 選手登録(ianseo 本体のスマホモード「参加者リスト」と同じ画面構成)
-//   検索と部門のチップ → 選手のカード → タップで編集シート、「＋ 追加」で追加シート(新しく入力 / 過去の記録会から)
+// 参加者登録(ianseo 本体のスマホモード「参加者リスト」と同じ画面構成)
+//   検索と部門のチップ → 参加者のカード → タップで編集シート、「＋ 追加」で追加シート(新しく入力 / 過去の記録会から)
 // 的番号と位置は「立順」の画面で設定する。
 require __DIR__ . '/_layout.php';
 require_admin();
@@ -62,7 +62,7 @@ function import_entries($text)
     return [$added, $errors];
 }
 
-/** 画面に渡す選手の一覧 */
+/** 画面に渡す参加者の一覧 */
 function entry_rows()
 {
     $total = Settings::totalArrows();
@@ -102,25 +102,25 @@ if ($act !== '') {
                     'status' => !empty($_POST['status']),
                 ];
                 if ($id && !Entries::find($id)) {
-                    throw new InvalidArgumentException('選手が見つかりません');
+                    throw new InvalidArgumentException('参加者が見つかりません');
                 }
                 $id = Entries::save($d, $id);
                 json_out(['ok' => true, 'id' => $id, 'msg' => trim($d['family_name'] . ' ' . $d['given_name']) . ' を' . ((int)($_POST['id'] ?? 0) ? '保存' : '追加') . 'しました', 'rows' => entry_rows()]);
             case 'delete':
                 $e = Entries::find((int)($_POST['id'] ?? 0));
                 if (!$e) {
-                    throw new InvalidArgumentException('選手が見つかりません');
+                    throw new InvalidArgumentException('参加者が見つかりません');
                 }
                 if (Entries::hasScore($e)) {
-                    throw new InvalidArgumentException('点数が入っている選手は削除できません(欠場にしてください)');
+                    throw new InvalidArgumentException('点数が入っている参加者は削除できません(欠場にしてください)');
                 }
                 Entries::delete($e['id']);
                 json_out(['ok' => true, 'msg' => Entries::fullName($e) . ' を削除しました', 'rows' => entry_rows()]);
             case 'teams':     // 過去の記録会の所属(チーム)
                 json_out(['ok' => true, 'teams' => Past::teams()]);
-            case 'archers':   // 過去の記録会の、その所属の選手
+            case 'archers':   // 過去の記録会の、その所属の参加者
                 json_out(['ok' => true, 'archers' => Past::archers($_GET['team'] ?? '')]);
-            case 'pastadd':   // 過去の記録会の選手を登録
+            case 'pastadd':   // 過去の記録会の参加者を登録
                 $r = Past::add((array)($_POST['src'] ?? []));
                 json_out(['ok' => true, 'msg' => $r['added'] . '人を追加しました' . ($r['skipped'] ? '(登録済みなど ' . $r['skipped'] . '人は飛ばしました)' : ''), 'rows' => entry_rows()]);
         }
@@ -159,7 +159,7 @@ page_head('参加者登録', 'entries', ['js' => ['LiteRows' => entry_rows(), 'L
 	<button type="button" class="sp-btn sub" style="flex:none" id="SpAddBtn"><?php echo icon('plus'); ?>追加</button>
 </div>
 <div class="sp-list" id="SpList"></div>
-<p class="sp-note">カードをタップすると、名前・所属・部門を変更できます。点数のない選手は削除もできます。的番号と位置は <a href="targets.php">立順</a> の画面で設定します。</p>
+<p class="sp-note">カードをタップすると、名前・所属・部門を変更できます。点数のない参加者は削除もできます。的番号と位置は <a href="targets.php">立順</a> の画面で設定します。</p>
 <details class="card"><summary>CSVでまとめて登録</summary>
 	<form method="post" enctype="multipart/form-data"><?php echo csrf_field(); ?><input type="hidden" name="do" value="import">
 	<p class="sp-note">列: <code>姓,名,所属,部門</code>(部門は 男子 / 女子)。カンマかタブ区切り、UTF-8 か Shift_JIS(Excel保存)。1行目が見出しなら飛ばします。</p>
@@ -188,7 +188,7 @@ function spEntCard(r) {
 }
 
 function spEntRender() {
-	document.getElementById('SpList').innerHTML = LiteRows.length ? LiteRows.map(spEntCard).join('') : '<div class="sp-empty">選手がいません。「＋ 追加」から登録してください</div>';
+	document.getElementById('SpList').innerHTML = LiteRows.length ? LiteRows.map(spEntCard).join('') : '<div class="sp-empty">参加者がいません。「＋ 追加」から登録してください</div>';
 	document.getElementById('SpCatChips').innerHTML = '<button type="button" class="sp-chip' + (SpFilter.cat ? '' : ' active') + '" data-cat="">すべて</button>'
 		+ LiteCats.map(c => '<button type="button" class="sp-chip' + (String(c.id) === SpFilter.cat ? ' active' : '') + '" data-cat="' + c.id + '">' + spEsc(c.name) + '</button>').join('');
 	spEntFilter();
@@ -231,7 +231,7 @@ function spOpenEdit(r) {
 		+ '<div class="sp-sub">' + (r.tgt ? '的' + spEsc(r.tgt) : '的は未割当') + '(立順の画面で変更)' + (r.hits ? ' / ' + r.hits + '射入力済み' : '') + '</div>'
 		+ spNameFields(r)
 		+ '<label class="sp-switch" style="margin:4px 0 8px"><input type="checkbox" data-f="status"' + (r.status ? ' checked' : '') + '> 欠場(端末・結果から外す)</label>'
-		+ (r.scored ? '<p class="sp-note">点数が入っているため削除できません。</p>' : '<button type="button" class="sp-btn danger block" id="SpDelBtn">この選手を削除</button>')
+		+ (r.scored ? '<p class="sp-note">点数が入っているため削除できません。</p>' : '<button type="button" class="sp-btn danger block" id="SpDelBtn">この参加者を削除</button>')
 		+ '<div class="sp-sheet-actions"><button type="button" class="sp-btn sub" onclick="spSheet.close()">閉じる</button><button type="button" class="sp-btn" id="SpSaveBtn">保存</button></div>';
 	const el = spSheet.open(html);
 	el.querySelector('#SpSaveBtn').addEventListener('click', async () => {
@@ -249,15 +249,15 @@ function spOpenEdit(r) {
 /* ---- 追加(新しく入力 / 過去の記録会から) ---- */
 function spOpenAdd() {
 	const blank = {family: '', given: '', aff: '', catId: SpFilter.cat || (LiteCats[0] || {}).id};
-	const html = '<h2>選手を追加</h2>'
+	const html = '<h2>参加者を追加</h2>'
 		+ '<div class="sp-seg"><button type="button" data-tab="new" class="active">新しく入力</button><button type="button" data-tab="past">過去の記録会から</button></div>'
 		+ '<div data-pane="new">' + spNameFields(blank)
 		+ '<div class="sp-sheet-actions"><button type="button" class="sp-btn sub" onclick="spSheet.close()">閉じる</button><button type="button" class="sp-btn" id="SpAddGo1">追加</button></div>'
 		+ '<p class="sp-note">追加したあとも、続けて入力できます。</p></div>'
 		+ '<div data-pane="past" class="sp-hide">'
-		+ '<div class="sp-sub">このサーバーにある、ほかの記録会の選手から選びます。</div>'
+		+ '<div class="sp-sub">このサーバーにある、ほかの記録会の参加者から選びます。</div>'
 		+ '<label class="sp-field"><span>1. 所属</span><select id="SpPastTeam"><option value="">読み込み中…</option></select></label>'
-		+ '<div class="sp-hide" id="SpPastField"><div class="sp-field"><span>2. 追加する選手</span></div>'
+		+ '<div class="sp-hide" id="SpPastField"><div class="sp-field"><span>2. 追加する参加者</span></div>'
 		+ '<label class="sp-switch" style="margin-bottom:6px"><input type="checkbox" id="SpPastAll"> すべて選ぶ</label>'
 		+ '<div class="sp-check-list" id="SpPastList"></div></div>'
 		+ '<div class="sp-sheet-actions"><button type="button" class="sp-btn sub" onclick="spSheet.close()">閉じる</button><button type="button" class="sp-btn" id="SpAddGo2" disabled>追加する</button></div></div>';
@@ -301,7 +301,7 @@ async function spPastTeams(el) {
 		const last = spStore('ent_past_team') || '';
 		sel.innerHTML = res.teams.length
 			? '<option value="">-- 選んでください --</option>' + res.teams.map(t => '<option value="' + spEsc(t.name) + '"' + (t.name === last ? ' selected' : '') + '>' + spEsc(t.name + '(' + t.count + '人)') + '</option>').join('')
-			: '<option value="">ほかの記録会に選手がいません</option>';
+			: '<option value="">ほかの記録会に参加者がいません</option>';
 		if (sel.value) spPastArchers(el);
 	} catch (e) {
 		spToast('読み込めませんでした: ' + e.message, true);
@@ -322,7 +322,7 @@ async function spPastArchers(el) {
 			'<label class="sp-check' + (a.registered ? ' done' : '') + '"><input type="checkbox" value="' + spEsc(a.src) + '"' + (a.registered ? ' disabled' : '') + '>'
 			+ '<span><b>' + spEsc(a.family + ' ' + a.given) + '</b>' + (a.registered ? ' <span class="sp-tag">登録済み</span>' : '')
 			+ '<small>' + spEsc([a.category_name, '前回 ' + a.last].filter(x => x).join(' / ')) + '</small></span></label>').join('')
-			: '<div class="sp-sub">選べる選手がいません</div>';
+			: '<div class="sp-sub">選べる参加者がいません</div>';
 	} catch (e) {
 		spToast('読み込めませんでした: ' + e.message, true);
 	}

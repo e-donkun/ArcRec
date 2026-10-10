@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'distance_name' => trim($_POST['distance_name'] ?? ''), 'distance_name2' => trim($_POST['distance_name2'] ?? ''),
                     'archers_per_target' => max(1, min(Settings::MAX_PER_TARGET, (int)($_POST['archers_per_target'] ?? 4))),
                 ], $faces, $ties));
-                // 端末に保存した選手一覧・的面・距離の設定は、次の接続で作り直させる
+                // 端末に保存した参加者一覧・的面・距離の設定は、次の接続で作り直させる
                 Db::pdo()->exec("UPDATE devices SET setup = '', setup_confirmed = 0");
                 flash('記録会設定を保存しました');
                 break;
@@ -123,10 +123,10 @@ echo '<form method="post">' . csrf_field() . '<input type="hidden" name="do" val
     . '<label>新しいパスワード</label><input type="password" name="password" required autocomplete="new-password">'
     . '<label>確認</label><input type="password" name="password2" required autocomplete="new-password"><p><button class="sub">変更</button></p></form>';
 echo '<form method="post" onsubmit="return window.confirm(\'この記録会の全員の点数を消します。よろしいですか?\')">' . csrf_field() . '<input type="hidden" name="do" value="clear_scores">'
-    . '<h3>この記録会の点数を全消去</h3><p class="muted small">リハーサル後などに、選手名簿はそのままで点数だけを消します。</p>'
+    . '<h3>この記録会の点数を全消去</h3><p class="muted small">リハーサル後などに、参加者名簿はそのままで点数だけを消します。</p>'
     . '<label style="font-weight:400"><input type="checkbox" name="confirm" value="yes"> 本当に消す</label><p><button class="danger">点数を全消去</button></p></form>';
-echo '<form method="post" onsubmit="return window.confirm(\'この記録会を削除します。選手名簿・点数・設定がすべて消え、元に戻せません。よろしいですか?\')">' . csrf_field() . '<input type="hidden" name="do" value="delete">'
-    . '<h3>この記録会を削除</h3><p class="muted small">この記録会のデータベースファイルを削除します。選手名簿・点数・設定がすべて消え、元に戻せません。削除すると記録会の一覧に戻ります。</p>'
+echo '<form method="post" onsubmit="return window.confirm(\'この記録会を削除します。参加者名簿・点数・設定がすべて消え、元に戻せません。よろしいですか?\')">' . csrf_field() . '<input type="hidden" name="do" value="delete">'
+    . '<h3>この記録会を削除</h3><p class="muted small">この記録会のデータベースファイルを削除します。参加者名簿・点数・設定がすべて消え、元に戻せません。削除すると記録会の一覧に戻ります。</p>'
     . '<label style="font-weight:400"><input type="checkbox" name="confirm" value="yes"> 本当に削除する</label><p><button class="danger">この記録会を削除</button></p></form>';
 echo '</details>';
 echo '<script>(function(){'

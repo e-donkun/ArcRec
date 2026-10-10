@@ -2,7 +2,7 @@
 namespace Lite;
 
 /**
- * 選手と、その得点(距離ごとの arrowstring)。
+ * 参加者と、その得点(距離ごとの arrowstring)。
  */
 class Entries
 {
@@ -75,7 +75,7 @@ class Entries
     }
 
     /**
-     * 追加・更新。選手の登録(姓名・所属・部門・欠場)だけを扱う。
+     * 追加・更新。参加者の登録(姓名・所属・部門・欠場)だけを扱う。
      * 的番号と位置は、$d に 'target' があるときだけ設定する(登録画面では触らない。的番号の設定は place())。
      */
     public static function save(array $d, $id = 0)
@@ -102,7 +102,7 @@ class Entries
                 $st = $pdo->prepare('SELECT id FROM entries WHERE target = ? AND letter = ? AND id != ?');
                 $st->execute([$target, $letter, (int)$id]);
                 if ($st->fetchColumn()) {
-                    throw new \InvalidArgumentException("的{$target}{$letter} には既に別の選手がいます");
+                    throw new \InvalidArgumentException("的{$target}{$letter} には既に別の参加者がいます");
                 }
             }
         }
@@ -131,7 +131,7 @@ class Entries
         $pdo->prepare('INSERT INTO entries(family_name, given_name, affiliation, category_id, status, target, letter)
             VALUES(?,?,?,?,?,?,?)')->execute(array_merge($row, [$target, $letter]));
         $newId = (int)$pdo->lastInsertId();
-        // bib は端末へ渡す選手コード(encode)用で、入力させない。ID を入れる
+        // bib は端末へ渡す参加者コード(encode)用で、入力させない。ID を入れる
         $pdo->prepare('UPDATE entries SET bib = ? WHERE id = ?')->execute([(string)$newId, $newId]);
         return $newId;
     }
@@ -153,9 +153,9 @@ class Entries
     }
 
     /**
-     * 選手を的(target)・位置(letter)に置く。target=0 で未割当に戻す。letter が空なら、その的の空いている最初の位置。
-     * 置き先に別の選手がいれば入れ替える。
-     * 得点が入っている選手(置き先の選手も)は動かせない: 端末は「的+位置」で選手を見分けるので、
+     * 参加者を的(target)・位置(letter)に置く。target=0 で未割当に戻す。letter が空なら、その的の空いている最初の位置。
+     * 置き先に別の参加者がいれば入れ替える。
+     * 得点が入っている参加者(置き先の参加者も)は動かせない: 端末は「的+位置」で参加者を見分けるので、
      * 得点のあとで入れ替わると、別の人の得点になってしまう。
      *
      * @return array ['ok' => bool, 'msg' => string]
@@ -174,10 +174,10 @@ class Entries
         return Db::immediate(function (\PDO $pdo) use ($id, $target, $letter, $letters) {
             $e = self::find($id);
             if (!$e) {
-                return ['ok' => false, 'msg' => '選手が見つかりません'];
+                return ['ok' => false, 'msg' => '参加者が見つかりません'];
             }
             if ($e['status']) {
-                return ['ok' => false, 'msg' => '欠場の選手は的に置けません'];
+                return ['ok' => false, 'msg' => '欠場の参加者は的に置けません'];
             }
             if ($target === 0) {
                 $letter = '';
@@ -197,14 +197,14 @@ class Entries
                 return ['ok' => true, 'msg' => ''];
             }
             if (self::hasScore($e)) {
-                return ['ok' => false, 'msg' => '点数が入力済みの選手は動かせません'];
+                return ['ok' => false, 'msg' => '点数が入力済みの参加者は動かせません'];
             }
             $other = $target ? self::findByPos($target, $letter) : null;
             if ($other && (int)$other['id'] === (int)$e['id']) {
                 $other = null;
             }
             if ($other && self::hasScore($other)) {
-                return ['ok' => false, 'msg' => "的{$target}{$letter} には点数が入力済みの選手がいるため移せません"];
+                return ['ok' => false, 'msg' => "的{$target}{$letter} には点数が入力済みの参加者がいるため移せません"];
             }
             $up = $pdo->prepare('UPDATE entries SET target = ?, letter = ? WHERE id = ?');
             $oldT = (int)$e['target'];
@@ -214,14 +214,14 @@ class Entries
                 $up->execute([$oldT, $oldL, $other['id']]);  // 入れ替え: 元の場所へ(元が未割当なら未割当へ)
             }
             $up->execute([$target, $letter, $e['id']]);
-            // 端末に保存した選手一覧は古くなるので、次に的を選び直したときに作り直させる
+            // 端末に保存した参加者一覧は古くなるので、次に的を選び直したときに作り直させる
             $pdo->exec("UPDATE devices SET setup = '', setup_confirmed = 0");
             $msg = $other ? Entries::fullName($other) . ' と入れ替えました' : '';
             return ['ok' => true, 'msg' => $msg];
         });
     }
 
-    /** 得点のない選手を、すべて未割当に戻す */
+    /** 得点のない参加者を、すべて未割当に戻す */
     public static function unassignAll()
     {
         Db::pdo()->exec("UPDATE entries SET target = 0, letter = '' WHERE " . self::NO_SCORE);
@@ -229,8 +229,8 @@ class Entries
     }
 
     /**
-     * 未割当の(点数のない)選手を、空いている枠に入れる。部門順 → 登録順に、1的から A, B, … の空きを埋める。
-     * すでに割り当てた選手は動かさない。
+     * 未割当の(点数のない)参加者を、空いている枠に入れる。部門順 → 登録順に、1的から A, B, … の空きを埋める。
+     * すでに割り当てた参加者は動かさない。
      * @return array ['count' => 入れた人数, 'maxTarget' => 使ったいちばん大きい的番号]
      */
     public static function assignUnassigned($perTarget)
@@ -273,8 +273,8 @@ class Entries
     }
 
     /**
-     * 同じ部門どうしで、点数のない選手の立順をシャッフルする(部門ごとに、その部門の選手がいる枠の中で入れ替える)。
-     * 点数のある選手・未割当の選手は動かさない。
+     * 同じ部門どうしで、点数のない参加者の立順をシャッフルする(部門ごとに、その部門の参加者がいる枠の中で入れ替える)。
+     * 点数のある参加者・未割当の参加者は動かさない。
      * @return int 動かした人数
      */
     public static function shuffleWithinCategory()
@@ -318,12 +318,12 @@ class Entries
         });
     }
 
-    /** 得点がまだ1本も無い選手の条件(SQL) */
+    /** 得点がまだ1本も無い参加者の条件(SQL) */
     const NO_SCORE = "TRIM(arrowstring) = '' AND TRIM(arrowstring2) = ''";
 
     /**
      * 的番号を割り当て直す。部門順 -> 登録順に、1 的あたり $perTarget 人ずつ A,B,C,D と埋める。
-     * 既に得点がある選手は動かさない(得点の取り違え防止)。
+     * 既に得点がある参加者は動かさない(得点の取り違え防止)。
      */
     public static function autoAssign($perTarget, $firstTarget = 1)
     {
@@ -390,7 +390,7 @@ class Entries
             $st->execute([(int)$entryId]);
             $cur = $st->fetch();
             if (!$cur) {
-                throw new \RuntimeException('選手が見つかりません');
+                throw new \RuntimeException('参加者が見つかりません');
             }
             $new = Scoring::pad($cur['arrows'], $total);
             $log = $pdo->prepare('INSERT INTO score_log(entry_id, device, distance, end_no, arrows, source, at)
@@ -432,7 +432,7 @@ class Entries
         Db::immediate(function (\PDO $pdo) use ($entryId, $by, $distance, $col, $total, $per, $ends, $new) {
             $cur = self::find($entryId);
             if (!$cur) {
-                throw new \RuntimeException('選手が見つかりません');
+                throw new \RuntimeException('参加者が見つかりません');
             }
             $old = Scoring::pad($cur[$col], $total);
             $now = date('Y-m-d H:i:s');

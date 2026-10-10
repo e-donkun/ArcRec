@@ -12,7 +12,7 @@ use Lite\TargetFaces;
 
 $e = Entries::find((int)($_GET['id'] ?? $_POST['id'] ?? 0));
 if (!$e) {
-    flash('選手が見つかりません', 'err');
+    flash('参加者が見つかりません', 'err');
     redirect('scores.php');
 }
 $per = Settings::arrowsPerEnd();
