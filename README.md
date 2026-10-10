@@ -12,7 +12,7 @@ ScorekeeperNG(ISK-NG)で得点を入力できる、**予選だけ・1セッシ�
 - 順位: 全距離の合計 → 第1優先順位の点の本数 → 第2優先順位の点の本数(記録会設定で変更可。初期値は アウトドア X → 10、インドア 10 → 9)。すべて同じなら同順位(*)で、シュートオフ等で決める
 - 出力: **スコアカード PDF**(白紙/得点入り)、**結果 PDF**、結果・全矢の CSV
 
-本家 ianseo の ISK-NG Lite モードの通信(`Api/ISK-NG/v1/*`)を、予選に必要な部分だけ SQLite 上に再実装しています。
+ScorekeeperNG の ISK-NG Lite モードの通信を、予選に必要な部分だけ、本家 ianseo と同じ形式(項目名・値)で SQLite 上に独自に実装しています(本家のコードは含みません)。
 個人戦/団体戦のマッチ・エリミネーション・ゲート・Pro/Live モードは対象外です。
 
 ## 入れ方
@@ -138,7 +138,7 @@ ianseo-lite/
 ├─ Api/ISK-NG/index.php   ScorekeeperNG の接続先
 ├─ admin/                 管理画面(管理者メニュー/ホーム/記録会設定/選手登録/立順/入力状況/結果/端末設定/PDF/CSV)
 ├─ src/                   ロジック(Db, Settings, Entries, Scoring, Results, IskApi, Pdf ...)
-├─ lib/tcpdf/             PDF 生成(TCPDF 同梱。LGPL)。日本語は小塚ゴシック(kozgopromedium。PDF に埋め込まない CID フォント)
+├─ lib/tcpdf/             PDF 生成(TCPDF 同梱。LGPL v3)。日本語は小塚ゴシック(kozgopromedium。PDF に埋め込まない CID フォント)
 ├─ assets/                的面画像、アプリ用言語ファイル(ja/en)
 ├─ tools/                 的面定義の生成(gen_targets.php)とサンプル記録会の作成(make_sample.php)。実行時は不要
 ├─ samples/               サンプル記録会の DB 2つ(5A4D0001 屋外 / 5A4D0002 屋内。初回に data/competitions/ へコピー、版が変わると置き換え。パスワード sample)
@@ -159,7 +159,7 @@ ianseo-lite/
 
 ## 制限事項・注意
 
-- ScorekeeperNG の通信仕様は本家 ianseo のソース(`Api/ISK-NG`)から再現したものです。**実機アプリでの確認は、本番前に必ずリハーサルで行ってください**
+- ScorekeeperNG の通信は、本家 ianseo と同じ形式になるよう独自に実装したものです。**実機アプリでの確認は、本番前に必ずリハーサルで行ってください**
   (接続→的選択→入力→確定→PDF の一連)。アプリの版によって挙動が異なる可能性があります。
 - 「QR 読み取りの強制」「署名の正規表現」「GPS 設定」など Pro/Live 向けの端末設定には対応していません。
 - WA 形式の予選(1〜2距離)・1セッションだけです。的面は記録会で1種類です。3距離以上、部門ごとに違う的面、マッチ戦が必要なら本家 ianseo を使ってください。
@@ -168,15 +168,31 @@ ianseo-lite/
 ## ライセンス
 
 ianseo-lite は **GNU General Public License version 3(GPL v3)** で配布します。全文は `LICENSE.txt` です。
-本家 ianseo の 2023-04-01 版(GPL v3)のファイル(的面の画像、言語ファイル、矢の文字と点数の表、的面の定義)を含む派生物です。
-取り込んだファイルの一覧と、同梱ライブラリの著作権表示は `NOTICE.md` にあります。
-ianseo のそれより後の版(FSL-1.1-ALv2)のファイルは含めていません。
+
+```
+ianseo-lite  Copyright (C) 2026 e-donkun
+This program comes with ABSOLUTELY NO WARRANTY.
+This is free software, and you are welcome to redistribute it under the terms of the GNU GPL v3.
+```
+
+**利用の条件(GPL v3 の要点)**
 
 - 誰でも、商用を含めて、使う・改変する・再配布することができます。
-- 再配布するときは、`LICENSE.txt` と `NOTICE.md` を一緒に配り、著作権表示を消さず、ソースを付けてください(PHP のソースのまま配れば満たします)。
+- 再配布するときは `LICENSE.txt` と `NOTICE.md` を一緒に配り、著作権表示を消さず、ソースを付けてください(PHP のソースのまま配れば満たします)。
 - 改変したものを配るときも GPL v3 で配り、改変したファイルには変更したことと日付を書いてください。
 - 無保証です。
 
-PDF の作成に使う **TCPDF**(`lib/tcpdf/`)は **GNU LGPL v3** です(全文は `lib/tcpdf/LICENSE.TXT`)。
+**含まれているもの**
+
+| 部分 | ライセンス | 内容 |
+|---|---|---|
+| ianseo-lite のコード(`src/`、`admin/`、`index.php` など) | GPL v3 | 独自に書いたもの |
+| 本家 ianseo 2023-04-01 版のファイル | GPL v3 | 的面の画像、英語の言語ファイル、国旗画像、矢の文字と点数の表、的面の定義(一覧は `NOTICE.md`) |
+| 日本語の言語ファイル(`assets/lang/ja/ISK-App.php`) | GPL v3 | 英語の文言から独自に訳したもの |
+| TCPDF(`lib/tcpdf/`) | GNU LGPL v3 | PDF の作成。全文は `lib/tcpdf/LICENSE.TXT`。変更したファイルは `NOTICE.md` に記載 |
+
+- 本家 ianseo の 2023-04-01 版より後の版(FSL-1.1-ALv2 で配布)のファイルは含めていません。
+- ScorekeeperNG との通信とスコアカードPDFの寸法は、本家と同じ形式・同じ考え方で独自に書いたもので、本家のコードは含みません。
+- 小塚ゴシックのフォント本体は同梱していません(PDF に埋め込まず、表示する側のフォントを使います)。
 
 「ianseo」は本家の名称です。ianseo-lite は本家 ianseo の公式なものではありません。
