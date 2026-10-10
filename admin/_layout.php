@@ -46,6 +46,13 @@ function public_comp($allowAdmin = true)
     return $code;
 }
 
+/** 「?CDE9E793」のように、クエリが記録会コードだけのときのコード(それ以外は null) */
+function bare_code()
+{
+    $q = rawurldecode((string)($_SERVER['QUERY_STRING'] ?? ''));
+    return preg_match('/^[A-Za-z0-9_-]{1,32}$/', $q) ? $q : null;
+}
+
 function flash($msg = null, $type = 'ok')
 {
     if ($msg !== null) {

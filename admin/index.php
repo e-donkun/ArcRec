@@ -83,6 +83,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// 「admin/?記録会コード」で、その記録会のパスワード入力を出す(admin/index.php?code=… と同じ)
+if (!isset($_GET['code']) && ($bc = bare_code()) !== null) {
+    if (Competitions::find($bc)) {
+        $_GET['code'] = $bc;
+    } else {
+        flash('その記録会コードの記録会はありません', 'err');
+    }
+}
 // 記録会を開いていれば、その記録会を開いたまま一覧を出す(上部バーに記録会名、下部タブも出る)
 if (!Auth::check() || Competitions::open(Auth::current()) === false) {
     Db::unselect();

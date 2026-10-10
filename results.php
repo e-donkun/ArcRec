@@ -1,13 +1,16 @@
 <?php
 // 参加者向けの結果ページ(ログイン不要)。記録会設定で「結果を公開」にした記録会だけ見られる。
 //   results.php            … 公開している記録会の一覧
-//   results.php?c=記録会コード … その記録会の結果(スマホモードの速報と同じ画面)
+//   results.php?c=記録会コード … その記録会の結果(スマホモードの速報と同じ画面)。?記録会コード だけでも同じ
 // トップ(index.php)からも読み込むので、公開用の URL は短い形(https://<サーバー>/ianseo-lite/?c=記録会コード)にする。
 require __DIR__ . '/admin/_layout.php';
 require __DIR__ . '/admin/_results.php';
 
 use Lite\Competitions;
 
+if (!isset($_GET['c']) && ($bc = bare_code()) !== null) {
+    $_GET['c'] = $bc;   // 「?記録会コード」だけでも「?c=記録会コード」と同じ
+}
 if (isset($_GET['c'])) {
     results_page(public_comp(false), true);   // 一般向け: 管理者でも非公開は見せない
     exit;
