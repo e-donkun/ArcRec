@@ -1,6 +1,6 @@
 <?php
 // 結果一覧の画面(ianseo 本体のスマホモード「ライブ得点集計」と同じ画面構成)。
-//   ランキング/的順のチップ、検索、自動更新(最初はオフ。入れると30秒からカウントダウン)、部門ごとの見出し、カードをタップするとスコアカード(第1・第2優先順位の本数も)
+//   ランキング/的順のチップ、検索、自動更新(最初はオフ。入れると 30秒 から数字が減る)、部門ごとの見出し、カードをタップするとスコアカード(第1・第2優先順位の本数も)
 // 管理画面の admin/results.php と、参加者向けのトップの results.php(記録会設定で公開にした記録会だけ)から使う。
 
 use Lite\Entries;
@@ -184,7 +184,7 @@ function spResAuto(on) {
 	clearInterval(SpLv.timer);
 	const label = document.getElementById('SpAutoSec');
 	let left = SP_AUTO_SEC;
-	label.textContent = on ? 'あと' + left + '秒' : SP_AUTO_SEC + '秒';
+	label.textContent = left + '秒';
 	if (!on) return;
 	SpLv.timer = setInterval(async () => {
 		left--;
@@ -195,7 +195,7 @@ function spResAuto(on) {
 			if (document.getElementById('SpAuto').checked) spResAuto(true);
 			return;
 		}
-		label.textContent = 'あと' + left + '秒';
+		label.textContent = left + '秒';
 	}, 1000);
 }
 
