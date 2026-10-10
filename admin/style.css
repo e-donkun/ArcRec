@@ -464,3 +464,17 @@ details.sp-manage h3 { font-size: 15px; margin: 10px 0 4px; }
 .sp-qr-nav { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--sp-border); background: #fff; display: flex; align-items: center; justify-content: center; padding: 0; color: var(--sp-primary); }
 .sp-qr-nav svg { width: 26px; height: 26px; fill: currentColor; }
 .sp-qr-nav:active { background: var(--sp-primary-light); }
+
+/* 得点の訂正(ScorekeeperNG と同じボタン入力) */
+.sp-sc-edit { margin-top: 8px; background: #fff; table-layout: fixed; }
+.sp-sc-edit td { padding: 2px; }
+.sp-sc-edit td.no { color: var(--sp-muted); font-weight: bold; width: 24px; }
+.sp-sc-edit td.tot, .sp-sc-edit td.run { font-weight: bold; width: 40px; }
+.sp-sc-edit td.run { color: var(--sp-muted); }
+.sp-cell { width: 100%; min-width: 0; height: 38px; padding: 0; border: 1px solid var(--sp-border); border-radius: 6px; background: #fff; font-size: 17px; font-weight: bold; color: var(--sp-text); }
+.sp-cell.sel { border: 2px solid var(--sp-primary); background: var(--sp-primary-light); }
+.sp-sc-keypad { --kcols: 3; }
+.sp-sc-keypad button { height: 46px; font-size: 22px; border: 1px solid rgba(0,0,0,.15); }
+.sp-sc-keypad button.fn { font-size: 14px; background: #eef0f3; color: var(--sp-text); }
+.sp-sc-keypad button.save { background: var(--sp-primary); color: #fff; font-weight: bold; }
+body.sp-score-edit .sp-main { padding-bottom: calc(var(--sp-tabbar-h) + 320px + env(safe-area-inset-bottom)); }

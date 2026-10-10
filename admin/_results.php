@@ -213,9 +213,8 @@ document.addEventListener('DOMContentLoaded', () => {
 		if (document.getElementById('SpAuto').checked) spResAuto(true);   // 手で更新したら、カウントダウンも数え直す
 	});
 	const auto = document.getElementById('SpAuto');
-	const saved = spStore('res_auto');
-	auto.checked = saved === '1';   // 最初はオフ(前にチェックを入れた端末では、その設定を覚えておく)
-	auto.addEventListener('change', () => { spStore('res_auto', auto.checked ? '1' : '0'); spResAuto(auto.checked); });
+	auto.checked = false;   // 自動更新は、開くたびに必ずオフから(前の状態は覚えない)
+	auto.addEventListener('change', () => spResAuto(auto.checked));
 	spResAuto(auto.checked);
 	document.getElementById('SpList').addEventListener('click', ev => {
 		const card = ev.target.closest('.sp-card[data-id]');
