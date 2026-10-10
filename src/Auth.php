@@ -178,7 +178,6 @@ class Auth
         }
         session_regenerate_id(true);
         $_SESSION['comp'] = $f['code'];
-        unset($_SESSION['auth']);   // 以前の版で覚えていた「開いた記録会の一覧」は使わない
         return true;
     }
 

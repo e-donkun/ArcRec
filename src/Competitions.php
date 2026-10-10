@@ -222,7 +222,7 @@ class Competitions
         }
     }
 
-    // ------------------------------------------------------------ 起動時の準備(旧データの移行・サンプル)
+    // ------------------------------------------------------------ 起動時の準備(サンプル)
 
     /** 1リクエストにつき1回だけ($force はテスト用) */
     public static function bootstrap($force = false)
@@ -232,47 +232,9 @@ class Competitions
         }
         self::$booted = true;
         try {
-            self::migrateLegacy();
             self::seedSample();
         } catch (\Throwable $e) {
             error_log('ianseo-lite: 起動時の準備に失敗: ' . $e->getMessage());
-        }
-    }
-
-    /** 1記録会だけだった頃の data/lite.sqlite を、記録会のフォルダへ移す(パスワードも DB の中なのでそのまま) */
-    private static function migrateLegacy()
-    {
-        if (getenv('LITE_DB')) {
-            return;
-        }
-        $legacy = Db::dataDir() . '/lite.sqlite';
-        if (!is_file($legacy)) {
-            return;
-        }
-        $pdo = Db::connect($legacy);
-        $st = $pdo->query("SELECT v FROM settings WHERE k = 'code'");
-        $code = (string)($st ? $st->fetchColumn() : '');
-        if ($st) {
-            $st->closeCursor();   // 読み終えてから書く(開いたままだと「table is locked」になる)
-        }
-        if (!preg_match('/^[A-Za-z0-9_-]{1,32}$/', $code) || $code === 'LITE' || self::exists($code)) {
-            $code = self::newCode();
-        }
-        $set = $pdo->prepare('INSERT INTO settings(k, v) VALUES(?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v');
-        $set->execute(['code', $code]);
-        $has = $pdo->prepare("SELECT 1 FROM settings WHERE k = 'created_at'");
-        $has->execute();
-        $hasCreated = $has->fetchColumn();
-        $has->closeCursor();
-        if (!$hasCreated) {
-            $set->execute(['created_at', date('Y-m-d H:i:s', (int)@filemtime($legacy))]);
-        }
-        $pdo->exec('PRAGMA wal_checkpoint(TRUNCATE)');
-        unset($pdo, $st, $set, $has);
-        $dest = Db::competitionsDir() . '/' . $code . '.sqlite';
-        if (@rename($legacy, $dest)) {
-            @unlink($legacy . '-wal');
-            @unlink($legacy . '-shm');
         }
     }
 
@@ -304,10 +266,6 @@ class Competitions
                 if (@copy($src, $dest . '.tmp')) {
                     @rename($dest . '.tmp', $dest);
                 }
-            } elseif (strpos((string)self::readSetting($code, 'name'), 'サンプル大会') === 0) {
-                // 以前の版の「サンプル大会」という名前を「サンプル記録会」に直す
-                $pdo = Db::connect($dest);
-                $pdo->exec("UPDATE settings SET v = REPLACE(v, 'サンプル大会', 'サンプル記録会') WHERE k = 'name' AND v LIKE 'サンプル大会%'");
             }
         }
     }

@@ -162,8 +162,6 @@ ok(Settings::get('code') === '', '作成直後は記録会コードが空');
 $c1 = Settings::code();
 ok(preg_match('/^[0-9A-F]{8}$/', $c1) === 1, '記録会コードは8桁の16進数: ' . $c1);
 ok(Settings::code() === $c1 && Settings::get('code') === $c1, '一度作ったら変わらない(保存される)');
-Settings::set('code', 'LITE');
-ok(Settings::code() !== 'LITE' && preg_match('/^[0-9A-F]{8}$/', Settings::code()) === 1, '以前の既定値 LITE は作り直す');
 Settings::set('code', 'KYOTO26');
 ok(Settings::code() === 'KYOTO26', '自分で入れていた値はそのまま使う');
 Settings::set('code', '');

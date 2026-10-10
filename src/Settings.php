@@ -303,18 +303,18 @@ class Settings
     /**
      * 記録会コード(端末が使う識別子)。ユーザーは入力しない。
      * 記録会の作成時(最初に必要になったとき)に、8桁の16進数をランダムに作って保存する。
-     * 空のときと、以前の既定値 "LITE" のときだけ作り直す(自分で入れた値は、そのまま使い続ける)。
+     * 空のときだけ作る(入っている値は、そのまま使い続ける)。
      */
     public static function code()
     {
         $v = (string)self::get('code');
-        if ($v !== '' && $v !== 'LITE') {
+        if ($v !== '') {
             return $v;
         }
         return Db::immediate(function () {
             self::reset();
             $v = (string)self::get('code');
-            if ($v === '' || $v === 'LITE') {
+            if ($v === '') {
                 $v = strtoupper(bin2hex(random_bytes(4)));
                 self::set('code', $v);
             }

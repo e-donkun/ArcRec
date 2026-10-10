@@ -169,43 +169,10 @@ class Db
             at TEXT NOT NULL)');
         $pdo->exec('CREATE INDEX IF NOT EXISTS score_log_entry ON score_log(entry_id)');
 
-        // 2 距離対応より前に作った DB に列を足す
-        self::addColumn($pdo, 'entries', 'arrowstring2', 'TEXT NOT NULL DEFAULT \'\'');
-        self::addColumn($pdo, 'score_log', 'distance', 'INTEGER NOT NULL DEFAULT 1');
-        // 使っていなかった部門の的面の列を消す(的面は記録会の設定で持つ)
-        self::dropColumn($pdo, 'categories', 'targetface');
-        // 以前の部門名の初期値(リカーブ男子/リカーブ女子)は 男子/女子 に(名前を変えていない部門だけ)
-        $pdo->exec("UPDATE categories SET name = '男子' WHERE code = 'RM' AND name = 'リカーブ男子'");
-        $pdo->exec("UPDATE categories SET name = '女子' WHERE code = 'RW' AND name = 'リカーブ女子'");
-
         // 部門(記録会設定で変えられる)。何も無ければ 男子・女子 を作る
         if (!(int)$pdo->query('SELECT COUNT(*) FROM categories')->fetchColumn()) {
             $pdo->exec("INSERT INTO categories(code, name, sort) VALUES
                 ('RM', '男子', 10), ('RW', '女子', 20)");
         }
-    }
-
-    /** 列があれば消す。古い SQLite(3.35 より前)で消せないときは、そのまま残す(使わないだけ) */
-    private static function dropColumn(PDO $pdo, $table, $column)
-    {
-        foreach ($pdo->query('PRAGMA table_info(' . $table . ')')->fetchAll() as $c) {
-            if ($c['name'] === $column) {
-                try {
-                    $pdo->exec("ALTER TABLE $table DROP COLUMN $column");
-                } catch (\PDOException $e) {
-                }
-                return;
-            }
-        }
-    }
-
-    private static function addColumn(PDO $pdo, $table, $column, $def)
-    {
-        foreach ($pdo->query('PRAGMA table_info(' . $table . ')') as $c) {
-            if ($c['name'] === $column) {
-                return;
-            }
-        }
-        $pdo->exec("ALTER TABLE $table ADD COLUMN $column $def");
     }
 }

@@ -270,31 +270,7 @@ $kob = array_values(array_filter(Entries::all(), function ($e) { return $e['fami
 ok($kob['affiliation'] === 'みずうみ大学' && $kob['category_code'] === 'RW' && (int)$kob['target'] === 0, '姓名・所属・部門が入り、的は未割当');
 ok(Past::find($a . ':' . $a1) === null, 'いまの記録会の選手は「過去」として読まない');
 
-echo "# 旧データ(記録会が1つだけだった頃の data/lite.sqlite)の移行\n";
-$legacyDir = sys_get_temp_dir() . '/lite-legacy-' . getmypid();
-mkdir($legacyDir, 0775, true);
-$pdo = Db::connect($legacyDir . '/lite.sqlite');
-$ins = $pdo->prepare('INSERT INTO settings(k, v) VALUES(?, ?)');
-$ins->execute(['code', 'LITE']);
-$ins->execute(['name', '旧データの記録会']);
-$ins->execute(['admin_hash', Auth::hashPassword('oldpass')]);
-unset($pdo, $ins);
-putenv('LITE_DATA_DIR=' . $legacyDir);
-Db::unselect();
-Competitions::bootstrap(true);
-$files = Competitions::files();
-$found = null;
-foreach ($files as $c => $path) {
-    if (!Competitions::isSample($c)) {
-        $found = (string)$c;
-    }
-}
-ok(!is_file($legacyDir . '/lite.sqlite') && $found && preg_match('/^[0-9A-F]{8}$/', $found), '旧DBは記録会フォルダへ移り、コードは LITE → 16進数8桁に: ' . $found);
-ok(Auth::verify($found, 'oldpass'), '旧DBのパスワードはそのまま使える');
-ok(Competitions::readSetting($found, 'name') === '旧データの記録会' && Competitions::readSetting($found, 'code') === $found, '内容と記録会コードが一致');
-ok(is_file($legacyDir . '/competitions/5A4D0001.sqlite'), '移行した環境にもサンプルが入る');
-
-foreach ([$dataDir, $legacyDir] as $d) {
+foreach ([$dataDir] as $d) {
     rrmdir($d);
 }
 echo $fail ? "\nFAILED(複数記録会): $fail\n" : "\nAll OK(複数記録会)\n";

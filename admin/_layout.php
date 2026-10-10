@@ -7,7 +7,7 @@ use Lite\Competitions;
 use Lite\Settings;
 
 Auth::start();
-Competitions::bootstrap();   // 旧データの移行・サンプル記録会の用意(1リクエストにつき1回)
+Competitions::bootstrap();   // サンプル記録会の用意(1リクエストにつき1回)
 
 /**
  * ログイン必須のページの冒頭で呼ぶ。パスワードを通した記録会が選ばれていなければ、記録会の一覧(index.php)へ。
