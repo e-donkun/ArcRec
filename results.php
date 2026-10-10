@@ -9,7 +9,7 @@ require __DIR__ . '/admin/_results.php';
 use Lite\Competitions;
 
 if (isset($_GET['c'])) {
-    results_page(public_comp(), true);
+    results_page(public_comp(false), true);   // 一般向け: 管理者でも非公開は見せない
     exit;
 }
 

@@ -7,11 +7,7 @@ use Lite\Scoring;
 use Lite\Settings;
 
 $what = $_GET['what'] ?? '';
-if ($what === 'results') {
-    public_comp();   // 結果は公開(?c=記録会コード)
-} else {
-    require_admin();
-}
+require_admin();   // CSV は管理者だけ(一般向けの記録会結果には CSV を出さない)
 
 /** Excel(日本語環境)で文字化けしないよう BOM 付き UTF-8 の CSV で出す */
 function csv_out($filename, array $rows)

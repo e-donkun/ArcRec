@@ -72,7 +72,7 @@ function results_page($code, $public)
         'js' => ['LiteRes' => results_data(), 'LiteCode' => $code, 'LitePublic' => $public]]);
     $adm = $public ? 'admin/' : '';
     if (!Settings::resultsPublic()) {
-        echo '<div class="sp-flash warn">この記録会の結果は<b>非公開</b>です(この記録会を開いている管理者だけが見られます)。' . ($public ? '' : '<a href="setup.php">記録会設定</a>で公開にできます。') . '</div>';
+        echo '<div class="sp-flash warn">この記録会の結果は<b>非公開</b>です(この記録会を開いている管理者だけが見られます)。ホームの「結果の公開」で公開にできます。</div>';
     }
 ?>
 <div class="sp-toolbar">
@@ -88,10 +88,14 @@ function results_page($code, $public)
 	</div>
 </div>
 <div class="sp-list" id="SpList"></div>
+<?php if (!$public) {   // 一般向けには、説明と結果CSVを出さない ?>
 <p class="sp-note">カードをタップするとスコアカードを表示します。* は 合計・<?php echo h(Settings::tieLabel(1)); ?>・<?php echo h(Settings::tieLabel(2)); ?> がすべて同じ(シュートオフ等で決める)選手です。</p>
+<?php } ?>
 <div class="actions noprint">
 	<a class="sp-btn sub" href="<?php echo $adm; ?>pdf.php?type=results&c=<?php echo h($code); ?>" target="_blank"><?php echo icon('print'); ?>結果PDF</a>
-	<a class="sp-btn sub" href="<?php echo $adm; ?>export.php?what=results&c=<?php echo h($code); ?>">結果CSV</a>
+<?php if (!$public) { ?>
+	<a class="sp-btn sub" href="export.php?what=results">結果CSV</a>
+<?php } ?>
 </div>
 <?php if (!$public) { ?>
 <p class="sp-note">公開用のURL: <code><?php echo h(server_base_url() . '?c=' . $code); ?></code>(<?php echo Settings::resultsPublic() ? '公開中' : '非公開'; ?>)</p>

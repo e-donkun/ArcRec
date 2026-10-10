@@ -26,19 +26,20 @@ function require_admin()
 }
 
 /**
- * ログイン不要の公開ページ(結果・結果PDF/CSV)で、どの記録会かを決めて DB を開く。
- * ?c=記録会コード があればその記録会、なければ管理中の記録会。
- * 記録会設定で「結果を公開」にしている記録会だけ見せる(その記録会を開いている管理者は、非公開でも見られる)。
+ * ログイン不要の公開ページ(結果・結果PDF)で、どの記録会かを決めて DB を開く。
+ * ?c=記録会コード があればその記録会、なければ管理中の記録会($allowAdmin のときだけ)。
+ * 「結果の公開」にしている記録会だけ見せる。$allowAdmin なら、その記録会を開いている管理者は非公開でも見られる
+ * (管理画面からの結果PDF)。トップの記録会結果(一般向け)は $allowAdmin = false で、管理者かどうかは見ない。
  */
-function public_comp()
+function public_comp($allowAdmin = true)
 {
-    $code = $_GET['c'] ?? Auth::current();
+    $code = $_GET['c'] ?? ($allowAdmin ? Auth::current() : null);
     if (!$code || Competitions::open($code) === false) {
         http_response_code(404);
         exit('記録会が見つかりません');
     }
     $code = Competitions::find($code)['code'];
-    if (!Settings::resultsPublic() && !Auth::isCurrent($code)) {
+    if (!Settings::resultsPublic() && !($allowAdmin && Auth::isCurrent($code))) {
         http_response_code(403);
         exit('この記録会の結果は公開されていません');
     }
