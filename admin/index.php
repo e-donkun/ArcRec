@@ -14,6 +14,10 @@ $next = preg_match('/^[a-z_]+\.php$/', $next) ? $next : 'home.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     Auth::verifyCsrf();
     $back = 'index.php';
+    // 公開ページのシートから来たときは、失敗したらその公開ページに戻す
+    if (preg_match('#^\.\./(\?(c=[A-Za-z0-9]+|list=1))?$#', (string)($_POST['back'] ?? ''))) {
+        $back = $_POST['back'];
+    }
     try {
         switch ($_POST['do'] ?? '') {
             case 'open':
@@ -75,6 +79,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if (!Auth::check() || Competitions::open(Auth::current()) === false) {
     Db::unselect();
 }
-page_head('管理者メニュー', 'home', ['logout' => true, 'right' => admin_header_buttons(), 'back' => ['../', '記録会一覧(結果)に戻る']]);
+page_head('管理者メニュー', 'home', ['logout' => true, 'right' => admin_header_buttons(), 'back' => ['../?list=1', '記録会一覧に戻る']]);
 render_competitions($next);
 page_foot(Auth::check() ? 'home' : '');

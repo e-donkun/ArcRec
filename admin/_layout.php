@@ -131,8 +131,8 @@ function tabs()
 
 /**
  * 画面の上部(スマホモードと同じ: 上部バーに記録会名と画面名)。
- * $opts: 'public' => 参加者向けの公開ページ(管理用のリンク・タブを出さない), 'logout' => 右上にログアウトボタン(管理者メニュー), 'complist' => 右上に管理者メニューボタン(ホーム), 'back' => [左上の「<」の戻り先, 説明],
- *        'gear' => 右上に歯車の「設定」ボタン(リンク先。公開の結果ページ), 'base' => style.css などの場所(トップのページから使うとき 'admin/'),
+ * $opts: 'public' => 参加者向けの公開ページ(管理用のリンク・タブを出さない), 'logout' => 右上にログアウトボタン(管理者メニュー), 'back' => [左上の「<」の戻り先, 説明],
+ *        'base' => style.css などの場所(トップのページから使うとき 'admin/'),
  *        'wide' => 表の多い画面で横幅を広げる, 'js' => JavaScript に渡す変数, 'body' => body の class
  */
 function page_head($title, $tab = '', array $opts = [])
@@ -169,13 +169,6 @@ function page_head($title, $tab = '', array $opts = [])
     }
     if (($admin || (Auth::isAdmin() && empty($opts['public']))) && !empty($opts['logout'])) {
         echo '<a class="sp-appbar-btn" href="logout.php" title="ログアウト">' . icon('logout') . '<span>ログアウト</span></a>';
-    }
-    if ($admin && !empty($opts['complist'])) {
-        // 記録会を閉じて管理者メニューへ(管理者のログインはそのまま)
-        echo '<a class="sp-appbar-btn" href="close.php" title="管理者メニューに戻る">' . icon('list') . '<span>管理者メニュー</span></a>';
-    }
-    if (!empty($opts['gear'])) {
-        echo '<a class="sp-appbar-btn" href="' . h($opts['gear']) . '" title="設定">' . icon('gear') . '<span>設定</span></a>';
     }
     echo '</header><main class="sp-main' . (!empty($opts['wide']) ? ' wide' : '') . '">';
     foreach ((array)flash() as $f) {
@@ -347,4 +340,58 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 HTML;
+}
+
+/**
+ * 公開ページ(トップ)の右上のボタン。シートのフォームは admin/index.php に送る。
+ *   $code = null … 記録会一覧: 「全体管理者ログイン」。ログイン中ならそのまま管理者メニューへ
+ *   $code = 記録会コード … 記録会結果: 「設定」。この記録会を開いている(または全体管理者)ならそのまま管理者画面ホームへ、
+ *                          そうでなければ個別パスワードのシート
+ */
+function public_admin_button($code = null)
+{
+    $back = $code === null ? '../?list=1' : '../?c=' . rawurlencode($code);
+    $form = function ($inner) use ($back) {
+        return '<form method="post" action="admin/index.php?next=home.php">' . csrf_field()
+            . '<input type="hidden" name="back" value="' . h($back) . '">' . $inner . '</form>';
+    };
+    $actions = function ($label) {
+        return '<div class="sp-sheet-actions"><button type="button" class="sp-btn sub" onclick="spSheet.close()">戻る</button><button class="sp-btn">' . $label . '</button></div>';
+    };
+    $pw = function ($name, $label) {
+        return '<label class="sp-field"><span>' . $label . '</span><input type="password" name="' . $name . '" required autocomplete="current-password"></label>';
+    };
+    $btn = function ($href, $icon, $label, $id = '') {
+        return '<a class="sp-appbar-btn" href="' . h($href) . '"' . ($id ? ' id="' . $id . '"' : '') . ' title="' . h($label) . '">' . icon($icon) . '<span>' . h($label) . '</span></a>';
+    };
+    $sheet = function ($btnId, $tplId) {
+        return '<script>document.getElementById("' . $btnId . '").addEventListener("click",function(ev){ev.preventDefault();'
+            . 'var el=spSheet.open(document.getElementById("' . $tplId . '").innerHTML);var f=el.querySelector("input[type=password]");if(f)setTimeout(function(){f.focus()},250)});</script>';
+    };
+
+    if ($code === null) {
+        if (Auth::isAdmin() || !Auth::adminIsSet()) {
+            return $btn('admin/index.php', 'gear', '全体管理者ログイン');   // 未設定のときは管理者メニューで最初の設定
+        }
+        return $btn('#', 'gear', '全体管理者ログイン', 'PubAdminBtn')
+            . '<template id="PubAdminTpl">' . $form('<input type="hidden" name="do" value="admin_login"><h2>全体管理者ログイン</h2>'
+                . $pw('admin_password', '管理者パスワード') . $actions('ログイン')) . '</template>'
+            . $sheet('PubAdminBtn', 'PubAdminTpl');
+    }
+    if (Auth::isCurrent($code)) {
+        return $btn('admin/home.php', 'gear', '設定');
+    }
+    $open = '<input type="hidden" name="do" value="open"><input type="hidden" name="code" value="' . h($code) . '">';
+    if (Auth::isAdmin()) {
+        // 全体管理者はパスワードなしで開く
+        return $btn('#', 'gear', '設定', 'PubCompBtn')
+            . $form($open . '<input type="hidden" name="password" value="">')
+            . '<script>document.getElementById("PubCompBtn").addEventListener("click",function(ev){ev.preventDefault();this.nextElementSibling.submit()});</script>';
+    }
+    $name = Settings::title();
+    return $btn('#', 'gear', '設定', 'PubCompBtn')
+        . '<template id="PubCompTpl">' . $form($open . '<h2>' . h($name) . '</h2><div class="sp-sub">' . h($code) . '</div>'
+            . (Auth::hasCompetitionPassword($code) ? $pw('password', '個別パスワード') : $pw('password', '管理者パスワード(この記録会は管理者のみ)'))
+            . $actions('開く')) . '</template>'
+        . $sheet('PubCompBtn', 'PubCompTpl');
 }

@@ -1,5 +1,5 @@
 <?php
-// 管理者画面ホーム: 記録会の状況、結果の公開、メニュー(下部タブと同じ)、印刷・出力。右上の「管理者メニュー」で記録会を閉じて一覧へ(管理者のログインはそのまま)。記録会の切り替え・新しい記録会は管理者メニュー(index.php)で
+// 管理者画面ホーム: 記録会の状況、結果の公開、メニュー(下部タブと同じ)、印刷・出力。左上の「<」で戻る(全体管理者は管理者メニュー、個別管理者は記録会結果)。記録会の切り替え・新しい記録会は管理者メニュー(index.php)で
 require __DIR__ . '/_layout.php';
 require_admin();
 
@@ -21,7 +21,13 @@ foreach ($devices as $d) {
     }
 }
 $code = Settings::code();
-page_head('管理者画面ホーム', 'home', ['complist' => true]);
+// 左上の「<」: 全体管理者は管理者メニュー(記録会を閉じる)、個別管理者はこの記録会の結果(公開ページ。非公開のときは管理画面の結果)へ
+if (Lite\Auth::isAdmin()) {
+    $back = ['close.php', '管理者メニューに戻る'];
+} else {
+    $back = [Settings::resultsPublic() ? '../?c=' . rawurlencode($code) : 'results.php', '記録会結果に戻る'];
+}
+page_head('管理者画面ホーム', 'home', ['back' => $back]);
 // 見出し: 記録会名 [記録会コード]
 echo '<h2 class="sp-comp-title">' . h(Settings::get('name') ?: '(記録会名なし)') . ' <span>[' . h($code) . ']</span></h2>';
 if (!Settings::get('name')) {
