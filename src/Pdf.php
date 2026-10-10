@@ -413,7 +413,7 @@ class Pdf extends \TCPDF
         $pdf->AddPage();
         $pdf->f(16);
         $pdf->SetXY(10, 10);
-        $pdf->Cell(190, 8, Settings::title() . '　成績', 0, 1, 'C');
+        $pdf->Cell(190, 8, Settings::title(), 0, 1, 'C');
         $pdf->f(9);
         $pdf->Cell(190, 5, Settings::roundLabel(), 0, 1, 'C');
         $pdf->SetY($pdf->GetY() + 3);
