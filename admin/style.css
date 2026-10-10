@@ -452,3 +452,5 @@ details.sp-advanced[open] { padding-bottom: 8px; }
 /* 記録会設定の「管理」: アコーディオンを縦に並べる */
 .sp-main > details.sp-advanced { background: var(--sp-card, #fff); margin: 8px 0; }
 details.sp-advanced input:not([type=checkbox]):not([type=radio]) { width: 100%; box-sizing: border-box; }
+details.sp-manage form { border-top: 1px solid var(--sp-border); padding-top: 4px; }
+details.sp-manage h3 { font-size: 15px; margin: 10px 0 4px; }

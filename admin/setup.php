@@ -115,20 +115,19 @@ echo '</details>';
 echo '<input type="hidden" name="archers_per_target" value="' . h($s['archers_per_target']) . '">';
 echo '<p><button>保存</button></p></form>';
 
-// ---- 管理(詳細設定と同じく、タップで開くアコーディオンを縦に並べる)
-echo '<h2>管理</h2>';
-echo '<details class="sp-advanced"><summary>この記録会のパスワードの変更</summary>'
-    . '<form method="post">' . csrf_field() . '<input type="hidden" name="do" value="password">'
+// ---- 管理(詳細設定と同じく、タップで開くアコーディオン。開くと3項目が縦に並ぶ)
+echo '<details class="sp-advanced sp-manage"><summary>管理</summary>';
+echo '<form method="post">' . csrf_field() . '<input type="hidden" name="do" value="password">'
+    . '<h3>この記録会のパスワードの変更</h3>'
     . '<label>新しいパスワード</label><input type="password" name="password" required autocomplete="new-password">'
-    . '<label>確認</label><input type="password" name="password2" required autocomplete="new-password"><p><button class="sub">変更</button></p></form></details>';
-echo '<details class="sp-advanced"><summary>この記録会の点数を全消去</summary>'
-    . '<form method="post" onsubmit="return window.confirm(\'この記録会の全員の点数を消します。よろしいですか?\')">' . csrf_field() . '<input type="hidden" name="do" value="clear_scores">'
-    . '<p class="muted small">リハーサル後などに、選手名簿はそのままで点数だけを消します。</p>'
-    . '<label style="font-weight:400"><input type="checkbox" name="confirm" value="yes"> 本当に消す</label><p><button class="danger">点数を全消去</button></p></form></details>';
-echo '<details class="sp-advanced"><summary>この記録会を削除</summary>'
-    . '<form method="post" onsubmit="return window.confirm(\'この記録会を削除します。選手名簿・点数・設定がすべて消え、元に戻せません。よろしいですか?\')">' . csrf_field() . '<input type="hidden" name="do" value="delete">'
-    . '<p class="muted small">この記録会のデータベースファイルを削除します。選手名簿・点数・設定がすべて消え、元に戻せません。削除すると記録会の一覧に戻ります。</p>'
-    . '<label style="font-weight:400"><input type="checkbox" name="confirm" value="yes"> 本当に削除する</label><p><button class="danger">この記録会を削除</button></p></form></details>';
+    . '<label>確認</label><input type="password" name="password2" required autocomplete="new-password"><p><button class="sub">変更</button></p></form>';
+echo '<form method="post" onsubmit="return window.confirm(\'この記録会の全員の点数を消します。よろしいですか?\')">' . csrf_field() . '<input type="hidden" name="do" value="clear_scores">'
+    . '<h3>この記録会の点数を全消去</h3><p class="muted small">リハーサル後などに、選手名簿はそのままで点数だけを消します。</p>'
+    . '<label style="font-weight:400"><input type="checkbox" name="confirm" value="yes"> 本当に消す</label><p><button class="danger">点数を全消去</button></p></form>';
+echo '<form method="post" onsubmit="return window.confirm(\'この記録会を削除します。選手名簿・点数・設定がすべて消え、元に戻せません。よろしいですか?\')">' . csrf_field() . '<input type="hidden" name="do" value="delete">'
+    . '<h3>この記録会を削除</h3><p class="muted small">この記録会のデータベースファイルを削除します。選手名簿・点数・設定がすべて消え、元に戻せません。削除すると記録会の一覧に戻ります。</p>'
+    . '<label style="font-weight:400"><input type="checkbox" name="confirm" value="yes"> 本当に削除する</label><p><button class="danger">この記録会を削除</button></p></form>';
+echo '</details>';
 echo '<script>(function(){'
     . 'var faces=' . json_encode(array_map(function ($o) {
         $r = [];
