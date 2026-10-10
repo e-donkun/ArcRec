@@ -153,15 +153,16 @@ function page_head($title, $tab = '', array $opts = [])
     $js = array_merge(['LITE_CSRF' => Auth::csrf()], $opts['js'] ?? []);
     $base = $opts['base'] ?? '';
     $ver = '?v=' . filemtime(__DIR__ . '/style.css') . '-' . filemtime(__DIR__ . '/app.js');
+    $superAdmin = Auth::isAdmin() && empty($opts['public']);   // 全体管理者でログイン中の管理画面は、上部バーを黒に
     echo '<!DOCTYPE html><html lang="ja" translate="no"><head><meta charset="UTF-8">'
         . '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
-        . '<meta name="theme-color" content="#1e4d8c"><title>' . h($title) . ' - ianseo-lite</title>'
+        . '<meta name="theme-color" content="' . ($superAdmin ? '#111111' : '#1e4d8c') . '"><title>' . h($title) . ' - ianseo-lite</title>'
         . '<link rel="stylesheet" href="' . $base . 'style.css' . $ver . '"><script>';
     foreach ($js as $k => $v) {
         echo 'var ' . $k . '=' . json_encode($v, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE) . ';';
     }
     echo '</script><script src="' . $base . 'app.js' . $ver . '"></script></head>'
-        . '<body class="' . h($opts['body'] ?? '') . '"><header class="sp-appbar">';
+        . '<body class="' . h($opts['body'] ?? '') . '"><header class="sp-appbar' . ($superAdmin ? ' super' : '') . '">';
     // ホーム以外の管理画面は、左上に「<」(ホームに戻る)。'back' => [URL, 説明] で戻り先を変える
     $back = $opts['back'] ?? ($admin && basename($_SERVER['SCRIPT_NAME']) !== 'home.php' && empty($opts['noback']) ? ['home.php', 'ホームに戻る'] : null);
     if ($back) {
