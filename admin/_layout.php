@@ -190,16 +190,6 @@ function page_foot($tab = '')
     echo '<div id="sp-toast" class="sp-toast" role="status"></div></body></html>';
 }
 
-/** 管理者メニューの上部バー右上のボタン: 全体管理者ログイン(未設定なら最初の設定)。シートは render_competitions() が用意する */
-function admin_header_buttons()
-{
-    if (Auth::isAdmin()) {
-        return '';   // ログイン中は、ログアウトのボタンだけ(パスワードの変更は一覧の下)
-    }
-    return '<a class="sp-appbar-btn" href="#" id="' . (Auth::adminIsSet() ? 'AdminLoginBtn' : 'AdminSetupBtn') . '" title="全体管理者ログイン">'
-        . icon('gear') . '<span>全体管理者ログイン</span></a>';
-}
-
 /**
  * 記録会の一覧(スマホモードの「試合の選択」と同じカード)と、新しい記録会・管理者ログインのシート。
  * 記録会をタップすると、その記録会のパスワード(管理者パスワードでも可)を入れるシートが出る。管理者としてログインしていれば、そのまま開く。
@@ -313,7 +303,8 @@ function render_code_login(array $list, callable $form, callable $pw)
     if ($cur) {
         $name = Competitions::readSetting($cur, 'name') ?: $cur;
         echo '<a class="sp-card tap" href="home.php">' . icon('home') . '<div class="sp-card-main"><div class="sp-name">' . h($name)
-            . ' <span class="sp-tag pri">開いている記録会</span></div><div class="sp-sub">' . h($cur) . '</div></div></a>';
+            . ' <span class="sp-tag pri">開いている記録会</span></div><div class="sp-sub">' . h($cur) . '</div></div></a>'
+            . '<div style="height:14px"></div>';
     }
     $sel = isset($_GET['code']) ? Competitions::find($_GET['code']) : null;
     if ($sel) {
@@ -337,6 +328,9 @@ function render_code_login(array $list, callable $form, callable $pw)
     echo '<div class="sp-card">' . $form('<input type="hidden" name="do" value="find">'
         . '<label class="sp-field"><span>記録会コード</span><input type="text" name="code" required autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例: 5A4D0001"></label>'
         . '<div class="sp-sheet-actions"><button class="sp-btn">次へ</button></div>') . '</div>';
+    // 全体管理者でログイン(まだ全体管理者パスワードが無ければ、最初の設定)
+    echo '<p style="margin-top:20px"><button type="button" class="sp-btn sub block" id="' . (Auth::adminIsSet() ? 'AdminLoginBtn' : 'AdminSetupBtn') . '">'
+        . icon('gear') . '全体管理者でログイン</button></p>';
 }
 
 /** 結果の公開カード(トグル・バッジ・URLのコピー)。ホームと記録会結果の画面で使う。切り替えは home.php へ POST */
@@ -385,7 +379,7 @@ HTML;
 
 /**
  * 公開ページ(トップ)の右上のボタン。シートのフォームは admin/index.php に送る。
- *   $code = null … 記録会一覧: 「全体管理者ログイン」。ログイン中ならそのまま管理者メニューへ
+ *   $code = null … 記録会一覧: 「管理」。管理者メニューへ
  *   $code = 記録会コード … 記録会結果: 「設定」。この記録会を開いている(または全体管理者)ならそのまま管理者画面ホームへ、
  *                          そうでなければ個別パスワードのシート
  */
@@ -411,13 +405,7 @@ function public_admin_button($code = null)
     };
 
     if ($code === null) {
-        if (Auth::isAdmin() || !Auth::adminIsSet()) {
-            return $btn('admin/index.php', 'gear', '全体管理者ログイン');   // 未設定のときは管理者メニューで最初の設定
-        }
-        return $btn('#', 'gear', '全体管理者ログイン', 'PubAdminBtn')
-            . '<template id="PubAdminTpl">' . $form('<input type="hidden" name="do" value="admin_login"><h2>全体管理者ログイン</h2>'
-                . $pw('admin_password', '管理者パスワード') . $actions('ログイン')) . '</template>'
-            . $sheet('PubAdminBtn', 'PubAdminTpl');
+        return $btn('admin/index.php', 'gear', '管理');   // 管理者メニューへ(記録会コード → 個別パスワード、または全体管理者でログイン)
     }
     if (Auth::isCurrent($code)) {
         return $btn('admin/home.php', 'gear', '設定');

@@ -87,6 +87,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if (!Auth::check() || Competitions::open(Auth::current()) === false) {
     Db::unselect();
 }
-page_head('管理者メニュー', 'home', ['logout' => true, 'right' => admin_header_buttons(), 'back' => ['../?list=1', '記録会一覧に戻る']]);
+page_head('管理者メニュー', 'home', ['logout' => true, 'notabs' => true, 'back' => ['../?list=1', '記録会一覧に戻る']]);
 render_competitions($next);
-page_foot(Auth::check() ? 'home' : '');
+page_foot();
