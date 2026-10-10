@@ -1,6 +1,6 @@
 <?php
 // 結果一覧の画面(ianseo 本体のスマホモード「ライブ得点集計」と同じ画面構成)。
-//   ランキング/的順のチップ、検索、自動更新(30秒)、部門ごとの見出し、カードをタップするとスコアカード(第1・第2優先順位の本数も)
+//   ランキング/的順のチップ、検索、自動更新(最初はオフ。入れると30秒からカウントダウン)、部門ごとの見出し、カードをタップするとスコアカード(第1・第2優先順位の本数も)
 // 管理画面の admin/results.php と、参加者向けのトップの results.php(記録会設定で公開にした記録会だけ)から使う。
 
 use Lite\Entries;
@@ -82,7 +82,7 @@ function results_page($code, $public)
 	</div>
 	<label class="sp-search"><?php echo icon('search'); ?><input type="search" id="SpSearch" placeholder="名前・所属で検索"></label>
 	<div class="sp-live-bar">
-		<label class="sp-switch"><input type="checkbox" id="SpAuto"> 自動更新(30秒)</label>
+		<label class="sp-switch"><input type="checkbox" id="SpAuto"> 自動更新(<span id="SpAutoSec">30秒</span>)</label>
 		<span id="SpInfo"></span>
 		<button type="button" class="sp-btn sub" id="SpReload" style="padding:6px 10px" aria-label="更新"><?php echo icon('reload'); ?></button>
 	</div>
@@ -178,9 +178,25 @@ async function spResReload() {
 	}
 }
 
+// 自動更新: チェックを入れると 30 秒からカウントダウンし、0 になったら更新して数え直す
+const SP_AUTO_SEC = 30;
 function spResAuto(on) {
 	clearInterval(SpLv.timer);
-	if (on) SpLv.timer = setInterval(spResReload, 30000);
+	const label = document.getElementById('SpAutoSec');
+	let left = SP_AUTO_SEC;
+	label.textContent = on ? 'あと' + left + '秒' : SP_AUTO_SEC + '秒';
+	if (!on) return;
+	SpLv.timer = setInterval(async () => {
+		left--;
+		if (left <= 0) {
+			label.textContent = '更新中';
+			clearInterval(SpLv.timer);
+			await spResReload();
+			if (document.getElementById('SpAuto').checked) spResAuto(true);
+			return;
+		}
+		label.textContent = 'あと' + left + '秒';
+	}, 1000);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -192,10 +208,13 @@ document.addEventListener('DOMContentLoaded', () => {
 		spResRender();
 	});
 	document.getElementById('SpSearch').addEventListener('input', spResFilter);
-	document.getElementById('SpReload').addEventListener('click', spResReload);
+	document.getElementById('SpReload').addEventListener('click', async () => {
+		await spResReload();
+		if (document.getElementById('SpAuto').checked) spResAuto(true);   // 手で更新したら、カウントダウンも数え直す
+	});
 	const auto = document.getElementById('SpAuto');
 	const saved = spStore('res_auto');
-	auto.checked = saved === null ? LitePublic : saved === '1';   // 参加者向け(ログインなし)は最初から自動更新
+	auto.checked = saved === '1';   // 最初はオフ(前にチェックを入れた端末では、その設定を覚えておく)
 	auto.addEventListener('change', () => { spStore('res_auto', auto.checked ? '1' : '0'); spResAuto(auto.checked); });
 	spResAuto(auto.checked);
 	document.getElementById('SpList').addEventListener('click', ev => {

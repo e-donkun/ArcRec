@@ -445,3 +445,7 @@ details.sp-advanced[open] { padding-bottom: 8px; }
 .sp-appbar-back { display: flex; align-items: center; justify-content: center; flex: none; width: 36px; height: 36px; margin-left: -6px; border-radius: 50%; color: #fff; }
 .sp-appbar-back svg { width: 26px; height: 26px; fill: currentColor; }
 .sp-appbar-back:active { background: rgba(255,255,255,.2); }
+
+/* 記録会結果の自動更新(カウントダウン)は1行に */
+.sp-live-bar .sp-switch { white-space: nowrap; flex: none; }
+#SpAutoSec { display: inline-block; min-width: 4.4em; text-align: center; font-variant-numeric: tabular-nums; }
