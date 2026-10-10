@@ -221,9 +221,10 @@ function render_competitions($next = 'home.php')
     foreach ($list as $c) {
         $cur = Auth::isCurrent($c['code']);
         echo '<div class="sp-card tap sp-tour-item' . ($cur ? ' current' : '') . '" data-code="' . h($c['code']) . '" data-name="' . h($c['name'] ?: '(記録会名未設定)') . '"'
-            . ($c['sample'] ? ' data-hint="' . h(Competitions::SAMPLE_PASSWORD) . '"' : '') . ($cur ? ' data-current="1"' : '') . '>'
+            . ($c['sample'] ? ' data-hint="' . h(Competitions::SAMPLE_PASSWORD) . '"' : '') . ($cur ? ' data-current="1"' : '') . (Auth::hasCompetitionPassword($c['code']) ? '' : ' data-nopw="1"') . '>'
             . '<div class="sp-name">' . h($c['name'] ?: '(記録会名未設定)')
-            . ($cur ? '<span class="sp-tag pri">開いている記録会</span>' : '') . ($c['sample'] ? '<span class="sp-tag">サンプル</span>' : '') . '</div>'
+            . ($cur ? '<span class="sp-tag pri">開いている記録会</span>' : '') . ($c['sample'] ? '<span class="sp-tag">サンプル</span>' : '')
+            . (Auth::hasCompetitionPassword($c['code']) ? '' : '<span class="sp-tag">管理者のみ</span>') . '</div>'
             . '<div class="sp-sub">' . h(implode(' / ', array_filter([$c['code'], $c['preset_label'], $c['entries'] . '人',
                 $c['last_score'] ? '最終更新 ' . substr($c['last_score'], 0, 16) : '']))) . '</div></div>';
     }
@@ -261,10 +262,11 @@ function render_competitions($next = 'home.php')
     }
     if ($isAdmin) {
         echo '<template id="CompNewTpl">' . $form('<input type="hidden" name="do" value="create"><h2>新しい記録会</h2>'
-            . '<div class="sp-sub">記録会コード(8桁の16進数)は自動で付きます。パスワードはこの記録会だけのもので、記録会の DB に保存します。</div>'
+            . '<div class="sp-sub">記録会コード(8桁の16進数)は自動で付きます。</div>'
             . '<label class="sp-field"><span>記録会名</span><input type="text" name="name"></label>'
             . '<label class="sp-field"><span>競技形式</span><select name="preset">' . $opts . '</select></label>'
-            . '<div class="sp-row">' . $pw('password', 'パスワード', 'new-password', 4) . $pw('password2', 'パスワード(確認)', 'new-password', 4) . '</div>'
+            . '<div class="sp-row">' . str_replace(' required', '', $pw('password', 'パスワード(任意)', 'new-password', 4) . $pw('password2', 'パスワード(確認)', 'new-password', 4)) . '</div>'
+            . '<div class="sp-sub">この記録会の管理を任せる人のためのパスワードです。空欄なら、管理者パスワードでだけ開けます。</div>'
             . $actions('作成')) . '</template>';
     }
     echo '<template id="AdminLoginTpl">' . $form('<input type="hidden" name="do" value="admin_login"><h2>管理者ログイン</h2>'
@@ -290,7 +292,8 @@ function render_competitions($next = 'home.php')
         . 'if(isAdmin){var d=document.getElementById("CompOpenDirect");d.querySelector("[name=code]").value=c.dataset.code;d.submit();return}'
         . 'var el=sheet("CompOpenTpl");'
         . 'el.querySelector("[name=code]").value=c.dataset.code;el.querySelector("[data-role=title]").textContent=c.dataset.name;'
-        . 'el.querySelector("[data-role=sub]").textContent=c.dataset.code+(c.dataset.hint?"(サンプル: パスワードは "+c.dataset.hint+")":"")});'
+        . 'el.querySelector("[data-role=sub]").textContent=c.dataset.code+(c.dataset.hint?"(サンプル: パスワードは "+c.dataset.hint+")":"");'
+        . 'if(c.dataset.nopw){el.querySelector(".sp-field span").textContent="管理者パスワード(この記録会は管理者のみ)"}});'
         . '[["CompNewBtn","CompNewTpl"],["AdminLoginBtn","AdminLoginTpl"],["AdminSetupBtn","AdminSetupTpl"],["AdminPwBtn","AdminPwTpl"]].forEach(function(x){'
         . 'var b=document.getElementById(x[0]);if(b)b.onclick=function(ev){ev.preventDefault();sheet(x[1])}});'
         . '})()</script>';

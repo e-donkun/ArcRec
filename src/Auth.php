@@ -148,10 +148,22 @@ class Auth
     }
 
     /** いま使っている記録会のパスワードを変える */
+    /** いま使っている記録会のパスワードを変える。空にすると、管理者パスワードでだけ開ける記録会になる */
     public static function setPassword($password)
     {
+        $password = (string)$password;
+        if ($password === '') {
+            Settings::set('admin_hash', '');
+            return;
+        }
         self::checkPasswordRule($password);
         Settings::set('admin_hash', self::hashPassword($password));
+    }
+
+    /** 記録会ごとのパスワードがあるか(なければ管理者だけが開ける) */
+    public static function hasCompetitionPassword($code)
+    {
+        return (string)Competitions::readSetting($code, 'admin_hash') !== '';
     }
 
     // ------------------------------------------------------------ ログイン状態(セッション)

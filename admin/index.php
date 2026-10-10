@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new InvalidArgumentException('確認用パスワードが一致しません');
                 }
                 $code = Competitions::create($_POST['name'] ?? '', $_POST['preset'] ?? '', (string)($_POST['password'] ?? ''));
-                Auth::login($code, (string)$_POST['password']);
+                Auth::login($code, '');   // 管理者としてログイン中なので、パスワードなしで開ける
                 flash('記録会を作りました。記録会設定を確認してください');
                 redirect('setup.php');
             case 'admin_login':

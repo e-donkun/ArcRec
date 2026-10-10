@@ -175,12 +175,19 @@ class Competitions
      * 記録会を作る。記録会コードは自動。パスワードは記録会の DB の中に持つ。
      * @return string 記録会コード
      */
-    public static function create($name, $preset, $password)
+    /**
+     * @param string $password この記録会だけの管理者(記録会ごとに任せる人)のパスワード。任意。
+     *                         空なら、その記録会は管理者パスワードでだけ開ける
+     */
+    public static function create($name, $preset, $password = '')
     {
         if (!isset(Settings::PRESETS[$preset])) {
             throw new \InvalidArgumentException('競技形式を選んでください');
         }
-        Auth::checkPasswordRule($password);
+        $password = (string)$password;
+        if ($password !== '') {
+            Auth::checkPasswordRule($password);
+        }
         $code = self::newCode();
         $path = Db::competitionsDir() . '/' . $code . '.sqlite';
         Db::select($path);
@@ -189,7 +196,7 @@ class Competitions
             'code' => $code,
             'name' => trim($name),
             'preset' => $preset,
-            'admin_hash' => Auth::hashPassword($password),
+            'admin_hash' => $password === '' ? '' : Auth::hashPassword($password),
             'created_at' => date('Y-m-d H:i:s'),
         ]);
         return $code;

@@ -107,6 +107,16 @@ ok($num !== null && Competitions::find('12345678')['code'] === '12345678' && Com
 unlink("$dataDir/competitions/12345678.sqlite");
 Db::unselect();
 
+// パスワードなしの記録会(管理者パスワードでだけ開ける)
+$np = Competitions::create('任せない記録会', 'outdoor36');
+ok(!Auth::hasCompetitionPassword($np) && !Auth::verify($np, '') && !Auth::verify($np, 'passA1'), 'パスワードなしで作れる(空のパスワードや他の記録会のパスワードでは開けない)');
+Competitions::open($np);
+Auth::setPassword('makase1');
+ok(Auth::hasCompetitionPassword($np) && Auth::verify($np, 'makase1'), 'あとから記録会ごとのパスワードを付けられる');
+Auth::setPassword('');
+ok(!Auth::hasCompetitionPassword($np), 'パスワードを空にすると管理者のみに戻る');
+Competitions::delete($np);
+
 // 記録会の削除(DB ファイルごと)
 $tmpCode = Competitions::create('消す記録会', 'outdoor36', 'keshi1');
 Entries::save(['family_name' => '削', 'category_id' => (int)Categories::byCode('RM')['id']]);

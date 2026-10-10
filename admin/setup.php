@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new InvalidArgumentException('確認用パスワードが一致しません');
                 }
                 Lite\Auth::setPassword($_POST['password'] ?? '');
-                flash('管理パスワードを変更しました');
+                flash(($_POST['password'] ?? '') === '' ? 'この記録会のパスワードをなくしました(管理者パスワードでだけ開けます)' : 'この記録会のパスワードを変更しました');
                 break;
         }
     } catch (InvalidArgumentException | RuntimeException $e) {
@@ -120,8 +120,10 @@ echo '<p><button>保存</button></p></form>';
 echo '<details class="sp-advanced sp-manage"><summary>管理</summary>';
 echo '<form method="post">' . csrf_field() . '<input type="hidden" name="do" value="password">'
     . '<h3>この記録会のパスワードの変更</h3>'
-    . '<label>新しいパスワード</label><input type="password" name="password" required autocomplete="new-password">'
-    . '<label>確認</label><input type="password" name="password2" required autocomplete="new-password"><p><button class="sub">変更</button></p></form>';
+    . '<p class="muted small">記録会ごとに管理を任せる人のためのパスワード(任意)。空欄で変更すると、管理者パスワードでだけ開ける記録会になります。'
+    . (Lite\Auth::hasCompetitionPassword(Settings::code()) ? '' : '<br>いまはパスワードなし(管理者のみ)です。') . '</p>'
+    . '<label>新しいパスワード</label><input type="password" name="password" autocomplete="new-password">'
+    . '<label>確認</label><input type="password" name="password2" autocomplete="new-password"><p><button class="sub">変更</button></p></form>';
 echo '<form method="post" onsubmit="return window.confirm(\'この記録会の全員の点数を消します。よろしいですか?\')">' . csrf_field() . '<input type="hidden" name="do" value="clear_scores">'
     . '<h3>この記録会の点数を全消去</h3><p class="muted small">リハーサル後などに、参加者名簿はそのままで点数だけを消します。</p>'
     . '<label style="font-weight:400"><input type="checkbox" name="confirm" value="yes"> 本当に消す</label><p><button class="danger">点数を全消去</button></p></form>';
