@@ -8,11 +8,11 @@ if (!defined('K_TCPDF_EXTERNAL_CONFIG')) {
 require_once LITE_ROOT . '/lib/tcpdf/tcpdf.php';
 
 /**
- * スコアカードと結果の PDF。日本語は TCPDF 同梱の Komorebi Gothic を埋め込む。
+ * スコアカードと結果の PDF。日本語は小塚ゴシック(kozgopromedium。ianseo 本体と同じ CID フォントで、PDF には埋め込まず表示側のフォントを使う)。
  */
 class Pdf extends \TCPDF
 {
-    const FONT = 'komorebigothic';
+    const FONT = 'kozgopromedium';
 
     private $footerText = '';
 
