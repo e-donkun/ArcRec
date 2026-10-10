@@ -47,10 +47,10 @@ class Past
     }
 
     /** 所属の入力候補(すべての記録会。よく使われる順) */
-    public static function affiliations($limit = 300)
+    public static function affiliations($limit = 300, $others = true)
     {
         $count = [];
-        $dbs = array_merge([['pdo' => Db::pdo()]], self::others());
+        $dbs = array_merge([['pdo' => Db::pdo()]], $others ? self::others() : []);   // $others = false: この記録会の所属だけ
         foreach ($dbs as $d) {
             foreach ($d['pdo']->query("SELECT affiliation, COUNT(*) n FROM entries WHERE affiliation != '' GROUP BY affiliation") as $r) {
                 $count[$r['affiliation']] = ($count[$r['affiliation']] ?? 0) + (int)$r['n'];

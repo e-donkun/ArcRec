@@ -116,6 +116,15 @@ if ($act !== '') {
                 }
                 Entries::delete($e['id']);
                 json_out(['ok' => true, 'msg' => Entries::fullName($e) . ' を削除しました', 'rows' => entry_rows()]);
+            case 'teams':
+            case 'archers':
+            case 'pastadd':
+                // 過去の記録会(ほかの記録会)の情報は、全体管理者だけ。個別管理では使えない
+                if (!Lite\Auth::isAdmin()) {
+                    throw new InvalidArgumentException('過去の記録会から選べるのは全体管理者だけです');
+                }
+        }
+        switch ($act) {
             case 'teams':     // 過去の記録会の所属(チーム)
                 json_out(['ok' => true, 'teams' => Past::teams()]);
             case 'archers':   // 過去の記録会の、その所属の参加者
@@ -148,7 +157,7 @@ $cats = [];
 foreach (Categories::all() as $c) {
     $cats[] = ['id' => (int)$c['id'], 'name' => $c['name']];
 }
-page_head('参加者登録', 'entries', ['js' => ['LiteRows' => entry_rows(), 'LiteCats' => $cats, 'LiteAffs' => Past::affiliations()]]);
+page_head('参加者登録', 'entries', ['js' => ['LiteRows' => entry_rows(), 'LiteCats' => $cats, 'LiteAffs' => Past::affiliations(300, Lite\Auth::isAdmin()), 'LitePast' => Lite\Auth::isAdmin()]]);
 ?>
 <div class="sp-toolbar">
 	<label class="sp-search"><?php echo icon('search'); ?><input type="search" id="SpSearch" placeholder="名前・所属で検索"></label>
@@ -250,7 +259,8 @@ function spOpenEdit(r) {
 function spOpenAdd() {
 	const blank = {family: '', given: '', aff: '', catId: SpFilter.cat || (LiteCats[0] || {}).id};
 	const html = '<h2>参加者を追加</h2>'
-		+ '<div class="sp-seg"><button type="button" data-tab="new" class="active">新しく入力</button><button type="button" data-tab="past">過去の記録会から</button></div>'
+		// 過去の記録会から選ぶのは全体管理者だけ(個別管理は新しく入力だけ)
+		+ (LitePast ? '<div class="sp-seg"><button type="button" data-tab="new" class="active">新しく入力</button><button type="button" data-tab="past">過去の記録会から</button></div>' : '')
 		+ '<div data-pane="new">' + spNameFields(blank)
 		+ '<div class="sp-sheet-actions"><button type="button" class="sp-btn sub" onclick="spSheet.close()">閉じる</button><button type="button" class="sp-btn" id="SpAddGo1">追加</button></div>'
 		+ '<p class="sp-note">追加したあとも、続けて入力できます。</p></div>'
