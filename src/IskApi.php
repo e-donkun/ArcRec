@@ -495,32 +495,17 @@ class IskApi
         if (!$this->device($req)) {
             return $this->unknownDevice($req);
         }
-        $base = LITE_ROOT . '/assets/lang/';
-        $names = [];
-        foreach (glob($base . '*', GLOB_ONLYDIR) as $dir) {
-            $id = basename($dir);
-            if (!is_file($dir . '/ISK-App.php')) {
-                continue;
-            }
-            $names[$id] = is_file("$dir/$id.txt") ? trim(file_get_contents("$dir/$id.txt")) : strtoupper($id);
-        }
+        // 言語ファイルは LangPacks(同梱のもの、または全体管理者が本家の翻訳サイトから取得したもの)
         if (empty($req->lang)) {
-            $list = [];
-            foreach ($names as $id => $name) {
-                $flag = is_file($f = "$base$id/$id.png") ? 'data:image/png;base64,' . base64_encode(file_get_contents($f)) : '';
-                $list[] = ['id' => $id, 'name' => $name, 'md5' => md5_file("$base$id/ISK-App.php"), 'flagBase64' => $flag];
-            }
-            return ['action' => $req->action, 'device' => $req->device, 'languageList' => $list];
+            return ['action' => $req->action, 'device' => $req->device, 'languageList' => LangPacks::languageList()];
         }
-        if (!preg_match('/^[a-z_0-9-]+$/i', $req->lang) || !isset($names[$req->lang])) {
+        $l = LangPacks::load((string)$req->lang);
+        if (!$l) {
             return $this->fail('Unknown language');
         }
-        $file = $base . $req->lang . '/ISK-App.php';
-        $lang = ['LangUpdatedEpoch' => filemtime($file)];
-        include $file;  // $lang[] を埋める
         return [
             'action' => $req->action, 'device' => $req->device, 'language' => $req->lang,
-            'languageName' => $names[$req->lang], 'md5' => md5_file($file), 'translations' => $lang,
+            'languageName' => $l['name'], 'md5' => $l['md5'], 'translations' => $l['translations'],
         ];
     }
 

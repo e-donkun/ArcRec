@@ -194,5 +194,6 @@ This is free software, and you are welcome to redistribute it under the terms of
 - 本家 ianseo の 2023-04-01 版より後の版(FSL-1.1-ALv2 で配布)のファイルは含めていません。
 - ScorekeeperNG との通信とスコアカードPDFの寸法は、本家と同じ形式・同じ考え方で独自に書いたもので、本家のコードは含みません。
 - 小塚ゴシックのフォント本体は同梱していません(PDF に埋め込まず、表示する側のフォントを使います)。
+- 全体管理者メニューの「本家の翻訳を取得」を押すと、そのサーバーが本家 ianseo の翻訳サイト(`translations.ianseo.net`)から端末アプリ用の訳を取得し、`data/lang/` に保存して使います(取得した訳は Git・配布物には入りません)。取得した訳は本家の条件(いまの本家は FSL-1.1-ALv2)に従うので、本家と競合する商用のサービスでは使わないでください。「同梱の訳に戻す」で、同梱の訳(GPL v3)に戻ります。
 
 「ianseo」は本家の名称です。ianseo-lite は本家 ianseo の公式なものではありません。

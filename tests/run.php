@@ -165,6 +165,36 @@ $r = call([['action' => 'handshake', 'uuid' => 'old', 'version' => '1.2.0', 'isk
     ['action' => 'manual', 'device' => 'old', 'tocode' => 'KYT26', 'type' => 'Q', 'sesstarget' => '10002']]);
 ok(isset($r['responses'][1]['targetFaces'][0]['imgGzip']), 'v1.2 の端末には的面画像を含める');
 
+echo "# 言語パック(本家の翻訳サイトから取得。ここではネットワークに出ない見本で確かめる)\n";
+$evil = 'O:8:"stdClass":0:{}';
+Lite\LangPacks::$downloader = function ($url) use (&$lastUrl) {
+    $lastUrl = $url;
+    $body = "\$lang['AppTitle']='Scorekeeper NG';\n\$lang['GenericOk']='OK';\n\$lang['Quote']='It\\'s';\nsystem('id');\n";
+    for ($i = 0; $i < 12; $i++) {
+        $body .= "\$lang['K$i']='値$i';\n";
+    }
+    return gzdeflate(serialize(['langs' => [
+        'ja' => ['flag-png' => "\x89PNG\r\n\x1a\nxx", 'testuale' => '日本語 - Japanese', 'lang' => ['ISK-App' => $body, 'Common' => 'x']],
+        '../x' => ['lang' => ['ISK-App' => $body]],
+        'fr' => ['lang' => ['Common' => 'x']],
+    ], 'credits' => '']));
+};
+$got = Lite\LangPacks::fetch(['ja', 'fr']);
+ok($got === ['ja'] && strpos($lastUrl, 'l[]=ja&l[]=fr') !== false, '言語パックを取得(ISK-App があるものだけ保存、不正な言語名は無視)');
+$r = call([['action' => 'lang', 'device' => 'dev-1', 'lang' => 'ja']]);
+$t = $r['responses'][0]['translations'];
+ok($t['AppTitle'] === 'Scorekeeper NG' && $t['Quote'] === "It's" && $t['K3'] === '値3' && !isset($t['SettingsConnectionCompCode']), '取得した訳を優先して端末に返す(文字として読むだけで実行しない)');
+$list = array_column(call([['action' => 'lang', 'device' => 'dev-1']])['responses'][0]['languageList'], null, 'id');
+ok(isset($list['en'], $list['ja']) && strpos($list['ja']['flagBase64'], 'data:image/png;base64,') === 0, '言語の一覧は同梱+取得');
+Lite\LangPacks::clear();
+$r = call([['action' => 'lang', 'device' => 'dev-1', 'lang' => 'ja']]);
+ok($r['responses'][0]['translations']['SettingsConnectionCompCode'] === '競技会コード', '取得したものを消すと同梱の訳に戻る');
+Lite\LangPacks::$downloader = function () { return gzdeflate('O:8:"stdClass":0:{}'); };
+$bad = false;
+try { Lite\LangPacks::fetch(['ja']); } catch (RuntimeException $e) { $bad = true; }
+ok($bad, '想定と違う形(オブジェクトなど)は受け付けない');
+Lite\LangPacks::$downloader = null;
+
 echo "# 採点と順位\n";
 ok(Scoring::total('KLJIHG', 'KL', 'K') === [10 + 10 + 9 + 8 + 7 + 6, 2, 1, 6], '採点: 合計/第1優先(10+X)/第2優先(X)/射数');
 ok(Scoring::total('KLJIHG') === [50, 1, 1, 6], '採点: 優先順位の初期値は 屋外 X → 10');
