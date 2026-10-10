@@ -405,10 +405,10 @@ class Pdf extends \TCPDF
         $pdf->SetLineWidth(0.2);
         $pdf->SetDrawColor(0);
         $nd = Settings::distances();
-        // 列の幅(合わせて 190mm)。1 距離のときは合計だけ
+        // 列の幅(合わせて 190mm。選手氏名と所属は同じ幅)。1 距離のときは合計だけ
         $pdf->cols = $nd > 1
-            ? ['rank' => 10, 'name' => 30, 'aff' => 48, 'grp' => [15, 9.5, 9.5]]
-            : ['rank' => 12, 'name' => 44, 'aff' => 81, 'grp' => [23, 15, 15]];
+            ? ['rank' => 10, 'name' => 39, 'aff' => 39, 'grp' => [15, 9.5, 9.5]]
+            : ['rank' => 12, 'name' => 62.5, 'aff' => 62.5, 'grp' => [23, 15, 15]];
         $pdf->groupNames = $nd > 1 ? [Settings::distanceName(1), Settings::distanceName(2), '合計'] : ['合計'];
         $pdf->AddPage();
         $pdf->f(16);
