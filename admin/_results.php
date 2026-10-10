@@ -129,7 +129,7 @@ function spResCard(it, showCat) {
 			: '<span class="sp-badge">' + spEsc(it.absent && !it.t ? '欠' : pos) + '</span>')
 		+ '<div class="sp-card-main">'
 		+ '<div class="sp-name">' + spEsc(it.name) + '</div>'
-		+ '<div class="sp-sub">' + spEsc(it.aff) + (showCat ? ' / ' + spEsc(showCat) : '') + (SpLv.order === 'rank' && it.t ? ' / 的' + spEsc(pos) : '') + '</div>'
+		+ '<div class="sp-sub">' + spEsc(it.aff) + (showCat ? ' / ' + spEsc(showCat) : '') + (SpLv.order === 'rank' && it.t ? ' / ' + spEsc(pos) : '') + '</div>'
 		+ '</div>'
 		+ (it.hits
 			? '<div class="sp-score"><b>' + it.score + '</b><div class="sp-sub">' + spEsc(LiteRes.goldLabel) + ':' + it.golds + ' ' + spEsc(LiteRes.xLabel) + ':' + it.xs + '</div></div>'
