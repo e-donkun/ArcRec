@@ -96,7 +96,8 @@ page_head('素点の編集', 'scores', ['body' => 'sp-has-keypad sp-score-edit',
 if ($e['locked']) {
     echo '<div class="sp-flash warn">このスコアカードは確定済みです(管理画面からは編集できます)。</div>';
 }
-echo '<div class="sp-card"><div class="sp-card-head"><span class="sp-badge' . ($pos ? '' : ' none') . '">' . h($pos ?: '-') . '</span><div class="sp-card-main">'
+// 参加者と合計のカードは、スクロールしても上部バーの下に固定する
+echo '<div class="sp-card sp-sticky-card" id="ScHead"><div class="sp-card-head"><span class="sp-badge' . ($pos ? '' : ' none') . '">' . h($pos ?: '-') . '</span><div class="sp-card-main">'
     . '<div class="sp-name">' . h(Entries::fullName($e)) . '<span class="sp-tag">' . h($e['category_name']) . '</span></div>'
     . '<div class="sp-sub">' . h($e['affiliation']) . '</div></div></div>'
     . '<div class="sp-totals" id="ScTotals"></div></div>';
@@ -135,7 +136,7 @@ echo '<table class="sp-sc sp-sc-edit" id="ScTable"></table>';
 	}
 	function render() {
 		// 表: エンド | 矢 | 小計 | 合計(ScorekeeperNG と同じ並び)
-		let h = '<colgroup><col style="width:26px">' + '<col>'.repeat(C.per) + '<col style="width:40px"><col style="width:44px"></colgroup><thead><tr><th></th>';
+		let h = '<colgroup><col style="width:26px">' + '<col>'.repeat(C.per + 2) + '</colgroup><thead><tr><th></th>';
 		for (let j = 1; j <= C.per; j++) h += '<th>' + j + '</th>';
 		h += '<th>小計</th><th>合計</th></tr></thead><tbody>';
 		let run = 0;
@@ -174,7 +175,8 @@ echo '<table class="sp-sc sp-sc-edit" id="ScTable"></table>';
 		const cell = document.querySelector('.sp-cell.sel');
 		const pad = document.getElementById('ScPad').getBoundingClientRect();
 		const r = cell.getBoundingClientRect();
-		if (r.bottom > pad.top - 8 || r.top < 70) cell.scrollIntoView({block: 'center', behavior: 'smooth'});
+		const head = document.getElementById('ScHead').getBoundingClientRect();
+		if (r.bottom > pad.top - 8 || r.top < head.bottom + 4) cell.scrollIntoView({block: 'center', behavior: 'smooth'});
 	}
 	function put(c) {
 		model[dist][sel] = c;
@@ -242,6 +244,10 @@ echo '<table class="sp-sc sp-sc-edit" id="ScTable"></table>';
 	window.addEventListener('beforeunload', ev => {
 		if (!leaving && dirty()) { ev.preventDefault(); ev.returnValue = '編集した内容が保存されていませんが、よろしいですか?'; }
 	});
+	// 固定するカードの位置 = 上部バーの高さ
+	const fixTop = () => { document.getElementById('ScHead').style.top = document.querySelector('.sp-appbar').offsetHeight + 'px'; };
+	fixTop();
+	window.addEventListener('resize', fixTop);
 	const first = model[0].findIndex(c => c === ' ');
 	sel = first >= 0 ? first : 0;
 	render();

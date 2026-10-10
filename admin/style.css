@@ -469,7 +469,7 @@ details.sp-manage h3 { font-size: 15px; margin: 10px 0 4px; }
 .sp-sc-edit { margin-top: 8px; background: #fff; table-layout: fixed; }
 .sp-sc-edit td { padding: 2px; }
 .sp-sc-edit td.no { color: var(--sp-muted); font-weight: bold; width: 24px; }
-.sp-sc-edit td.tot, .sp-sc-edit td.run { font-weight: bold; width: 40px; }
+.sp-sc-edit td.tot, .sp-sc-edit td.run { font-weight: bold; }
 .sp-sc-edit td.run { color: var(--sp-muted); }
 .sp-cell { width: 100%; min-width: 0; height: 38px; padding: 0; border: 1px solid var(--sp-border); border-radius: 6px; background: #fff; font-size: 17px; font-weight: bold; color: var(--sp-text); }
 .sp-cell.sel { border: 2px solid var(--sp-primary); background: var(--sp-primary-light); }
@@ -556,3 +556,5 @@ input.sp-readonly { background: #f2f4f7 !important; color: var(--sp-muted); font
 .sp-stats.sp-stats2 { grid-template-columns: 1fr 1fr; }
 .sp-print { grid-template-columns: 1fr; }
 .sp-h-link a { font-size: 13px; font-weight: normal; margin-left: 8px; }
+/* 素点の編集: 参加者と合計のカードを上部バーの下に固定 */
+.sp-sticky-card { position: sticky; top: 58px; z-index: 15; margin-top: -4px; box-shadow: 0 0 0 6px var(--sp-bg, #f2f4f7), 0 4px 8px rgba(0,0,0,.08); }
