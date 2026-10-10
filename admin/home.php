@@ -28,15 +28,9 @@ if (!Settings::get('name')) {
     echo '<div class="sp-flash warn">記録会名がまだありません。<a href="setup.php">記録会設定</a> で入れてください。</div>';
 }
 // 終了エンド: 的に配置した参加者の全員が射ち終えたエンドの数 / 全エンド
-$perEnd = Settings::arrowsPerEnd();
-$allEnds = Settings::ends() * Settings::distances();
-$doneEnds = null;
-foreach (Entries::all() as $e) {
-    if (!$e['status'] && $e['target']) {
-        $done = (int)floor(Lite\Scoring::total(Entries::allArrows($e))[3] / $perEnd);
-        $doneEnds = $doneEnds === null ? $done : min($doneEnds, $done);
-    }
-}
+$ep = Results::endsProgress();
+$doneEnds = $ep['done'];
+$allEnds = $ep['all'];
 echo '<div class="sp-stats sp-stats2">'
     . '<div><small>終了エンド</small><b>' . (int)$doneEnds . '</b> / ' . $allEnds . '<div class="bar"><i style="width:' . ($allEnds ? round((int)$doneEnds * 100 / $allEnds) : 0) . '%"></i></div></div>'
     . '<div><small>端末(直近2分)</small><b>' . $online . '</b> / ' . count($devices) . '</div>'

@@ -128,4 +128,18 @@ class Results
         }
         return ['archers' => $n, 'finished' => $done, 'hits' => $hits, 'all_arrows' => $n * $total];
     }
+
+    /** 終了エンド: 的に配置した参加者の全員が射ち終えたエンドの数 / 全エンド(ホームと結果の画面) */
+    public static function endsProgress()
+    {
+        $perEnd = Settings::arrowsPerEnd();
+        $done = null;
+        foreach (Entries::all() as $e) {
+            if (!$e['status'] && $e['target']) {
+                $n = (int)floor(Scoring::total(Entries::allArrows($e))[3] / $perEnd);
+                $done = $done === null ? $n : min($done, $n);
+            }
+        }
+        return ['done' => (int)$done, 'all' => Settings::ends() * Settings::distances()];
+    }
 }

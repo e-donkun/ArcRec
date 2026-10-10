@@ -56,7 +56,7 @@ function results_data()
         'sections' => $sections, 'per' => $per, 'total' => Settings::totalArrows(),
         'goldLabel' => Settings::tieLabel(1), 'xLabel' => Settings::tieLabel(2),
         'round' => Settings::roundLabel(), 'updated' => Results::lastUpdateText(),
-        'finished' => $p['finished'], 'archers' => $p['archers'],
+        'finished' => $p['finished'], 'archers' => $p['archers'], 'ends' => Results::endsProgress(),
     ];
 }
 
@@ -155,7 +155,7 @@ function spResRender() {
 		all.forEach(x => html += spResCard(x[0], x[1]));
 	}
 	document.getElementById('SpList').innerHTML = html || '<div class="sp-empty">表示する参加者がいません</div>';
-	document.getElementById('SpInfo').textContent = LiteRes.round + ' / ' + LiteRes.finished + '/' + LiteRes.archers + '人終了 / 更新 ' + LiteRes.updated;
+	document.getElementById('SpInfo').textContent = '終了エンド ' + LiteRes.ends.done + ' / ' + LiteRes.ends.all;
 	spResFilter();
 }
 
