@@ -298,3 +298,47 @@ function render_competitions($next = 'home.php')
         . 'var b=document.getElementById(x[0]);if(b)b.onclick=function(ev){ev.preventDefault();sheet(x[1])}});'
         . '})()</script>';
 }
+
+/** 結果の公開カード(トグル・バッジ・URLのコピー)。ホームと記録会結果の画面で使う。切り替えは home.php へ POST */
+function public_card()
+{
+    // 状態はバッジ(公開中 / 非公開)、URL はコピーできる欄に
+    $pubUrl = server_base_url() . '?c=' . Lite\Settings::code();
+    $pub = Lite\Settings::resultsPublic();
+    return '<div class="sp-card sp-public">' . icon('chart') . '<div class="sp-card-main">'
+        . '<div class="sp-name">結果の公開 <span class="sp-tag ' . ($pub ? 'ok' : 'danger') . '" id="PubBadge">' . ($pub ? '公開中' : '非公開') . '</span></div>'
+        . '<div class="sp-copy"><input type="text" readonly id="PubUrl" value="' . h($pubUrl) . '" aria-label="公開用のURL">'
+        . '<button type="button" class="sp-btn sub" id="PubCopy" title="URLをコピー">' . icon('copy') . '</button></div></div>'
+        . '<label class="sp-toggle" title="結果を公開する"><input type="checkbox" id="PubToggle"' . ($pub ? ' checked' : '') . '><span></span></label></div>'
+        . <<<'HTML'
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+	const t = document.getElementById('PubToggle'), badge = document.getElementById('PubBadge');
+	t.addEventListener('change', async () => {
+		t.disabled = true;
+		try {
+			const r = await spPostJson('home.php', {act: 'public', value: t.checked ? 1 : 0});
+			t.checked = r.public;
+			badge.textContent = r.public ? '公開中' : '非公開';
+			badge.className = 'sp-tag ' + (r.public ? 'ok' : 'danger');
+			spToast(r.public ? '結果を公開しました' : '結果を非公開にしました');
+		} catch (e) {
+			t.checked = !t.checked;
+			spToast('切り替えできませんでした: ' + e.message, true);
+		}
+		t.disabled = false;
+	});
+	document.getElementById('PubCopy').addEventListener('click', async () => {
+		const inp = document.getElementById('PubUrl');
+		try {
+			await navigator.clipboard.writeText(inp.value);
+		} catch (e) {
+			inp.select();
+			document.execCommand('copy');   // 古いブラウザ・http のとき
+		}
+		spToast('URLをコピーしました');
+	});
+});
+</script>
+HTML;
+}

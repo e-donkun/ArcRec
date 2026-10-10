@@ -41,45 +41,8 @@ echo '<div class="sp-stats sp-stats2">'
     . '</div>';
 echo '<p class="sp-note">スコア最終更新: <b>' . h(Results::lastUpdateText()) . '</b></p>';
 
-// 結果の公開(トグル)。状態はバッジ(公開中 / 非公開)、URL はコピーできる欄に
-$pubUrl = server_base_url() . '?c=' . $code;
-$pub = Settings::resultsPublic();
-echo '<div class="sp-card sp-public">' . icon('chart') . '<div class="sp-card-main">'
-    . '<div class="sp-name">結果の公開 <span class="sp-tag ' . ($pub ? 'ok' : 'danger') . '" id="PubBadge">' . ($pub ? '公開中' : '非公開') . '</span></div>'
-    . '<div class="sp-copy"><input type="text" readonly id="PubUrl" value="' . h($pubUrl) . '" aria-label="公開用のURL">'
-    . '<button type="button" class="sp-btn sub" id="PubCopy" title="URLをコピー">' . icon('copy') . '</button></div></div>'
-    . '<label class="sp-toggle" title="結果を公開する"><input type="checkbox" id="PubToggle"' . ($pub ? ' checked' : '') . '><span></span></label></div>';
-?>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-	const t = document.getElementById('PubToggle'), badge = document.getElementById('PubBadge');
-	t.addEventListener('change', async () => {
-		t.disabled = true;
-		try {
-			const r = await spPostJson('home.php', {act: 'public', value: t.checked ? 1 : 0});
-			t.checked = r.public;
-			badge.textContent = r.public ? '公開中' : '非公開';
-			badge.className = 'sp-tag ' + (r.public ? 'ok' : 'danger');
-			spToast(r.public ? '結果を公開しました' : '結果を非公開にしました');
-		} catch (e) {
-			t.checked = !t.checked;
-			spToast('切り替えできませんでした: ' + e.message, true);
-		}
-		t.disabled = false;
-	});
-	document.getElementById('PubCopy').addEventListener('click', async () => {
-		const inp = document.getElementById('PubUrl');
-		try {
-			await navigator.clipboard.writeText(inp.value);
-		} catch (e) {
-			inp.select();
-			document.execCommand('copy');   // 古いブラウザ・http のとき
-		}
-		spToast('URLをコピーしました');
-	});
-});
-</script>
-<?php
+// 結果の公開(トグル)
+echo public_card();
 
 $item = function ($href, $icon, $title, $sub = '', $attr = '') {
     return '<a class="sp-card tap" href="' . $href . '"' . $attr . '>' . icon($icon) . '<div class="sp-card-main"><div class="sp-name">' . $title . '</div>'

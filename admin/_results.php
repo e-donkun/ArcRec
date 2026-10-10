@@ -71,8 +71,8 @@ function results_page($code, $public)
     page_head('記録会結果', 'results', ['public' => $public, 'base' => $public ? 'admin/' : '', 'gear' => $public ? 'admin/index.php' : '',
         'js' => ['LiteRes' => results_data(), 'LiteCode' => $code, 'LitePublic' => $public]]);
     $adm = $public ? 'admin/' : '';
-    if (!Settings::resultsPublic()) {
-        echo '<div class="sp-flash warn">この記録会の結果は<b>非公開</b>です(この記録会を開いている管理者だけが見られます)。ホームの「結果の公開」で公開にできます。</div>';
+    if (!$public) {
+        echo public_card();   // 管理画面では、結果の公開を一番上に
     }
 ?>
 <div class="sp-toolbar">
@@ -92,12 +92,8 @@ function results_page($code, $public)
 	<a class="sp-btn sub" href="<?php echo $adm; ?>pdf.php?type=results&c=<?php echo h($code); ?>" target="_blank"><?php echo icon('print'); ?>結果PDF</a>
 <?php if (!$public) { ?>
 	<a class="sp-btn sub" href="export.php?what=results">結果CSV</a>
-	<a class="sp-btn sub" href="export.php?what=arrows">全矢CSV</a>
 <?php } ?>
 </div>
-<?php if (!$public) { ?>
-<p class="sp-note">公開用のURL: <code><?php echo h(server_base_url() . '?c=' . $code); ?></code>(<?php echo Settings::resultsPublic() ? '公開中' : '非公開'; ?>)</p>
-<?php } ?>
 
 <script>
 const SpLv = {order: spStore('res_order') || 'rank', open: new Set(), timer: null};
