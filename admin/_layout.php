@@ -148,7 +148,13 @@ function page_head($title, $tab = '', array $opts = [])
         echo 'var ' . $k . '=' . json_encode($v, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE) . ';';
     }
     echo '</script><script src="' . $base . 'app.js' . $ver . '"></script></head>'
-        . '<body class="' . h($opts['body'] ?? '') . '"><header class="sp-appbar"><div class="sp-appbar-title">';
+        . '<body class="' . h($opts['body'] ?? '') . '"><header class="sp-appbar">';
+    // ホーム以外の管理画面は、左上に「<」(ホームに戻る)
+    if ($admin && basename($_SERVER['SCRIPT_NAME']) !== 'home.php') {
+        echo '<a class="sp-appbar-back" href="home.php" title="ホームに戻る" aria-label="ホームに戻る">'
+            . '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.4 4.6 8 12l7.4 7.4-1.4 1.4L5.2 12l8.8-8.8z"/></svg></a>';
+    }
+    echo '<div class="sp-appbar-title">';
     // 記録会名は表示だけ(ここから記録会は切り替えない。切り替えはログアウトして記録会の選択で)
     echo '<span class="sp-tour">' . h($name) . '</span>';
     echo '<h1>' . h($title) . '</h1></div>';

@@ -440,3 +440,8 @@ details.sp-advanced[open] { padding-bottom: 8px; }
 .sp-toggle input:checked + span { background: var(--sp-ok, #2e7d32); }
 .sp-toggle input:checked + span::before { transform: translateX(22px); }
 .sp-toggle input:focus-visible + span { outline: 2px solid var(--sp-primary); outline-offset: 2px; }
+
+/* 上部バー左上の「<」(ホームに戻る) */
+.sp-appbar-back { display: flex; align-items: center; justify-content: center; flex: none; width: 36px; height: 36px; margin-left: -6px; border-radius: 50%; color: #fff; }
+.sp-appbar-back svg { width: 26px; height: 26px; fill: currentColor; }
+.sp-appbar-back:active { background: rgba(255,255,255,.2); }
