@@ -315,30 +315,33 @@ function render_code_login(array $list, callable $form, callable $pw)
             . '<div style="height:14px"></div>';
     }
     $sel = isset($_GET['code']) ? Competitions::find($_GET['code']) : null;
-    if ($sel) {
-        $code = $sel['code'];
-        $sample = false;
-        foreach ($list as $c) {
-            if ((string)$c['code'] === $code) {
-                $sample = !empty($c['sample']);
-            }
-        }
-        $hasPw = Auth::hasCompetitionPassword($code);
-        echo '<div class="sp-card">' . $form('<input type="hidden" name="do" value="open"><input type="hidden" name="code" value="' . h($code) . '">'
-            . '<input type="hidden" name="back" value="index.php?code=' . h(rawurlencode($code)) . '">'
-            . '<h2 class="sp-comp-title">' . h(Competitions::readSetting($code, 'name') ?: '(記録会名未設定)') . '</h2>'
-            . '<div class="sp-sub">' . h($code) . ($sample ? '(サンプル: パスワードは ' . h(Competitions::SAMPLE_PASSWORD) . ')' : '') . '</div>'
-            . $pw('password', $hasPw ? '個別パスワード' : '管理者パスワード(この記録会は管理者のみ)')
-            . '<div class="sp-sheet-actions"><a class="sp-btn sub" href="index.php">戻る</a><button class="sp-btn">開く</button></div>') . '</div>';
-        echo '<script>document.querySelector(".sp-card input[type=password]").focus()</script>';
-        return;
-    }
     echo '<div class="sp-card">' . $form('<input type="hidden" name="do" value="find">'
-        . '<label class="sp-field"><span>記録会コード</span><input type="text" name="code" required autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例: 5A4D0001"></label>'
+        . '<label class="sp-field"><span>記録会コード</span><input type="text" name="code" required autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例: 5A4D0001"'
+        . ($sel ? ' value="' . h($sel['code']) . '"' : '') . '></label>'
         . '<div class="sp-sheet-actions"><button class="sp-btn">次へ</button></div>') . '</div>';
     // 全体管理者でログイン(まだ全体管理者パスワードが無ければ、最初の設定)
     echo '<p style="margin-top:20px"><button type="button" class="sp-btn sub block" id="' . (Auth::adminIsSet() ? 'AdminLoginBtn' : 'AdminSetupBtn') . '">'
         . icon('gear') . '全体管理者でログイン</button></p>';
+    if (!$sel) {
+        return;
+    }
+    // 記録会が見つかったら、個別パスワードの入力を下から出す(全体管理者ログインと同じシート)
+    $code = $sel['code'];
+    $sample = false;
+    foreach ($list as $c) {
+        if ((string)$c['code'] === $code) {
+            $sample = !empty($c['sample']);
+        }
+    }
+    $hasPw = Auth::hasCompetitionPassword($code);
+    echo '<template id="CodeOpenTpl">' . $form('<input type="hidden" name="do" value="open"><input type="hidden" name="code" value="' . h($code) . '">'
+        . '<input type="hidden" name="back" value="index.php?code=' . h(rawurlencode($code)) . '">'
+        . '<h2>' . h(Competitions::readSetting($code, 'name') ?: '(記録会名未設定)') . '</h2>'
+        . '<div class="sp-sub">' . h($code) . ($sample ? '(サンプル: パスワードは ' . h(Competitions::SAMPLE_PASSWORD) . ')' : '') . '</div>'
+        . $pw('password', $hasPw ? '個別パスワード' : '管理者パスワード(この記録会は管理者のみ)')
+        . '<div class="sp-sheet-actions"><button type="button" class="sp-btn sub" onclick="spSheet.close()">戻る</button><button class="sp-btn">開く</button></div>') . '</template>'
+        . '<script>document.addEventListener("DOMContentLoaded",function(){var el=spSheet.open(document.getElementById("CodeOpenTpl").innerHTML);'
+        . 'var f=el.querySelector("input[type=password]");if(f)setTimeout(function(){f.focus()},250)});</script>';
 }
 
 /** 結果の公開カード(トグル・バッジ・URLのコピー)。ホームと記録会結果の画面で使う。切り替えは home.php へ POST */
