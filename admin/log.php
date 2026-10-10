@@ -55,6 +55,7 @@ foreach ($rows as $r) {
     echo '<details class="card" style="padding:.5rem 1rem"><summary><span class="small muted">' . h($r['time']) . ' ' . h($r['ip']) . '</span> '
         . '<b>' . h(implode(', ', $acts)) . '</b> → ' . h(implode(', ', $ras) ?: '(応答なし)')
         . ($bad ? ' <span class="err">エラー: ' . h($resp['errorMsg'] ?? '') . '</span>' : '') . '</summary>'
+        . (!empty($r['http']) ? '<p class="small muted" style="margin:.4rem 0 0;word-break:break-all">' . h($r['http']) . '</p>' : '')
         . '<p class="small muted" style="margin:.4rem 0 0">リクエスト</p><pre style="overflow:auto;max-height:18rem">' . h(json_encode($r['request'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) . '</pre>'
         . '<p class="small muted" style="margin:.4rem 0 0">レスポンス</p><pre style="overflow:auto;max-height:24rem">' . h(json_encode($r['response'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) . '</pre></details>';
 }

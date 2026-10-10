@@ -30,6 +30,12 @@ class IskApi
         @ini_set('display_errors', '0');
 
         $raw = file_get_contents('php://input');
+        $method = $_SERVER['REQUEST_METHOD'] ?? '';
+        if ($method === 'OPTIONS') {
+            // ブラウザ系アプリの事前確認(CORS)。中身は無いので、ヘッダーだけ返す(調査用にログにも残す)
+            ApiLog::writeUnbound(['action' => '(OPTIONS)', 'headers' => self::requestHeaders()], ['error' => false, 'responses' => []]);
+            self::out(['error' => false, 'responses' => []]);
+        }
         $data = json_decode($raw);
         $json = ['error' => true];
         if (is_object($data) && isset($data->requests)) {
@@ -37,18 +43,41 @@ class IskApi
         } elseif ($data === null) {
             if (!(isset($_REQUEST['requests']) && ($data = json_decode($_REQUEST['requests'])) !== null)) {
                 $json['errorMsg'] = 'Missing REQUESTS payload';
+                self::logInvalid($method, $raw, $json);
                 self::out($json);
             }
         } elseif (is_array($data)) {
             // 配列そのままの場合は許容
         } elseif (!is_object($data)) {
             $json['errorMsg'] = 'Missing PAYLOAD and REQUESTS';
+            self::logInvalid($method, $raw, $json);
             self::out($json);
         }
         $api = new self();
         $res = $api->process($data);
         ApiLog::write($data, $res, $api->usedCodes());
         self::out($res);
+    }
+
+    /** 読めなかったリクエストも、調査できるようにログに残す(どの記録会か分からないので、ログがオンの記録会すべてに) */
+    private static function logInvalid($method, $raw, array $json)
+    {
+        ApiLog::writeUnbound([
+            'action' => '(読めないリクエスト)', 'method' => $method,
+            'contentType' => $_SERVER['CONTENT_TYPE'] ?? '', 'uri' => $_SERVER['REQUEST_URI'] ?? '',
+            'body' => mb_strcut((string)$raw, 0, 2000), 'headers' => self::requestHeaders(),
+        ], $json);
+    }
+
+    private static function requestHeaders()
+    {
+        $h = [];
+        foreach ($_SERVER as $k => $v) {
+            if (strpos($k, 'HTTP_') === 0 && $k !== 'HTTP_COOKIE') {
+                $h[strtolower(str_replace('_', '-', substr($k, 5)))] = mb_strcut((string)$v, 0, 300);
+            }
+        }
+        return $h;
     }
 
     public static function out(array $json)
@@ -59,7 +88,8 @@ class IskApi
         }
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, AccountKey, x-requested-with, origin, authorization, accept');
+        // 本家(Common/Globals.inc.php の JsonOut)と同じ
+        header('Access-Control-Allow-Headers: Content-Type, AccountKey, x-requested-with, origin, authorization, accept, client-security-token, host, date, cookie, cookie2');
         header('Cache-Control: no-store, no-cache, must-revalidate');
         header('Content-Type: application/json; charset=UTF-8');
         header('Content-Length: ' . strlen($body));

@@ -51,6 +51,8 @@ class ApiLog
                 $line = json_encode([
                     'time' => date('Y-m-d H:i:s'),
                     'ip' => $_SERVER['REMOTE_ADDR'] ?? '',
+                    'http' => trim(($_SERVER['REQUEST_METHOD'] ?? '') . ' ' . ($_SERVER['REQUEST_URI'] ?? '') . ' / ' . ($_SERVER['HTTP_USER_AGENT'] ?? '')
+                        . (isset($_SERVER['HTTP_ORIGIN']) ? ' / origin ' . $_SERVER['HTTP_ORIGIN'] : '')),
                     'request' => self::shrink($requests),
                     'response' => self::shrink($response),
                 ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
@@ -58,6 +60,16 @@ class ApiLog
                 @file_put_contents($f, $line . "\n", FILE_APPEND | LOCK_EX);
                 @chmod($f, 0660);
             }
+        } catch (\Throwable $e) {
+            // ログの失敗で端末の通信を止めない
+        }
+    }
+
+    /** どの記録会への通信か分からないもの(OPTIONS・読めないリクエスト)を、ログがオンの記録会すべてに残す */
+    public static function writeUnbound($request, array $response)
+    {
+        try {
+            self::write($request, $response, array_map('strval', array_keys(Competitions::files())));
         } catch (\Throwable $e) {
             // ログの失敗で端末の通信を止めない
         }
