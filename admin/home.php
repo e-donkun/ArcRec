@@ -1,5 +1,5 @@
 <?php
-// 管理者画面ホーム: 記録会の状況、結果の公開、メニュー(下部タブと同じ)、印刷・出力。ログアウトは上部バーの右上(ホームだけ)。記録会の切り替え・新しい記録会は、ログアウトして「記録会の選択」(index.php)で
+// 管理者画面ホーム: 記録会の状況、結果の公開、メニュー(下部タブと同じ)、印刷・出力。右上の「記録会一覧」で記録会を閉じて一覧へ(管理者のログインはそのまま)。記録会の切り替え・新しい記録会は記録会一覧(index.php)で
 require __DIR__ . '/_layout.php';
 require_admin();
 
@@ -21,7 +21,7 @@ foreach ($devices as $d) {
     }
 }
 $code = Settings::code();
-page_head('管理者画面ホーム', 'home', ['logout' => true]);
+page_head('管理者画面ホーム', 'home', ['complist' => true]);
 if (!Settings::get('name')) {
     echo '<div class="sp-flash warn">記録会名がまだありません。<a href="setup.php">記録会設定</a> で入れてください。</div>';
 }

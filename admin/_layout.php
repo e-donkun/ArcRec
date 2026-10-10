@@ -116,7 +116,7 @@ function icon($name)
     return '<svg class="sp-icon" viewBox="0 0 24 24" aria-hidden="true">' . ($paths[$name] ?? '') . '</svg>';
 }
 
-/** 下部タブ(スマホモードと同じ並び方 + 端末設定。記録会設定などはホームのメニュー、記録会の切り替えは記録会の選択画面) */
+/** 下部タブ(スマホモードと同じ並び方 + 端末設定。記録会設定などはホームのメニュー、記録会の切り替えは記録会一覧画面) */
 function tabs()
 {
     return [
@@ -131,7 +131,7 @@ function tabs()
 
 /**
  * 画面の上部(スマホモードと同じ: 上部バーに記録会名と画面名)。
- * $opts: 'public' => 参加者向けの公開ページ(管理用のリンク・タブを出さない), 'logout' => 右上にログアウトボタン(ホーム・記録会の選択),
+ * $opts: 'public' => 参加者向けの公開ページ(管理用のリンク・タブを出さない), 'logout' => 右上にログアウトボタン(記録会一覧), 'complist' => 右上に記録会一覧ボタン(ホーム),
  *        'gear' => 右上に歯車の「管理者設定」ボタン(リンク先。公開の結果ページ), 'base' => style.css などの場所(トップのページから使うとき 'admin/'),
  *        'wide' => 表の多い画面で横幅を広げる, 'js' => JavaScript に渡す変数, 'body' => body の class
  */
@@ -160,11 +160,15 @@ function page_head($title, $tab = '', array $opts = [])
             . '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.4 4.6 8 12l7.4 7.4-1.4 1.4L5.2 12l8.8-8.8z"/></svg></a>';
     }
     echo '<div class="sp-appbar-title">';
-    // 記録会名は表示だけ(ここから記録会は切り替えない。切り替えはログアウトして記録会の選択で)。管理画面では [記録会コード] も
+    // 記録会名は表示だけ(ここから記録会は切り替えない。切り替えは記録会一覧で)。管理画面では [記録会コード] も
     echo '<span class="sp-tour">' . h($name) . ($inComp && empty($opts['public']) && Auth::check() ? ' [' . h(Settings::code()) . ']' : '') . '</span>';
     echo '<h1>' . h($title) . '</h1></div>';
     if (($admin || (Auth::isAdmin() && empty($opts['public']))) && !empty($opts['logout'])) {
-        echo '<a class="sp-appbar-btn" href="logout.php" title="ログアウトして、記録会の選択に戻る">' . icon('logout') . '<span>ログアウト</span></a>';
+        echo '<a class="sp-appbar-btn" href="logout.php" title="ログアウト">' . icon('logout') . '<span>ログアウト</span></a>';
+    }
+    if ($admin && !empty($opts['complist'])) {
+        // 記録会を閉じて記録会一覧へ(管理者のログインはそのまま)
+        echo '<a class="sp-appbar-btn" href="close.php" title="記録会一覧に戻る">' . icon('list') . '<span>記録会一覧</span></a>';
     }
     if (!empty($opts['right'])) {
         echo $opts['right'];   // ページ固有の右上のボタン
