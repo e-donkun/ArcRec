@@ -116,7 +116,7 @@ function icon($name)
     return '<svg class="sp-icon" viewBox="0 0 24 24" aria-hidden="true">' . ($paths[$name] ?? '') . '</svg>';
 }
 
-/** 下部タブ(スマホモードと同じ並び方 + 端末設定。記録会設定などはホームのメニュー、記録会の切り替えは記録会選択画面) */
+/** 下部タブ(スマホモードと同じ並び方 + 端末設定。記録会設定などはホームのメニュー、記録会の切り替えは管理者メニュー画面) */
 function tabs()
 {
     return [
@@ -131,7 +131,7 @@ function tabs()
 
 /**
  * 画面の上部(スマホモードと同じ: 上部バーに記録会名と画面名)。
- * $opts: 'public' => 参加者向けの公開ページ(管理用のリンク・タブを出さない), 'logout' => 右上にログアウトボタン(記録会選択), 'complist' => 右上に記録会選択ボタン(ホーム), 'back' => [左上の「<」の戻り先, 説明],
+ * $opts: 'public' => 参加者向けの公開ページ(管理用のリンク・タブを出さない), 'logout' => 右上にログアウトボタン(管理者メニュー), 'complist' => 右上に管理者メニューボタン(ホーム), 'back' => [左上の「<」の戻り先, 説明],
  *        'gear' => 右上に歯車の「設定」ボタン(リンク先。公開の結果ページ), 'base' => style.css などの場所(トップのページから使うとき 'admin/'),
  *        'wide' => 表の多い画面で横幅を広げる, 'js' => JavaScript に渡す変数, 'body' => body の class
  */
@@ -161,7 +161,7 @@ function page_head($title, $tab = '', array $opts = [])
             . '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.4 4.6 8 12l7.4 7.4-1.4 1.4L5.2 12l8.8-8.8z"/></svg></a>';
     }
     echo '<div class="sp-appbar-title">';
-    // 記録会名は表示だけ(ここから記録会は切り替えない。切り替えは記録会選択で)。管理画面では [記録会コード] も
+    // 記録会名は表示だけ(ここから記録会は切り替えない。切り替えは管理者メニューで)。管理画面では [記録会コード] も
     echo '<span class="sp-tour">' . h($name) . ($inComp && empty($opts['public']) && Auth::check() ? ' [' . h(Settings::code()) . ']' : '') . '</span>';
     echo '<h1>' . h($title) . '</h1></div>';
     if (!empty($opts['right'])) {
@@ -171,8 +171,8 @@ function page_head($title, $tab = '', array $opts = [])
         echo '<a class="sp-appbar-btn" href="logout.php" title="ログアウト">' . icon('logout') . '<span>ログアウト</span></a>';
     }
     if ($admin && !empty($opts['complist'])) {
-        // 記録会を閉じて記録会選択へ(管理者のログインはそのまま)
-        echo '<a class="sp-appbar-btn" href="close.php" title="記録会選択に戻る">' . icon('list') . '<span>記録会選択</span></a>';
+        // 記録会を閉じて管理者メニューへ(管理者のログインはそのまま)
+        echo '<a class="sp-appbar-btn" href="close.php" title="管理者メニューに戻る">' . icon('list') . '<span>管理者メニュー</span></a>';
     }
     if (!empty($opts['gear'])) {
         echo '<a class="sp-appbar-btn" href="' . h($opts['gear']) . '" title="設定">' . icon('gear') . '<span>設定</span></a>';
@@ -197,7 +197,7 @@ function page_foot($tab = '')
     echo '<div id="sp-toast" class="sp-toast" role="status"></div></body></html>';
 }
 
-/** 記録会選択の上部バー右上のボタン: 全体管理者ログイン(未設定なら最初の設定)。シートは render_competitions() が用意する */
+/** 管理者メニューの上部バー右上のボタン: 全体管理者ログイン(未設定なら最初の設定)。シートは render_competitions() が用意する */
 function admin_header_buttons()
 {
     if (Auth::isAdmin()) {

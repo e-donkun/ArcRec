@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
 
             case 'delete':
-                // この記録会の DB ファイルを削除して、記録会選択へ
+                // この記録会の DB ファイルを削除して、管理者メニューへ
                 if (($_POST['confirm'] ?? '') !== 'yes') {
                     throw new InvalidArgumentException('確認のチェックを入れてください');
                 }

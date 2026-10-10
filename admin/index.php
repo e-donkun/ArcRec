@@ -1,5 +1,5 @@
 <?php
-// 記録会選択: 記録会を選んでパスワードで開く(記録会ごとに DB とパスワードがある)。記録会の切り替え・新しい記録会もこの画面だけで行う。
+// 管理者メニュー: 記録会を選んでパスワードで開く(記録会ごとに DB とパスワードがある)。記録会の切り替え・新しい記録会もこの画面だけで行う。
 // 開くとき・切り替えるときは毎回パスワードを入れる(前に開いた記録会のパスワードは覚えない)。
 // 管理者パスワード(すべての記録会に共通)でログインすると、どの記録会もそのまま開け、新しい記録会を作れる。公開の結果ページの「設定」からここに来る。
 require __DIR__ . '/_layout.php';
@@ -75,6 +75,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if (!Auth::check() || Competitions::open(Auth::current()) === false) {
     Db::unselect();
 }
-page_head('記録会選択', 'home', ['logout' => true, 'right' => admin_header_buttons(), 'back' => ['../', '記録会一覧(結果)に戻る']]);
+page_head('管理者メニュー', 'home', ['logout' => true, 'right' => admin_header_buttons(), 'back' => ['../', '記録会一覧(結果)に戻る']]);
 render_competitions($next);
 page_foot(Auth::check() ? 'home' : '');
