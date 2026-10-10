@@ -57,7 +57,7 @@ switch ($what) {
                 $rows[] = $row;
             }
         }
-        csv_out('results.csv', $rows);
+        csv_out('results-' . Settings::code() . '-' . date('Ymd-His') . '.csv', $rows);   // 例 results-5A4D0001-20261010-204000.csv
     case 'arrows':
         $per = Settings::arrowsPerEnd();
         $rows = [['的', '氏名', '所属', '部門', '距離', 'エンド', '矢1〜']];
