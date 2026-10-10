@@ -71,6 +71,7 @@ $r = call([['action' => 'manual', 'device' => 'dev-1', 'tocode' => 'KYT26', 'typ
 $cfg = $r['responses'][0];
 ok($cfg['action'] === 'reconfigure' && count($cfg['archers']) === 2, 'manual: reconfigure に 2 人');
 ok($cfg['archers'][0]['refKey'] === '1.1A' && $cfg['archers'][1]['refKey'] === '1.1B', 'refKey = 1.1A, 1.1B');
+ok($cfg['archers'][0]['placement'] === '1A' && $cfg['archers'][1]['placement'] === '1B', 'placement = 1A, 1B(本家と同じ。端末の選手一覧に位置が出る)');
 ok($cfg['archers'][0]['scoring'][0]['ends'] === '6' && strlen($cfg['archers'][0]['scoring'][0]['arrowstring']) === 36, 'ends=6, arrowstring 36文字');
 ok(isset($cfg['configHash']) && $cfg['targetFaces'][0]['code'] === '5' && $cfg['targetFaces'][0]['letterPoint'][0]['letter'] === 'K', 'targetFaces と configHash');
 // 端末は scoring.targetface と targetFaces[].code を突き合わせて入力画面の的を決める。型(文字列)まで一致している必要がある

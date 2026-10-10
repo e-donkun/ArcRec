@@ -642,7 +642,7 @@ class IskApi
                 'refKey' => $key,
                 'encode' => $e['bib'],
                 'name' => Entries::fullName($e),
-                'placement' => (string)$e['target'],
+                'placement' => $e['target'] . $e['letter'],   // 本家と同じ「的番号+位置」(例 1A)。端末の選手一覧に出る
                 'noc' => mb_substr($e['affiliation'], 0, 10),
                 'nocname' => $e['affiliation'],
                 'event' => $e['category_code'] ?: (string)$e['category_name'],
