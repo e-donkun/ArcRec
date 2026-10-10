@@ -243,7 +243,7 @@ page_head('参加者登録', 'entries', ['js' => ['LiteRows' => entry_rows(), 'L
 <p class="sp-note">カードをタップすると、名前・所属・部門を変更できます。</p>
 <details class="card"><summary>CSVでまとめて登録</summary>
 	<form method="post" enctype="multipart/form-data"><?php echo csrf_field(); ?><input type="hidden" name="do" value="import">
-	<p class="sp-note">列: <code>姓,名,所属,部門</code>(姓だけでも可。部門は 部門名かコード、空なら先頭の部門)。まだ無い部門は、コードを入れて作ってから取り込みます。カンマかタブ区切り、UTF-8 か Shift_JIS(Excel保存)。1行目が見出しなら飛ばします。</p>
+	<p class="sp-note">列: <code>姓,名,所属,部門,的番号</code> (カンマ or タブ区切りで入力。姓のみ必須入力。1行目が見出しなら除外して取込。)</p>
 	<label class="sp-field"><span>ファイルから</span><input type="file" name="file" accept=".csv,.tsv,.txt"></label>
 	<label class="sp-field"><span>または貼り付け</span><textarea name="csv" rows="5" style="width:100%" placeholder="山田,太郎,京都大学,男子&#10;佐藤,花子,同志社大学,女子"></textarea></label>
 	<button class="sp-btn">取り込む</button></form>
