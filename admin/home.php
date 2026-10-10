@@ -22,6 +22,8 @@ foreach ($devices as $d) {
 }
 $code = Settings::code();
 page_head('管理者画面ホーム', 'home', ['complist' => true]);
+// 見出し: 記録会名 [記録会コード]
+echo '<h2 class="sp-comp-title">' . h(Settings::get('name') ?: '(記録会名なし)') . ' <span>[' . h($code) . ']</span></h2>';
 if (!Settings::get('name')) {
     echo '<div class="sp-flash warn">記録会名がまだありません。<a href="setup.php">記録会設定</a> で入れてください。</div>';
 }
