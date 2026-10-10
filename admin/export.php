@@ -46,7 +46,7 @@ switch ($what) {
         foreach (Results::byCategory() as $g) {
             foreach ($g['rows'] as $r) {
                 $rows[] = array_merge(
-                    [$g['category']['name'], $r['rank'], $r['target'] ? $r['target'] . $r['letter'] : '', Entries::fullName($r), $r['affiliation']],
+                    [$g['category']['name'], $r['absent'] ? '欠' : $r['rank'], $r['target'] ? $r['target'] . $r['letter'] : '', Entries::fullName($r), $r['affiliation']],
                     $r['end_scores'],
                     Settings::distances() > 1 ? [$r['dist_scores'][1], $r['dist_scores'][2]] : [],
                     [$r['hits'] ? $r['score'] : '', $r['hits'] ? $r['golds'] : '', $r['hits'] ? $r['xs'] : '']

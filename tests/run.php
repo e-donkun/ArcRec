@@ -165,6 +165,16 @@ ok(Entries::find($b)['target'] == 1 && Entries::find($b)['letter'] === 'B', '得
 ok(Entries::find($c)['target'] == 2 && Entries::find($c)['letter'] === 'A', '未得点の選手は先頭から詰め直す (鈴木=2A)');
 ok(Entries::find($d)['target'] == 2 && Entries::find($d)['letter'] === 'B' && Entries::find($e)['target'] == 3, '田中=2B, 高橋=3A');
 
+// 欠場: 結果には部門の最後に「欠」(順位なし)、端末の的の一覧には出さない
+$tgtE = (int)Entries::find($e)['target'];
+Entries::save(['family_name' => '高橋', 'category_id' => $rm, 'status' => 1], $e);
+$men = Results::byCategory()[0]['rows'];
+$last = end($men);
+ok($last['id'] == $e && $last['absent'] && $last['rank'] === null, '欠場は結果の部門の最後に、順位なしで出る');
+ok(!array_filter(Entries::onTarget($tgtE), function ($r) use ($e) { return $r['id'] == $e; }), '欠場は端末の的の一覧に出ない');
+ok(strpos(Lite\Pdf::results(Results::byCategory()), '%PDF') === 0, '欠場がいても結果PDF');
+Entries::save(['family_name' => '高橋', 'category_id' => $rm, 'status' => 0], $e);
+
 echo "# 最終更新\n";
 ok(preg_match('/^\d\d\/\d\d \d\d:\d\d:\d\d\(\d+秒前\)$/', Results::lastUpdateText()) === 1, '最終更新の表示: ' . Results::lastUpdateText());
 ok(strtotime(Results::lastUpdate()) >= time() - 5, '最終更新は直近の更新時刻');

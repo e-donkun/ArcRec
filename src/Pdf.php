@@ -482,9 +482,9 @@ class Pdf extends \TCPDF
                 $title(true);
             }
             $this->SetX(10);
-            $this->n(10);
-            // 順位。まだ点数が無い人は的番号(1A など)
-            $rank = $r['rank'] !== null ? (string)$r['rank'] : ($r['target'] ? $r['target'] . $r['letter'] : '');
+            // 順位。欠場は「欠」(日本語の字体で)、まだ点数が無い人は的番号(1A など)
+            $r['absent'] ? $this->f(10) : $this->n(10);
+            $rank = $r['absent'] ? '欠' : ($r['rank'] !== null ? (string)$r['rank'] : ($r['target'] ? $r['target'] . $r['letter'] : ''));
             $this->Cell($c['rank'], $h, $rank, 1, 0, 'C');
             $this->f(10.5);
             $this->Cell($c['name'], $h, Entries::fullName($r), 1, 0, 'C', false, '', 1);

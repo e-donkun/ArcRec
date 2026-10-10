@@ -26,9 +26,6 @@ class Results
         $groups[0] = ['category' => ['id' => 0, 'name' => '部門未設定', 'code' => ''], 'rows' => []];
 
         foreach (Entries::all(false) as $e) {
-            if ($e['status']) {
-                continue; // 欠場
-            }
             $score = $golds = $xs = $hits = 0;
             $distScores = [];
             $endScores = [];
@@ -51,13 +48,15 @@ class Results
             $e['hits'] = $hits;
             $e['dist_scores'] = $distScores;
             $e['end_scores'] = $endScores;
+            $e['absent'] = (bool)$e['status'];   // 欠場: 順位を付けず、部門の最後に「欠」で並べる
             $key = isset($groups[(int)$e['category_id']]) ? (int)$e['category_id'] : 0;
             $groups[$key]['rows'][] = $e;
         }
 
         foreach ($groups as $k => &$g) {
             usort($g['rows'], function ($a, $b) {
-                return [$b['score'], $b['golds'], $b['xs']] <=> [$a['score'], $a['golds'], $a['xs']]
+                return $a['absent'] <=> $b['absent']
+                    ?: [$b['score'], $b['golds'], $b['xs']] <=> [$a['score'], $a['golds'], $a['xs']]
                     ?: $a['target'] <=> $b['target'] ?: $a['id'] <=> $b['id'];
             });
             $rank = 0;
@@ -69,7 +68,7 @@ class Results
                     $rank = $i + 1;
                     $prev = $sig;
                 }
-                $r['rank'] = $r['hits'] ? $rank : null;
+                $r['rank'] = $r['hits'] && !$r['absent'] ? $rank : null;
                 if ($r['rank'] !== null) {
                     $counts[$r['rank']] = ($counts[$r['rank']] ?? 0) + 1;
                 }

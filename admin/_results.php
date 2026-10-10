@@ -43,7 +43,7 @@ function results_data()
                 $sc[] = ['name' => Settings::distanceName($d) ?: ($nd > 1 ? '距離' . $d : '得点'), 'ends' => $endRows, 't' => $dt, 'g' => $dg, 'x' => $dx];
             }
             $items[] = [
-                'id' => (int)$r['id'], 'rank' => $r['rank'], 'tie' => $r['tie'],
+                'id' => (int)$r['id'], 'rank' => $r['rank'], 'tie' => $r['tie'], 'absent' => $r['absent'],
                 't' => (int)$r['target'], 'l' => $r['letter'], 'name' => Entries::fullName($r), 'aff' => $r['affiliation'],
                 'score' => $r['score'], 'golds' => $r['golds'], 'xs' => $r['xs'], 'hits' => $r['hits'],
                 'dists' => $dists, 'sc' => $sc,
@@ -125,8 +125,8 @@ function spResCard(it, showCat) {
 	return '<div class="sp-card tap' + (SpLv.open.has(it.id) ? ' open' : '') + '" data-id="' + it.id + '" data-search="' + spEsc(spNorm(it.name + ' ' + it.aff + ' ' + pos)) + '">'
 		+ '<div class="sp-card-head">'
 		+ (SpLv.order === 'rank'
-			? '<div class="sp-rank">' + (it.rank === null ? '' : it.rank + (it.tie ? '*' : '')) + '</div>'
-			: '<span class="sp-badge">' + spEsc(pos) + '</span>')
+			? '<div class="sp-rank">' + (it.absent ? '欠' : it.rank === null ? '' : it.rank + (it.tie ? '*' : '')) + '</div>'
+			: '<span class="sp-badge">' + spEsc(it.absent && !it.t ? '欠' : pos) + '</span>')
 		+ '<div class="sp-card-main">'
 		+ '<div class="sp-name">' + spEsc(it.name) + '</div>'
 		+ '<div class="sp-sub">' + spEsc(it.aff) + (showCat ? ' / ' + spEsc(showCat) : '') + (SpLv.order === 'rank' && it.t ? ' / 的' + spEsc(pos) : '') + '</div>'
