@@ -428,3 +428,15 @@ details.sp-advanced > summary::-webkit-details-marker { display: none; }
 details.sp-advanced > summary::before { content: "▸"; display: inline-block; width: 1.2em; transition: transform .15s; }
 details.sp-advanced[open] > summary::before { transform: rotate(90deg); }
 details.sp-advanced[open] { padding-bottom: 8px; }
+
+/* 結果の公開(ホーム)のトグルボタン */
+.sp-public { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+.sp-public > .sp-icon { width: 28px; height: 28px; color: var(--sp-primary); flex: none; }
+.sp-public .sp-sub a { color: var(--sp-muted); word-break: break-all; }
+.sp-toggle { position: relative; flex: none; width: 52px; height: 30px; margin: 0; }
+.sp-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.sp-toggle span { position: absolute; inset: 0; border-radius: 15px; background: #c9ced6; transition: background .2s; cursor: pointer; }
+.sp-toggle span::before { content: ""; position: absolute; left: 3px; top: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .2s; }
+.sp-toggle input:checked + span { background: var(--sp-ok, #2e7d32); }
+.sp-toggle input:checked + span::before { transform: translateX(22px); }
+.sp-toggle input:focus-visible + span { outline: 2px solid var(--sp-primary); outline-offset: 2px; }

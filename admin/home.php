@@ -7,6 +7,12 @@ use Lite\Entries;
 use Lite\Results;
 use Lite\Settings;
 
+// 結果の公開/非公開(トグル。Ajax)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['act'] ?? '') === 'public') {
+    Settings::set('results_public', empty($_POST['value']) ? '0' : '1');
+    json_out(['ok' => true, 'public' => Settings::resultsPublic()]);
+}
+
 $p = Results::progress();
 $pct = $p['all_arrows'] ? round($p['hits'] * 100 / $p['all_arrows']) : 0;
 $devices = Lite\Devices::all();
@@ -34,6 +40,33 @@ echo '<div class="sp-stats">'
     . '<div><small>端末(直近2分)</small><b>' . $online . '</b> / ' . count($devices) . '</div>'
     . '</div>';
 echo '<p class="sp-note">スコア最終更新: <b>' . h(Results::lastUpdateText()) . '</b></p>';
+
+// 結果の公開(トグル)
+$pubUrl = server_base_url() . 'results.php?c=' . $code;
+echo '<div class="sp-card sp-public">' . icon('chart') . '<div class="sp-card-main"><div class="sp-name">結果の公開</div>'
+    . '<div class="sp-sub" id="PubState">' . (Settings::resultsPublic() ? '公開中: ログインなしで見られます' : '非公開: この記録会を開いている管理者だけが見られます') . '</div>'
+    . '<div class="sp-sub"><a href="' . h($pubUrl) . '" target="_blank">' . h($pubUrl) . '</a></div></div>'
+    . '<label class="sp-toggle" title="結果を公開する"><input type="checkbox" id="PubToggle"' . (Settings::resultsPublic() ? ' checked' : '') . '><span></span></label></div>';
+?>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+	const t = document.getElementById('PubToggle');
+	t.addEventListener('change', async () => {
+		t.disabled = true;
+		try {
+			const r = await spPostJson('home.php', {act: 'public', value: t.checked ? 1 : 0});
+			t.checked = r.public;
+			document.getElementById('PubState').textContent = r.public ? '公開中: ログインなしで見られます' : '非公開: この記録会を開いている管理者だけが見られます';
+			spToast(r.public ? '結果を公開しました' : '結果を非公開にしました');
+		} catch (e) {
+			t.checked = !t.checked;
+			spToast('切り替えできませんでした: ' + e.message, true);
+		}
+		t.disabled = false;
+	});
+});
+</script>
+<?php
 
 $item = function ($href, $icon, $title, $sub = '', $attr = '') {
     return '<a class="sp-card tap" href="' . $href . '"' . $attr . '>' . icon($icon) . '<div class="sp-card-main"><div class="sp-name">' . $title . '</div>'

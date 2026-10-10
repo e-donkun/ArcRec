@@ -40,7 +40,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'preset' => $preset,
                     'distance_name' => trim($_POST['distance_name'] ?? ''), 'distance_name2' => trim($_POST['distance_name2'] ?? ''),
                     'archers_per_target' => max(1, min(4, (int)($_POST['archers_per_target'] ?? 4))),
-                    'results_public' => empty($_POST['results_public']) ? '0' : '1',
                 ], $faces, $ties));
                 // 端末に保存した選手一覧・的面・距離の設定は、次の接続で作り直させる
                 Db::pdo()->exec("UPDATE devices SET setup = '', setup_confirmed = 0");
@@ -77,21 +76,16 @@ page_head('記録会設定', 'home');
 echo '<form method="post" class="card wideform">' . csrf_field() . '<input type="hidden" name="do" value="settings">';
 echo '<label>記録会名</label><input type="text" name="name" value="' . h($s['name']) . '">';
 
-echo '<label>競技形式</label><select name="preset" id="preset">';
+// 競技形式と的の種類(前半・後半とも同じ的)を横に並べる。結果の公開はホームのトグルで切り替える
+echo '<div class="row nowrap wide"><div><label>競技形式</label><select name="preset" id="preset">';
 foreach (Settings::PRESETS as $k => $p) {
     echo '<option value="' . $k . '" data-nd="' . $p['distances'] . '" data-cat="' . $p['category'] . '"' . (Settings::preset() === $p ? ' selected' : '') . '>' . h($p['label']) . '</option>';
 }
-echo '</select>';
-
-// 的の種類(前半・後半とも同じ的)
-echo '<label>的の種類</label><select name="target_face" id="face">';
+echo '</select></div><div><label>的の種類</label><select name="target_face" id="face">';
 foreach (Settings::faceOptions() as $id => $label) {
     echo '<option value="' . $id . '"' . (Settings::targetFace() === $id ? ' selected' : '') . '>' . h($label) . '</option>';
 }
-echo '</select>';
-
-echo '<label>結果の公開</label><label class="sp-switch"><input type="checkbox" name="results_public" value="1"' . (Settings::resultsPublic() ? ' checked' : '') . '> 結果を公開する(ログインなしで見られる)</label>'
-    . '<p class="sp-note">公開用のURL: <code>' . h(server_base_url() . 'results.php?c=' . Settings::code()) . '</code>(非公開のときは、この記録会を開いている管理者だけが見られます)</p>';
+echo '</select></div></div>';
 
 // 詳細設定(ふだんは閉じておく): 距離の名称、同点のときの優先順位
 echo '<details class="sp-advanced"><summary>詳細設定</summary>';
