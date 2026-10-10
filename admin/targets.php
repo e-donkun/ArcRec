@@ -21,7 +21,7 @@ function targets_state()
     $entries = [];
     $maxT = 0;
     $maxL = 0;   // 参加者のいるいちばん後ろの位置(A=1 … F=6)
-    foreach (Entries::all(false) as $e) {
+    foreach (Entries::all() as $e) {   // 的番号順(1A, 1B, … 未設定は最後)
         if ($e['status']) {
             continue;   // 欠場の参加者は出さない
         }
