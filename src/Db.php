@@ -122,7 +122,6 @@ class Db
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             code TEXT NOT NULL DEFAULT \'\',
             name TEXT NOT NULL,
-            targetface INTEGER NOT NULL DEFAULT 5,
             sort INTEGER NOT NULL DEFAULT 0)');
 
         // 選手。矢は arrowstring(1 文字 = 1 本。未射は空白)で持つ。
@@ -173,11 +172,27 @@ class Db
         // 2 距離対応より前に作った DB に列を足す
         self::addColumn($pdo, 'entries', 'arrowstring2', 'TEXT NOT NULL DEFAULT \'\'');
         self::addColumn($pdo, 'score_log', 'distance', 'INTEGER NOT NULL DEFAULT 1');
+        // 使っていなかった部門の的面の列を消す(的面は記録会の設定で持つ)
+        self::dropColumn($pdo, 'categories', 'targetface');
 
         // 部門はリカーブ男子・女子だけ(固定)。何も無ければ作る
         if (!(int)$pdo->query('SELECT COUNT(*) FROM categories')->fetchColumn()) {
-            $pdo->exec("INSERT INTO categories(code, name, targetface, sort) VALUES
-                ('RM', 'リカーブ男子', 5, 10), ('RW', 'リカーブ女子', 5, 20)");
+            $pdo->exec("INSERT INTO categories(code, name, sort) VALUES
+                ('RM', 'リカーブ男子', 10), ('RW', 'リカーブ女子', 20)");
+        }
+    }
+
+    /** 列があれば消す。古い SQLite(3.35 より前)で消せないときは、そのまま残す(使わないだけ) */
+    private static function dropColumn(PDO $pdo, $table, $column)
+    {
+        foreach ($pdo->query('PRAGMA table_info(' . $table . ')')->fetchAll() as $c) {
+            if ($c['name'] === $column) {
+                try {
+                    $pdo->exec("ALTER TABLE $table DROP COLUMN $column");
+                } catch (\PDOException $e) {
+                }
+                return;
+            }
         }
     }
 
