@@ -192,7 +192,7 @@ Modules/Custom/ianseo-lite/
 ├─ Api/ISK-NG/index.php   ScorekeeperNG の接続先
 ├─ admin/                 管理画面(管理者メニュー/ホーム/記録会設定/選手登録/立順/入力状況/結果/端末設定/PDF/CSV)
 ├─ src/                   ロジック(Db, Settings, Entries, Scoring, Results, IskApi, Pdf ...)
-├─ lib/tcpdf/             PDF 生成(TCPDF 同梱。LGPL)と日本語フォント(Komorebi Gothic)
+├─ lib/tcpdf/             PDF 生成(TCPDF 同梱。LGPL)。日本語は小塚ゴシック(kozgopromedium。PDF に埋め込まない CID フォント)
 ├─ assets/                的面画像、アプリ用言語ファイル(ja/en)
 ├─ tools/                 的面定義の生成(gen_targets.php)とサンプル記録会の作成(make_sample.php)。実行時は不要
 ├─ samples/               サンプル記録会の DB 2つ(5A4D0001 屋外 / 5A4D0002 屋内。初回に data/competitions/ へコピー。パスワード sample)
