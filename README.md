@@ -189,7 +189,7 @@ Modules/Custom/ianseo-lite/
 ├─ results.php            参加者向けの記録会結果(公開にした記録会だけ。ログイン不要。トップ / を開いてもこれが出る)
 ├─ deploy.php             GitHub の Webhook を受けて git pull(サーバーへの自動反映。Secret を設定したときだけ動く)
 ├─ Api/ISK-NG/index.php   ScorekeeperNG の接続先
-├─ admin/                 管理画面(記録会の選択/ホーム/記録会設定/選手登録/的番号/入力状況/結果/端末接続/PDF/CSV)
+├─ admin/                 管理画面(記録会の選択/ホーム/記録会設定/選手登録/立順/入力状況/結果/端末設定/PDF/CSV)
 ├─ src/                   ロジック(Db, Settings, Entries, Scoring, Results, IskApi, Pdf ...)
 ├─ lib/tcpdf/             PDF 生成(TCPDF 同梱。LGPL)と日本語フォント(Komorebi Gothic)
 ├─ assets/                的面画像、アプリ用言語ファイル(ja/en)
