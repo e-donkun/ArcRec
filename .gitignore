@@ -2,3 +2,4 @@ data/*
 !data/.htaccess
 !data/.gitkeep
 config.local.php
+deploy.php

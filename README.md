@@ -136,7 +136,6 @@ ianseo-lite/
 ├─ CHANGELOG.md           版ごとの変更の履歴(いまの版は src/bootstrap.php の LITE_VERSION)
 ├─ index.php              入口(端末のPOSTはAPI、ブラウザには記録会結果)
 ├─ results.php            参加者向けの記録会結果(公開にした記録会だけ。ログイン不要。トップ / を開いてもこれが出る)
-├─ deploy.php             GitHub の Webhook を受けて git pull(サーバーへの自動反映。Secret を設定したときだけ動く)
 ├─ Api/ISK-NG/index.php   ScorekeeperNG の接続先
 ├─ admin/                 管理画面(管理者メニュー/ホーム/記録会設定/選手登録/立順/入力状況/結果/端末設定/PDF/CSV)
 ├─ src/                   ロジック(Db, Settings, Entries, Scoring, Results, IskApi, Pdf ...)
