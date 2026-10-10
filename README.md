@@ -213,4 +213,36 @@ ianseo-lite/
 - 「QR 読み取りの強制」「署名の正規表現」「GPS 設定」など Pro/Live 向けの端末設定には対応していません。
 - WA 形式の予選(1〜2距離)・1セッションだけです。的面は記録会で1種類です。3距離以上、部門ごとに違う的面、マッチ戦が必要なら本家 ianseo を使ってください。
 - 競技形式の変更は、得点が1本も入っていないときだけできます(得点の全消去で戻せます)。2距離対応より前に作った DB は、新規に作り直すのが確実です。
-- ライセンスは本家 ianseo に準じます(このフォルダの `LICENSE.txt`)。TCPDF は LGPL(`lib/tcpdf/LICENSE.TXT`)。
+
+## ライセンス
+
+ianseo-lite には本家 ianseo のファイル(下の表)を含み、その派生物として本家と同じ
+**Functional Source License 1.1(FSL-1.1-ALv2)** で扱います。全文は `LICENSE.txt`(本家 ianseo のものと同一)です。
+
+- 社内・団体内での利用、非営利の教育・研究、記録会の運営などに使えます。改変・再配布もできます。
+- 本家 ianseo と競合する**商用の製品・サービスとして提供すること**はできません。
+- 再配布するときは `LICENSE.txt`(またはその所在)を添え、著作権表示(Copyright 2025 Ianseo)を消さないでください。
+- 各版は、公開から2年たつと Apache License 2.0 でも使えるようになります(`LICENSE.txt` の Grant of Future License)。
+- 無保証です。
+
+本家 ianseo から取り込んだもの:
+
+| ianseo-lite | 本家 ianseo の元 |
+|---|---|
+| `assets/targets/*.svgz` | `Common/Images/Targets/`(的面の画像) |
+| `assets/lang/{en,ja}/` | `Common/Languages/{en,ja}/`(端末アプリ用の言語ファイル。ja の `ISK-App.php` は「大会」を「記録会」に変更) |
+| `src/LetterPoint.php` | `Common/Lib/ArrTargets.inc.php` の `$LetterPoint`(矢の文字と点数) |
+| `src/TargetFaces.data.php` | `Install/install.sql` の Targets 表(`tools/gen_targets.php` で生成) |
+
+このほか、端末との通信(`src/IskApi.php`)は本家の `Api/ISK-NG` と同じ形式で、スコアカードPDFは本家の
+`DrawScoreNew` と同じ寸法の決め方で、それぞれ書き直したものです。
+
+同梱の外部ライブラリ:
+
+| ライブラリ | ライセンス |
+|---|---|
+| TCPDF 6.11.2(`lib/tcpdf/`。小塚ゴシックの CID フォント定義 `fonts/kozgopromedium.php`・`uni2cid_aj16.php` を含む) | GNU LGPL v3(`lib/tcpdf/LICENSE.TXT`) |
+
+小塚ゴシック(Kozuka Gothic)のフォント本体は同梱していません(PDF には埋め込まず、表示する側のフォントを使います)。
+
+「ianseo」は本家の名称です。ianseo-lite は本家 ianseo の公式なものではありません。
