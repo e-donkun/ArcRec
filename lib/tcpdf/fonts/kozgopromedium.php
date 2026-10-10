@@ -1,4 +1,5 @@
 <?php
+// TCPDF のフォント定義(LGPL v3)。ianseo-lite で変更: 2026-10-10 に uni2cid_aj16.php を読み込む1行を追加(全角・半角の文字幅を正しくするため)。
 $type = 'cidfont0';
 $name = 'KozGoPro-Medium-Acro';
 $displayname = 'Kozuka Gothic Pro (Japanese Sans-Serif)';

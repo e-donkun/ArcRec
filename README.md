@@ -180,6 +180,7 @@ php tests/run.php        # (このフォルダで実行) ScorekeeperNG との通
 
 ```
 ianseo-lite/
+├─ LICENSE.txt / NOTICE.md  ライセンス(FSL-1.1-ALv2)と、本家 ianseo 由来のファイル・TCPDF の表示
 ├─ CHANGELOG.md           版ごとの変更の履歴(いまの版は src/bootstrap.php の LITE_VERSION)
 ├─ index.php              入口(端末のPOSTはAPI、ブラウザには記録会結果)
 ├─ results.php            参加者向けの記録会結果(公開にした記録会だけ。ログイン不要。トップ / を開いてもこれが出る)
@@ -216,33 +217,18 @@ ianseo-lite/
 
 ## ライセンス
 
-ianseo-lite には本家 ianseo のファイル(下の表)を含み、その派生物として本家と同じ
-**Functional Source License 1.1(FSL-1.1-ALv2)** で扱います。全文は `LICENSE.txt`(本家 ianseo のものと同一)です。
+ianseo-lite は本家 ianseo のファイルを含む派生物として、本家と同じ
+**Functional Source License, Version 1.1, ALv2 Future License(FSL-1.1-ALv2)** で配布します。
+全文は `LICENSE.txt`(本家と同一。https://ianseo.net/IanseoLicense-FSL-1.1-ALv2.html)、
+本家から取り込んだファイルと同梱ライブラリの一覧・著作権表示は `NOTICE.md` にあります。
 
-- 社内・団体内での利用、非営利の教育・研究、記録会の運営などに使えます。改変・再配布もできます。
-- 本家 ianseo と競合する**商用の製品・サービスとして提供すること**はできません。
-- 再配布するときは `LICENSE.txt`(またはその所在)を添え、著作権表示(Copyright 2025 Ianseo)を消さないでください。
-- 各版は、公開から2年たつと Apache License 2.0 でも使えるようになります(`LICENSE.txt` の Grant of Future License)。
+- 自分たちの記録会の運営、非営利の教育・研究などに使えます。改変・再配布もできます。
+- 本家 ianseo と競合する**商用の製品・サービスとして提供すること**はできません(有料で売る・有料の記録会システムとして提供する など)。
+- 再配布するときは `LICENSE.txt` と `NOTICE.md` を一緒に配り、著作権表示を消さないでください。
+- 各版は、公開から2年たつと Apache License 2.0 でも使えるようになります。
 - 無保証です。
 
-本家 ianseo から取り込んだもの:
-
-| ianseo-lite | 本家 ianseo の元 |
-|---|---|
-| `assets/targets/*.svgz` | `Common/Images/Targets/`(的面の画像) |
-| `assets/lang/{en,ja}/` | `Common/Languages/{en,ja}/`(端末アプリ用の言語ファイル。ja の `ISK-App.php` は「大会」を「記録会」に変更) |
-| `src/LetterPoint.php` | `Common/Lib/ArrTargets.inc.php` の `$LetterPoint`(矢の文字と点数) |
-| `src/TargetFaces.data.php` | `Install/install.sql` の Targets 表(`tools/gen_targets.php` で生成) |
-
-このほか、端末との通信(`src/IskApi.php`)は本家の `Api/ISK-NG` と同じ形式で、スコアカードPDFは本家の
-`DrawScoreNew` と同じ寸法の決め方で、それぞれ書き直したものです。
-
-同梱の外部ライブラリ:
-
-| ライブラリ | ライセンス |
-|---|---|
-| TCPDF 6.11.2(`lib/tcpdf/`。小塚ゴシックの CID フォント定義 `fonts/kozgopromedium.php`・`uni2cid_aj16.php` を含む) | GNU LGPL v3(`lib/tcpdf/LICENSE.TXT`) |
-
-小塚ゴシック(Kozuka Gothic)のフォント本体は同梱していません(PDF には埋め込まず、表示する側のフォントを使います)。
+PDF の作成に使う **TCPDF**(`lib/tcpdf/`)は **GNU LGPL v3** です(全文は `lib/tcpdf/LICENSE.TXT`)。
+PHP のソースのまま同梱しているので、差し替えて使えます。変更したファイルは `NOTICE.md` に記載しています。
 
 「ianseo」は本家の名称です。ianseo-lite は本家 ianseo の公式なものではありません。
