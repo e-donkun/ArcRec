@@ -562,3 +562,4 @@ input.sp-readonly { background: #f2f4f7 !important; color: var(--sp-muted); font
 .sp-comp-title { font-size: 20px; font-weight: bold; margin: 4px 2px 10px; color: var(--sp-text); overflow-wrap: anywhere; }
 .sp-comp-title span { white-space: nowrap; font-size: 14px; font-weight: normal; color: var(--sp-muted); }
 .sp-appbar.super { background: #111; }   /* 全体管理者でログイン中 */
+.sp-appbar-left { margin-left: -6px; flex: none; }

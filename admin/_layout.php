@@ -139,7 +139,7 @@ function tabs()
 
 /**
  * 画面の上部(スマホモードと同じ: 上部バーに記録会名と画面名)。
- * $opts: 'public' => 参加者向けの公開ページ(管理用のリンク・タブを出さない), 'logout' => 右上にログアウトボタン(管理者メニュー), 'back' => [左上の「<」の戻り先, 説明],
+ * $opts: 'public' => 参加者向けの公開ページ(管理用のリンク・タブを出さない), 'logout' => 右上にログアウトボタン(管理者メニュー), 'back' => [左上の「<」の戻り先, 説明(, アイコン名: 「<」の代わりにアイコンと説明のボタン)],
  *        'base' => style.css などの場所(トップのページから使うとき 'admin/'),
  *        'wide' => 表の多い画面で横幅を広げる, 'js' => JavaScript に渡す変数, 'body' => body の class
  */
@@ -165,7 +165,10 @@ function page_head($title, $tab = '', array $opts = [])
         . '<body class="' . h($opts['body'] ?? '') . '"><header class="sp-appbar' . ($superAdmin ? ' super' : '') . '">';
     // ホーム以外の管理画面は、左上に「<」(ホームに戻る)。'back' => [URL, 説明] で戻り先を変える
     $back = $opts['back'] ?? ($admin && basename($_SERVER['SCRIPT_NAME']) !== 'home.php' && empty($opts['noback']) ? ['home.php', 'ホームに戻る'] : null);
-    if ($back) {
+    if ($back && !empty($back[2])) {
+        // アイコンと表記のボタン(管理者画面ホームの「記録会一覧」)
+        echo '<a class="sp-appbar-btn sp-appbar-left" href="' . h($back[0]) . '" title="' . h($back[1]) . '">' . icon($back[2]) . '<span>' . h($back[1]) . '</span></a>';
+    } elseif ($back) {
         echo '<a class="sp-appbar-back" href="' . h($back[0]) . '" title="' . h($back[1]) . '" aria-label="' . h($back[1]) . '">'
             . '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.4 4.6 8 12l7.4 7.4-1.4 1.4L5.2 12l8.8-8.8z"/></svg></a>';
     }
