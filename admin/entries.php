@@ -228,7 +228,7 @@ async function spEntSave(params) {
 /* ---- 編集(カードをタップ) ---- */
 function spOpenEdit(r) {
 	const html = '<h2>' + spEsc(r.family + ' ' + r.given) + '</h2>'
-		+ '<div class="sp-sub">' + (r.tgt ? '的' + spEsc(r.tgt) : '的は未割当') + '(立順の画面で変更)' + (r.hits ? ' / ' + r.hits + '射入力済み' : '') + '</div>'
+		+ '<div class="sp-sub">' + (r.tgt ? spEsc(r.tgt) : '的番号未割当') + (r.hits ? '/' + r.hits + '射入力済' : '') + '</div>'
 		+ spNameFields(r)
 		+ '<label class="sp-switch" style="margin:4px 0 8px"><input type="checkbox" data-f="status"' + (r.status ? ' checked' : '') + '> 欠場(端末・結果から外す)</label>'
 		+ (r.scored ? '<p class="sp-note">点数が入っているため削除できません。</p>' : '<button type="button" class="sp-btn danger block" id="SpDelBtn">この参加者を削除</button>')
