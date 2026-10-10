@@ -225,6 +225,10 @@ function render_competitions($next = 'home.php')
     }
 
     $list = Competitions::all();
+    if (!$isAdmin) {
+        // 全体管理者でなければ一覧は出さない。記録会コードを入れて、その記録会の個別パスワードで開く
+        render_code_login($list, $form, $pw);
+    } else {
     echo '<div class="sp-list" id="CompList">';
     foreach ($list as $c) {
         $cur = Auth::isCurrent($c['code']);
@@ -240,6 +244,7 @@ function render_competitions($next = 'home.php')
         echo '<div class="sp-empty">記録会がありません</div>';
     }
     echo '</div>';
+    }
 
     // 全体管理者(一覧の下。ログイン中だけ)
     if ($isAdmin) {
@@ -286,7 +291,7 @@ function render_competitions($next = 'home.php')
     echo '<script>(function(){'
         . 'var isAdmin=' . ($isAdmin ? 'true' : 'false') . ';'
         . 'function sheet(id){var t=document.getElementById(id);if(!t)return;var el=spSheet.open(t.innerHTML);var f=el.querySelector("input:not([type=hidden])");if(f)setTimeout(function(){f.focus()},250);return el}'
-        . 'document.getElementById("CompList").addEventListener("click",function(ev){var c=ev.target.closest("[data-code]");if(!c)return;'
+        . 'var cl=document.getElementById("CompList");if(cl)cl.addEventListener("click",function(ev){var c=ev.target.closest("[data-code]");if(!c)return;'
         . 'if(c.dataset.current){location.href="home.php";return}'
         . 'if(isAdmin){var d=document.getElementById("CompOpenDirect");d.querySelector("[name=code]").value=c.dataset.code;d.submit();return}'
         . 'var el=sheet("CompOpenTpl");'
@@ -296,6 +301,42 @@ function render_competitions($next = 'home.php')
         . '[["CompNewBtn","CompNewTpl"],["AdminLoginBtn","AdminLoginTpl"],["AdminSetupBtn","AdminSetupTpl"],["AdminPwBtn","AdminPwTpl"]].forEach(function(x){'
         . 'var b=document.getElementById(x[0]);if(b)b.onclick=function(ev){ev.preventDefault();sheet(x[1])}});'
         . '})()</script>';
+}
+
+/**
+ * 全体管理者でないときの管理者メニュー: 記録会コードを入れる → その記録会があれば、個別パスワードを入れて開く。
+ * 記録会を開いていれば、そのホームへ戻るカードも出す。
+ */
+function render_code_login(array $list, callable $form, callable $pw)
+{
+    $cur = Auth::current();
+    if ($cur) {
+        $name = Competitions::readSetting($cur, 'name') ?: $cur;
+        echo '<a class="sp-card tap" href="home.php">' . icon('home') . '<div class="sp-card-main"><div class="sp-name">' . h($name)
+            . ' <span class="sp-tag pri">開いている記録会</span></div><div class="sp-sub">' . h($cur) . '</div></div></a>';
+    }
+    $sel = isset($_GET['code']) ? Competitions::find($_GET['code']) : null;
+    if ($sel) {
+        $code = $sel['code'];
+        $sample = false;
+        foreach ($list as $c) {
+            if ((string)$c['code'] === $code) {
+                $sample = !empty($c['sample']);
+            }
+        }
+        $hasPw = Auth::hasCompetitionPassword($code);
+        echo '<div class="sp-card">' . $form('<input type="hidden" name="do" value="open"><input type="hidden" name="code" value="' . h($code) . '">'
+            . '<input type="hidden" name="back" value="index.php?code=' . h(rawurlencode($code)) . '">'
+            . '<h2 class="sp-comp-title">' . h(Competitions::readSetting($code, 'name') ?: '(記録会名未設定)') . '</h2>'
+            . '<div class="sp-sub">' . h($code) . ($sample ? '(サンプル: パスワードは ' . h(Competitions::SAMPLE_PASSWORD) . ')' : '') . '</div>'
+            . $pw('password', $hasPw ? '個別パスワード' : '管理者パスワード(この記録会は管理者のみ)')
+            . '<div class="sp-sheet-actions"><a class="sp-btn sub" href="index.php">戻る</a><button class="sp-btn">開く</button></div>') . '</div>';
+        echo '<script>document.querySelector(".sp-card input[type=password]").focus()</script>';
+        return;
+    }
+    echo '<div class="sp-card">' . $form('<input type="hidden" name="do" value="find">'
+        . '<label class="sp-field"><span>記録会コード</span><input type="text" name="code" required autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例: 5A4D0001"></label>'
+        . '<div class="sp-sheet-actions"><button class="sp-btn">次へ</button></div>') . '</div>';
 }
 
 /** 結果の公開カード(トグル・バッジ・URLのコピー)。ホームと記録会結果の画面で使う。切り替えは home.php へ POST */

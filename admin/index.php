@@ -1,7 +1,8 @@
 <?php
-// 管理者メニュー: 記録会を選んでパスワードで開く(記録会ごとに DB とパスワードがある)。記録会の切り替え・新しい記録会もこの画面だけで行う。
+// 管理者メニュー。
+//   全体管理者(すべての記録会に共通のパスワード)でログイン中: 記録会の一覧。どの記録会もそのまま開け、新しい記録会を作れる。
+//   ログインしていない: 一覧は出さない。記録会コードを入れ、その記録会があれば個別パスワードを入れて開く(個別管理)。
 // 開くとき・切り替えるときは毎回パスワードを入れる(前に開いた記録会のパスワードは覚えない)。
-// 管理者パスワード(すべての記録会に共通)でログインすると、どの記録会もそのまま開け、新しい記録会を作れる。公開の結果ページの「設定」からここに来る。
 require __DIR__ . '/_layout.php';
 
 use Lite\Auth;
@@ -15,11 +16,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     Auth::verifyCsrf();
     $back = 'index.php';
     // 公開ページのシートから来たときは、失敗したらその公開ページに戻す
-    if (preg_match('#^\.\./(\?(c=[A-Za-z0-9]+|list=1))?$#', (string)($_POST['back'] ?? ''))) {
+    if (preg_match('#^(\.\./(\?(c=[A-Za-z0-9]+|list=1))?|index\.php\?code=[A-Za-z0-9_-]+)$#', (string)($_POST['back'] ?? ''))) {
         $back = $_POST['back'];
     }
     try {
         switch ($_POST['do'] ?? '') {
+            case 'find':
+                // 記録会コードから記録会を探す(全体管理者でないときの入口)。あれば、パスワードを入れる画面へ
+                $f = Competitions::find((string)($_POST['code'] ?? ''));
+                if (!$f) {
+                    throw new InvalidArgumentException('その記録会コードの記録会はありません');
+                }
+                redirect('index.php?code=' . rawurlencode($f['code']) . ($next !== 'home.php' ? '&next=' . rawurlencode($next) : ''));
             case 'open':
                 // 切り替えるときも毎回パスワードを確かめる(前に開いた記録会のパスワードは覚えていない)
                 if (!Auth::login((string)($_POST['code'] ?? ''), (string)($_POST['password'] ?? ''))) {
