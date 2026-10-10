@@ -114,6 +114,7 @@ function icon($name)
         'gear' => '<path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.4 2.7a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.5 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.4-2.7a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5A3.5 3.5 0 1 1 16.5 12 3.5 3.5 0 0 1 13 15.5z"/>',
         'qr' => '<path d="M3 3h8v8H3zm2 2v4h4V5zm8-2h8v8h-8zm2 2v4h4V5zM3 13h8v8H3zm2 2v4h4v-4zm8-2h3v3h-3zm3 3h3v3h-3zm3-3h2v3h-2zm-6 6h3v2h-3zm5 0h3v2h-3z"/>',
         'swap' => '<path d="M7 7h11l-3-3 1.4-1.4L22 8l-5.6 5.4L15 12l3-3H7zm10 10H6l3 3-1.4 1.4L2 16l5.6-5.4L9 12l-3 3h11z"/>',
+        'login' => '<path d="M11 7 9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5zm9 12h-8v2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-8v2h8z"/>',
         'logout' => '<path d="M10 3h9a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-9v-2h9V5h-9zm-1 5l1.4 1.4L8.8 11H16v2H8.8l1.6 1.6L9 16l-4-4z"/>',
         'list' => '<path d="M4 5h2v2H4zm4 0h12v2H8zM4 11h2v2H4zm4 0h12v2H8zm-4 6h2v2H4zm4 0h12v2H8z"/>',
         'plus' => '<path d="M11 4h2v7h7v2h-7v7h-2v-7H4v-2h7z"/>',
@@ -386,7 +387,7 @@ HTML;
 
 /**
  * 公開ページ(トップ)の右上のボタン。シートのフォームは admin/index.php に送る。
- *   $code = null … 記録会一覧: 「管理」。管理者メニューへ
+ *   $code = null … 記録会一覧: 「ログイン」。管理者メニューへ
  *   $code = 記録会コード … 記録会結果: 「設定」。この記録会を開いている(または全体管理者)ならそのまま管理者画面ホームへ、
  *                          そうでなければ個別パスワードのシート
  */
@@ -412,7 +413,7 @@ function public_admin_button($code = null)
     };
 
     if ($code === null) {
-        return $btn('admin/index.php', 'gear', '管理');   // 管理者メニューへ(記録会コード → 個別パスワード、または全体管理者でログイン)
+        return $btn('admin/index.php', 'login', 'ログイン');   // 管理者メニューへ(記録会コード → 個別パスワード、または全体管理者でログイン)
     }
     if (Auth::isCurrent($code)) {
         return $btn('admin/home.php', 'gear', '設定');
