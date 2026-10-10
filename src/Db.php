@@ -175,10 +175,10 @@ class Db
         // 使っていなかった部門の的面の列を消す(的面は記録会の設定で持つ)
         self::dropColumn($pdo, 'categories', 'targetface');
 
-        // 部門はリカーブ男子・女子だけ(固定)。何も無ければ作る
+        // 部門(記録会設定で変えられる)。何も無ければ 男子・女子 を作る
         if (!(int)$pdo->query('SELECT COUNT(*) FROM categories')->fetchColumn()) {
             $pdo->exec("INSERT INTO categories(code, name, sort) VALUES
-                ('RM', 'リカーブ男子', 10), ('RW', 'リカーブ女子', 20)");
+                ('RM', '男子', 10), ('RW', '女子', 20)");
         }
     }
 

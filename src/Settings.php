@@ -3,7 +3,7 @@ namespace Lite;
 
 /**
  * 記録会設定。WA(World Archery)の予選形式に絞る: 1 または 2 距離、各距離 屋外 36射 / 屋内 30射。
- * 射数・エンド数は競技形式(preset)から決まる。部門はリカーブ男子・女子だけ。
+ * 射数・エンド数は競技形式(preset)から決まる。部門は記録会ごとに設定する(Categories)。
  */
 class Settings
 {

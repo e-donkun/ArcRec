@@ -26,8 +26,25 @@ echo "# 記録会設定と選手\n";
 Settings::setMany(['code' => 'KYT26', 'name' => '京都テスト記録会', 'preset' => 'outdoor36']);
 $rm = (int)Categories::byCode('RM')['id'];
 $rw = (int)Categories::byCode('RW')['id'];
-ok(count(Categories::all()) === 2, '部門はリカーブ男子・女子の2つだけ');
+ok(count(Categories::all()) === 2 && Categories::all()[0]['name'] === '男子', '部門の初期値は 男子・女子');
 ok(Categories::resolve('男子') === $rm && Categories::resolve('リカーブ女子') === $rw && Categories::resolve('W') === $rw && Categories::resolve('RM') === $rm && Categories::resolve('コンパウンド') === null && Categories::resolve('コンパウンド男子') === null && Categories::resolve('Recurve Men') === $rm && Categories::resolve('女子リカーブ') === $rw && Categories::resolve('男') === $rm && Categories::resolve('') === null, '部門の表記ゆれを判別(コンパウンドは拒否)');
+// 部門の追加・変更・削除
+$cx = Categories::add('cm', 'コンパウンド男子');
+ok(Categories::find($cx)['code'] === 'CM' && Categories::all()[2]['id'] == $cx && Categories::resolve('コンパウンド男子') === $cx && Categories::resolve('cm') === $cx, '部門を追加(コードは大文字、最後に並ぶ、名前・コードで判別)');
+$dup = false;
+try { Categories::add('RM', '別'); } catch (InvalidArgumentException $e) { $dup = true; }
+ok($dup, '部門コードの重複は不可');
+Categories::update($cx, 'CM', 'コンパウンド男子', 5);
+ok(Categories::firstId() === $cx, '並び順を変えると先頭の部門が変わる');
+Categories::delete($cx);
+ok(count(Categories::all()) === 2 && Categories::firstId() === $rm, '部門を削除');
+$last = false;
+$tmp = Lite\Db::pdo();
+$tmp->exec('BEGIN');
+Categories::delete($rw);
+try { Categories::delete($rm); } catch (InvalidArgumentException $e) { $last = true; }
+$tmp->exec('ROLLBACK');
+ok($last && count(Categories::all()) === 2, '最後の 1 つの部門は削除できない');
 $a = Entries::save(['family_name' => '山田', 'given_name' => '太郎', 'affiliation' => '京都大', 'category_id' => $rm, 'target' => 1, 'letter' => 'A']);
 $b = Entries::save(['family_name' => '佐藤', 'given_name' => '花子', 'affiliation' => '同志社', 'category_id' => $rw, 'target' => 1, 'letter' => 'B']);
 $c = Entries::save(['family_name' => '鈴木', 'given_name' => '次郎', 'affiliation' => '立命館', 'category_id' => $rm, 'target' => 2, 'letter' => 'A']);
@@ -155,7 +172,7 @@ ok(Scoring::parseInput('X 10 9 8 7 M') === 'KLJIHA', '入力 "X 10 9 8 7 M"');
 ok(Scoring::parseInput('X1098') === 'KLIHJ' || Scoring::parseInput('X1098') === 'KLJI', '連続入力 X1098 -> KLJI');
 ok(Scoring::parseInput('X Q') === null, '不正入力は null');
 $g = Results::byCategory();
-ok($g[0]['category']['name'] === 'リカーブ男子' && $g[0]['rows'][0]['rank'] === 1, '順位: 部門ごと');
+ok($g[0]['category']['name'] === '男子' && $g[0]['rows'][0]['rank'] === 1, '順位: 部門ごと');
 ok($g[0]['rows'][0]['score'] > $g[0]['rows'][1]['score'] - 1 && $g[0]['rows'][0]['id'] == $a, '山田が 1 位');
 $d = Entries::save(['family_name' => '田中', 'category_id' => $rm]);
 $e = Entries::save(['family_name' => '高橋', 'category_id' => $rm]);

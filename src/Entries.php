@@ -86,7 +86,7 @@ class Entries
             throw new \InvalidArgumentException('氏名を入力してください');
         }
         if (!Categories::find((int)($d['category_id'] ?? 0))) {
-            throw new \InvalidArgumentException('部門(リカーブ男子/リカーブ女子)を選んでください');
+            throw new \InvalidArgumentException('部門を選んでください');
         }
         $setPos = array_key_exists('target', $d);
         $target = max(0, (int)($d['target'] ?? 0));

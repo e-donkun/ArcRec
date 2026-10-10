@@ -46,6 +46,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 flash('記録会設定を保存しました');
                 break;
 
+            case 'categories':
+                // 部門: 一覧の変更を保存 / 1 行削除(del) / 追加(add)
+                Db::immediate(function () {
+                    if (!empty($_POST['del'])) {
+                        Lite\Categories::delete((int)$_POST['del']);
+                        flash('部門を削除しました');
+                        return;
+                    }
+                    foreach ((array)($_POST['code'] ?? []) as $id => $code) {
+                        $c = Lite\Categories::find((int)$id);
+                        $name = $_POST['cname'][$id] ?? '';
+                        $sort = (int)($_POST['sort'][$id] ?? 0);
+                        if ($c && ($c['code'] !== $code || $c['name'] !== $name || (int)$c['sort'] !== $sort)) {
+                            Lite\Categories::update((int)$id, $code, $name, $sort);
+                        }
+                    }
+                    if (!empty($_POST['add'])) {
+                        $sort = trim((string)($_POST['new_sort'] ?? ''));
+                        Lite\Categories::add($_POST['new_code'] ?? '', $_POST['new_name'] ?? '', $sort === '' ? null : (int)$sort);
+                        flash('部門を追加しました');
+                    } else {
+                        flash('部門を保存しました');
+                    }
+                });
+                // 端末の参加者一覧(部門コード)を次の接続で作り直させる
+                Db::pdo()->exec("UPDATE devices SET setup = '', setup_confirmed = 0");
+                redirect('setup.php#cats');
+
             case 'clear_scores':
                 if (($_POST['confirm'] ?? '') !== 'yes') {
                     throw new InvalidArgumentException('確認のチェックを入れてください');
@@ -115,6 +143,27 @@ echo '</div><p class="sp-note">カンマ区切りで入力(例 <code>10,X</code>
 echo '</details>';
 echo '<input type="hidden" name="archers_per_target" value="' . h($s['archers_per_target']) . '">';
 echo '<p><button>保存</button></p></form>';
+
+// ---- 部門(コード・部門名・並び順)。最後の 1 つは削除できない
+$catsAll = Lite\Categories::all();
+echo '<form method="post" class="card" id="cats">' . csrf_field() . '<input type="hidden" name="do" value="categories">'
+    . '<button name="save" value="1" class="sp-offscreen" tabindex="-1" aria-hidden="true"></button>'   // Enter キーで送ったときは「保存」(削除ボタンにしない)
+    . '<h2 style="margin-top:0">部門</h2><table class="sp-cat-table"><thead><tr><th>コード</th><th>部門名</th><th>並び順</th><th></th></tr></thead><tbody>';
+foreach ($catsAll as $c) {
+    $id = (int)$c['id'];
+    echo '<tr><td><input type="text" name="code[' . $id . ']" value="' . h($c['code']) . '" maxlength="8" autocapitalize="characters" required></td>'
+        . '<td><input type="text" name="cname[' . $id . ']" value="' . h($c['name']) . '" required></td>'
+        . '<td><input type="text" inputmode="numeric" pattern="-?[0-9]*" name="sort[' . $id . ']" value="' . (int)$c['sort'] . '"></td>'
+        . '<td>' . (count($catsAll) > 1
+            ? '<button class="sub" name="del" value="' . $id . '" formnovalidate onclick="return window.confirm(\'部門「' . h(addslashes($c['name'])) . '」を削除しますか?\')">削除</button>'
+            : '') . '</td></tr>';
+}
+echo '</tbody><tfoot><tr><td><input type="text" name="new_code" maxlength="8" autocapitalize="characters" placeholder="例 RX"></td>'
+    . '<td><input type="text" name="new_name" placeholder="部門名"></td>'
+    . '<td><input type="text" inputmode="numeric" pattern="-?[0-9]*" name="new_sort" placeholder="最後"></td>'
+    . '<td><button class="sub" name="add" value="1">追加</button></td></tr></tfoot></table>'
+    . '<p class="sp-note">コードは英数字 8 文字まで(端末にも送られます)。並び順の小さい順に並べます。最後の 1 つと、参加者のいる部門は削除できません。</p>'
+    . '<p><button>部門を保存</button></p></form>';
 
 // ---- 管理(詳細設定と同じく、タップで開くアコーディオン。開くと3項目が縦に並ぶ)
 echo '<details class="sp-advanced sp-manage"><summary>管理</summary>';

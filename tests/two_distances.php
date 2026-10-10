@@ -75,7 +75,7 @@ Entries::applyArrows($c, str_repeat('K', 36), 't', null, 'admin', 1);   // 鈴�
 Entries::applyArrows($c, str_repeat('J', 36), 't', null, 'admin', 2);
 $g = Results::byCategory();
 $men = $g[0]['rows'];
-ok($g[0]['category']['name'] === 'リカーブ男子' && count($men) === 2, '男子の部');
+ok($g[0]['category']['name'] === '男子' && count($men) === 2, '男子の部');
 ok($men[0]['id'] == $c && $men[0]['score'] === 684 && $men[0]['golds'] === 36 && $men[0]['rank'] === 1, '同点684 → 第1優先(X)が多い鈴木が1位');
 ok($men[1]['id'] == $a && $men[1]['rank'] === 2 && !$men[1]['tie'], '山田は2位(同順位ではない)');
 ok($men[0]['dist_scores'] === [1 => 360, 2 => 324], '距離ごとの合計');

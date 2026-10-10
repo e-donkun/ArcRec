@@ -563,3 +563,15 @@ input.sp-readonly { background: #f2f4f7 !important; color: var(--sp-muted); font
 .sp-comp-title span { white-space: nowrap; font-size: 14px; font-weight: normal; color: var(--sp-muted); }
 .sp-appbar.super { background: #111; }   /* 全体管理者でログイン中 */
 .sp-appbar-left { margin-left: -6px; flex: none; }
+/* 記録会設定の部門 */
+.sp-offscreen { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.sp-cat-table { width: 100%; border-collapse: collapse; }
+.sp-cat-table th { text-align: left; font-weight: normal; font-size: 12px; color: var(--sp-muted); padding: 2px 4px; }
+.sp-cat-table td { padding: 3px 4px; vertical-align: middle; }
+.sp-cat-table td:nth-child(1) { width: 22%; }
+.sp-cat-table td:nth-child(3) { width: 18%; }
+.sp-cat-table td:nth-child(4) { width: 1%; white-space: nowrap; }
+.sp-cat-table input { width: 100%; box-sizing: border-box; }
+.sp-cat-table tfoot td { padding-top: 8px; border-top: 1px solid var(--sp-border); }
+.sp-cat-table th, .sp-cat-table td { border: 0; background: none; }
+.sp-cat-table.map td:nth-child(1) { width: 60%; }

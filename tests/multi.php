@@ -74,7 +74,7 @@ ok(Lite\Settings::resultsPublic(), 'サンプルは結果を公開している')
 ok(Auth::verify('5A4D0001', 'sample') && !Auth::verify('5A4D0001', 'wrong'), 'サンプルのパスワードは sample');
 Competitions::open('5A4D0001');
 $g = Lite\Results::byCategory();
-ok($g[0]['category']['name'] === 'リカーブ男子' && count($g[0]['rows']) === 8 && $g[0]['rows'][0]['rank'] === 1 && $g[0]['rows'][0]['hits'] === 72, 'サンプルの結果: 男子8人、1位は72射終了');
+ok($g[0]['category']['name'] === '男子' && count($g[0]['rows']) === 8 && $g[0]['rows'][0]['rank'] === 1 && $g[0]['rows'][0]['hits'] === 72, 'サンプルの結果: 男子8人、1位は72射終了');
 ok($g[1]['rows'][4]['hits'] === 0 || $g[1]['rows'][7]['hits'] === 0, 'サンプル: 的4の女子はまだ射っていない');
 $pdf = Lite\Pdf::results($g);
 ok(substr($pdf, 0, 4) === '%PDF', 'サンプルの結果PDF');

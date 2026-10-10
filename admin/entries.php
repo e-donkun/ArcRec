@@ -11,18 +11,16 @@ use Lite\Past;
 use Lite\Scoring;
 use Lite\Settings;
 
-/** CSV/TSV(UTF-8 か Shift_JIS)を取り込む。列: 姓,名,所属,部門,的(3A など) */
-function import_entries($text)
+/** CSV/TSV(UTF-8 か Shift_JIS)を行ごとの列に分ける。見出し行は飛ばす。@return array [行番号 => 列の配列] */
+function parse_entries_csv($text)
 {
     $enc = mb_detect_encoding($text, ['UTF-8', 'SJIS-win', 'EUC-JP'], true) ?: 'UTF-8';
     if ($enc !== 'UTF-8') {
         $text = mb_convert_encoding($text, 'UTF-8', $enc);
     }
     $text = preg_replace('/^\xEF\xBB\xBF/', '', $text);
-    $lines = preg_split('/\r\n|\r|\n/', $text);
-    $added = 0;
-    $errors = [];
-    foreach ($lines as $n => $line) {
+    $rows = [];
+    foreach (preg_split('/\r\n|\r|\n/', $text) as $n => $line) {
         if (trim($line) === '') {
             continue;
         }
@@ -31,20 +29,49 @@ function import_entries($text)
         if ($n === 0 && preg_match('/^(姓|氏名|名前|family|name)/iu', $c[0])) {
             continue; // 見出し行
         }
+        $rows[$n + 1] = $c;
+    }
+    return $rows;
+}
+
+/** 名簿の部門の欄のうち、登録してある部門に当てはまらない表記(重複なし) */
+function unknown_categories(array $rows)
+{
+    $u = [];
+    foreach ($rows as $c) {
+        $t = trim($c[3] ?? '');
+        if ($t !== '' && Categories::resolve($t) === null) {
+            $u[$t] = true;
+        }
+    }
+    return array_keys($u);
+}
+
+/**
+ * 名簿を取り込む。列: 姓,名,所属,部門,的(3A など)。姓だけでもよい(名・所属は空欄)。
+ * 部門が空なら並び順が一番若い部門。登録してない部門の行はエラー(先に unknown_categories で部門を作る)。
+ */
+function import_entries(array $rows)
+{
+    $added = 0;
+    $errors = [];
+    $first = Categories::firstId();
+    foreach ($rows as $n => $c) {
         $pos = $c[4] ?? '';
         $target = 0;
         $letter = '';
         if ($pos !== '') {
             if (!preg_match('/^(\d+)\s*([A-Fa-f])$/', $pos, $m)) {
-                $errors[] = ($n + 1) . '行目: 的の指定「' . $pos . '」が不正です(例 3A)';
+                $errors[] = $n . '行目: 的の指定「' . $pos . '」が不正です(例 3A)';
                 continue;
             }
             $target = (int)$m[1];
             $letter = strtoupper($m[2]);
         }
-        $cat = Categories::resolve($c[3] ?? '');
+        $catText = trim($c[3] ?? '');
+        $cat = $catText === '' ? $first : Categories::resolve($catText);
         if ($cat === null) {
-            $errors[] = ($n + 1) . '行目: 部門「' . ($c[3] ?? '') . '」を判別できません(男子 / 女子 のように書いてください)';
+            $errors[] = $n . '行目: 部門「' . $catText . '」がありません';
             continue;
         }
         try {
@@ -54,9 +81,9 @@ function import_entries($text)
             ]);
             $added++;
         } catch (InvalidArgumentException $e) {
-            $errors[] = ($n + 1) . '行目: ' . $e->getMessage();
+            $errors[] = $n . '行目: ' . $e->getMessage();
         } catch (PDOException $e) {
-            $errors[] = ($n + 1) . '行目: 登録できません(' . $e->getMessage() . ')';
+            $errors[] = $n . '行目: 登録できません(' . $e->getMessage() . ')';
         }
     }
     return [$added, $errors];
@@ -139,18 +166,63 @@ if ($act !== '') {
     }
 }
 
-// ---- CSV の取り込み(フォーム)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['do'] ?? '') === 'import') {
-    $text = $_POST['csv'] ?? '';
-    if (!empty($_FILES['file']['tmp_name']) && is_uploaded_file($_FILES['file']['tmp_name'])) {
-        $text = file_get_contents($_FILES['file']['tmp_name']);
+// ---- CSV の取り込み(フォーム)。登録してない部門があれば、先にその部門のコードを入れる画面へ
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['do'] ?? '', ['import', 'import_cats', 'import_cancel'], true)) {
+    $do = $_POST['do'];
+    if ($do === 'import_cancel') {
+        unset($_SESSION['lite_import']);
+        flash('取り込みをやめました', 'warn');
+        redirect('entries.php');
     }
-    list($added, $errors) = import_entries($text);
+    if ($do === 'import') {
+        $text = $_POST['csv'] ?? '';
+        if (!empty($_FILES['file']['tmp_name']) && is_uploaded_file($_FILES['file']['tmp_name'])) {
+            $text = file_get_contents($_FILES['file']['tmp_name']);
+        }
+        $rows = parse_entries_csv($text);
+    } else {
+        $rows = $_SESSION['lite_import'] ?? [];
+        try {
+            Lite\Db::immediate(function () {
+                foreach ((array)($_POST['cat_code'] ?? []) as $i => $code) {
+                    Categories::add($code, $_POST['cat_name'][$i] ?? '');
+                }
+            });
+        } catch (InvalidArgumentException $e) {
+            flash($e->getMessage(), 'err');
+            redirect('entries.php?catmap=1');
+        }
+    }
+    if (unknown_categories($rows)) {
+        $_SESSION['lite_import'] = $rows;
+        redirect('entries.php?catmap=1');
+    }
+    unset($_SESSION['lite_import']);
+    list($added, $errors) = import_entries($rows);
     flash($added . ' 人を取り込みました', $added ? 'ok' : 'warn');
     foreach (array_slice($errors, 0, 10) as $er) {
         flash($er, 'err');
     }
     redirect('entries.php');
+}
+
+// 登録してない部門のコードを入れる画面(CSV の取り込みの途中)
+if (isset($_GET['catmap']) && !empty($_SESSION['lite_import'])) {
+    $unknown = unknown_categories($_SESSION['lite_import']);
+    page_head('部門の追加', 'entries');
+    echo '<form method="post" class="card">' . csrf_field() . '<input type="hidden" name="do" value="import_cats">'
+        . '<h2 style="margin-top:0">名簿に、まだ無い部門があります</h2>'
+        . '<p class="sp-note">それぞれの部門のコード(英数字 8 文字まで)を入れると、部門を作ってから名簿を取り込みます。</p>'
+        . '<table class="sp-cat-table map"><thead><tr><th>部門名</th><th>コード</th></tr></thead><tbody>';
+    foreach ($unknown as $i => $name) {
+        echo '<tr><td><input type="text" name="cat_name[' . $i . ']" value="' . h($name) . '" required></td>'
+            . '<td><input type="text" name="cat_code[' . $i . ']" maxlength="8" autocapitalize="characters" required' . ($i === 0 ? ' autofocus' : '') . '></td></tr>';
+    }
+    echo '</tbody></table><div class="sp-sheet-actions" style="margin-top:12px">'
+        . '<button type="submit" class="sp-btn sub" form="ImportCancel">やめる</button><button class="sp-btn">部門を作って取り込む</button></div></form>'
+        . '<form method="post" id="ImportCancel">' . csrf_field() . '<input type="hidden" name="do" value="import_cancel"></form>';
+    page_foot('entries');
+    exit;
 }
 
 $cats = [];
@@ -171,7 +243,7 @@ page_head('参加者登録', 'entries', ['js' => ['LiteRows' => entry_rows(), 'L
 <p class="sp-note">カードをタップすると、名前・所属・部門を変更できます。</p>
 <details class="card"><summary>CSVでまとめて登録</summary>
 	<form method="post" enctype="multipart/form-data"><?php echo csrf_field(); ?><input type="hidden" name="do" value="import">
-	<p class="sp-note">列: <code>姓,名,所属,部門</code>(部門は 男子 / 女子)。カンマかタブ区切り、UTF-8 か Shift_JIS(Excel保存)。1行目が見出しなら飛ばします。</p>
+	<p class="sp-note">列: <code>姓,名,所属,部門</code>(姓だけでも可。部門は 部門名かコード、空なら先頭の部門)。まだ無い部門は、コードを入れて作ってから取り込みます。カンマかタブ区切り、UTF-8 か Shift_JIS(Excel保存)。1行目が見出しなら飛ばします。</p>
 	<label class="sp-field"><span>ファイルから</span><input type="file" name="file" accept=".csv,.tsv,.txt"></label>
 	<label class="sp-field"><span>または貼り付け</span><textarea name="csv" rows="5" style="width:100%" placeholder="山田,太郎,京都大学,男子&#10;佐藤,花子,同志社大学,女子"></textarea></label>
 	<button class="sp-btn">取り込む</button></form>
