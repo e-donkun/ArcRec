@@ -94,7 +94,7 @@ function results_page($code, $public)
 	<a class="sp-btn sub" href="<?php echo $adm; ?>export.php?what=results&c=<?php echo h($code); ?>">結果CSV</a>
 </div>
 <?php if (!$public) { ?>
-<p class="sp-note">公開用のURL: <code><?php echo h(server_base_url() . 'results.php?c=' . $code); ?></code>(<?php echo Settings::resultsPublic() ? '公開中' : '非公開'; ?>)</p>
+<p class="sp-note">公開用のURL: <code><?php echo h(server_base_url() . '?c=' . $code); ?></code>(<?php echo Settings::resultsPublic() ? '公開中' : '非公開'; ?>)</p>
 <?php } ?>
 
 <script>

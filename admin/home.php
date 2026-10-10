@@ -42,7 +42,7 @@ echo '<div class="sp-stats">'
 echo '<p class="sp-note">スコア最終更新: <b>' . h(Results::lastUpdateText()) . '</b></p>';
 
 // 結果の公開(トグル)
-$pubUrl = server_base_url() . 'results.php?c=' . $code;
+$pubUrl = server_base_url() . '?c=' . $code;
 echo '<div class="sp-card sp-public">' . icon('chart') . '<div class="sp-card-main"><div class="sp-name">結果の公開</div>'
     . '<div class="sp-sub" id="PubState">' . (Settings::resultsPublic() ? '公開中: ログインなしで見られます' : '非公開: この記録会を開いている管理者だけが見られます') . '</div>'
     . '<div class="sp-sub"><a href="' . h($pubUrl) . '" target="_blank">' . h($pubUrl) . '</a></div></div>'
