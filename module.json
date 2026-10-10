@@ -2,13 +2,18 @@
 	"id": "ianseo-lite",
 	"name": "ianseo-lite（簡易記録会システム）",
 	"description": "予選だけ・1セッションだけの記録会向け。SQLite + ScorekeeperNG(Lite)で入力し、スコアカードと結果をPDFで出力する。本体のDBとは独立して動く。",
-	"version": "0.8.0",
+	"version": "0.8.1",
 	"author": "e-donkun",
 	"homepage": "https://github.com/e-donkun/ianseo-lite",
 	"license": "GPL-2.0",
 	"testedIanseo": "2026-03-01",
 	"requiresPhp": "7.4",
 	"changelog": [
+		{
+			"version": "0.8.1",
+			"date": "2026-10-10",
+			"notes": "README: https で clone して認証情報を保存しているサーバーは Deploy key なしで自動反映できることを追記"
+		},
 		{
 			"version": "0.8.0",
 			"date": "2026-10-10",

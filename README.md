@@ -122,7 +122,10 @@ LAN 上のアドレス(例 `http://192.168.0.10:8080/admin/`)で管理画面を�
 Webhook の署名(Secret)を確かめてから動くので、ほかの人がこの URL を叩いても何も起きません。Secret を設定していなければ 404 を返して何もしません。
 `data/`(大会の DB)と `config.local.php` は Git の管理外なので、pull しても消えません。
 
-リポジトリは非公開なので、サーバーには**読み取り専用の鍵(Deploy key)**を置きます。以下は さくらのレンタルサーバ の例です
+リポジトリは非公開なので、サーバーが GitHub から取得できるようにしておきます。
+`https://github.com/...` で clone して認証情報を保存している場合は、そのままで構いません
+(サーバーで `GIT_TERMINAL_PROMPT=0 git pull --ff-only origin main` が入力なしで通れば OK。下の 1・2 と `deploy_ssh_key` は不要)。
+そうでなければ、**読み取り専用の鍵(Deploy key)**を置きます。以下は さくらのレンタルサーバ の例です
 (`<ユーザー名>` はサーバーのアカウント名、`~/www/ianseo-lite` は置き場所。ianseo の `Modules/Custom/ianseo-lite` に置くならそのパス)。
 
 1. **SSH でサーバーに入り、鍵を作る**
