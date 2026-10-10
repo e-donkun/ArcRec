@@ -1,7 +1,7 @@
 <?php
 // 結果一覧の画面(ianseo 本体のスマホモード「ライブ得点集計」と同じ画面構成)。
 //   ランキング/的順のチップ、検索、自動更新(最初はオフ。入れると 30秒 から数字が減る)、部門ごとの見出し、カードをタップするとスコアカード(第1・第2優先順位の本数も)
-// 管理画面の admin/results.php と、参加者向けのトップの results.php(記録会設定で公開にした記録会だけ)から使う。
+// 管理画面の admin/results.php と、参加者向けの公開ページ(トップ。admin/_public.php。記録会設定で公開にした記録会だけ)から使う。
 
 use Lite\Entries;
 use Lite\Results;
@@ -61,7 +61,7 @@ function results_data()
 }
 
 /**
- * 結果の画面。$public = true はトップの results.php(参加者向け。管理用のタブ・リンクを出さない)
+ * 結果の画面。$public = true はトップの公開ページ(参加者向け。管理用のタブ・リンクを出さない)
  */
 function results_page($code, $public)
 {
@@ -71,7 +71,8 @@ function results_page($code, $public)
     // 公開ページ: 左上の「<」で記録会一覧へ、右上の「設定」でこの記録会の管理者画面へ
     page_head('記録会結果', 'results', ['public' => $public, 'base' => $public ? 'admin/' : '',
         'back' => $public ? ['./?list=1', '記録会一覧に戻る'] : null, 'right' => $public ? public_admin_button($code) : '',
-        'js' => ['LiteRes' => results_data(), 'LiteCode' => $code, 'LitePublic' => $public]]);
+        'js' => ['LiteRes' => results_data(), 'LiteCode' => $code, 'LitePublic' => $public,
+            'LiteResUrl' => $public ? './' : 'results.php']]);
     $adm = $public ? 'admin/' : '';
     if (!$public) {
         echo public_card();   // 管理画面では、結果の公開を一番上に
@@ -174,7 +175,7 @@ function spResFilter() {
 
 async function spResReload() {
 	try {
-		LiteRes = await spGetJson('results.php', {c: LiteCode, json: 1});
+		LiteRes = await spGetJson(LiteResUrl, {c: LiteCode, json: 1});   // 公開ページはトップ(./)、管理画面は admin/results.php
 		spResRender();
 	} catch (e) {
 		spToast('更新できませんでした: ' + e.message, true);

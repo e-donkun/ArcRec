@@ -55,7 +55,7 @@ class Settings
         'target_count' => '0',         // 立順の割り当て表に出す的の数(0 = 選手の人数から決める)
         'admin_hash' => '',
         'api_log' => '0',
-        'results_public' => '0',   // 1 = 結果をトップの results.php で誰でも見られる(管理者は非公開でも見られる)
+        'results_public' => '0',   // 1 = 結果をトップの公開ページで誰でも見られる(管理者は非公開でも見られる)
     ];
 
     private static $cache;

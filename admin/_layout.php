@@ -81,7 +81,7 @@ function server_base_url()
     $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
         || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    // admin/ の中のページなら1つ上、トップの公開ページ(results.php)ならそのフォルダ
+    // admin/ の中のページなら1つ上、トップの公開ページ(index.php)ならそのフォルダ
     $dir = dirname($_SERVER['SCRIPT_NAME']);
     if (basename($dir) === 'admin') {
         $dir = dirname($dir);
