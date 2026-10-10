@@ -431,6 +431,7 @@ details.sp-advanced[open] { padding-bottom: 8px; }
 
 /* 結果の公開(ホーム)のトグルボタン */
 .sp-public { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+.sp-menu .sp-public { margin: 0; }
 .sp-public > .sp-icon { width: 28px; height: 28px; color: var(--sp-primary); flex: none; }
 .sp-public .sp-sub a { color: var(--sp-muted); word-break: break-all; }
 .sp-toggle { position: relative; flex: none; width: 52px; height: 30px; margin: 0; }

@@ -41,9 +41,6 @@ echo '<div class="sp-stats sp-stats2">'
     . '</div>';
 echo '<p class="sp-note">スコア最終更新: <b>' . h(Results::lastUpdateText()) . '</b></p>';
 
-// 結果の公開(トグル)
-echo public_card();
-
 $item = function ($href, $icon, $title, $sub = '', $attr = '') {
     return '<a class="sp-card tap" href="' . $href . '"' . $attr . '>' . icon($icon) . '<div class="sp-card-main"><div class="sp-name">' . $title . '</div>'
         . ($sub !== '' ? '<div class="sp-sub">' . $sub . '</div>' : '') . '</div></a>';
@@ -56,6 +53,7 @@ echo '<div class="sp-section-title">記録会の準備</div><div class="sp-menu"
     . $item('qr.php', 'qr', '端末設定')
     . $item('scores.php', 'edit', '点数管理')
     . $item('results.php', 'chart', '結果出力')
+    . public_card()   // 結果の公開(トグル)。結果出力の下に
     . '</div>';
 // 印刷・出力: スコアカード(白紙 / 素点入力済)と結果PDF
 echo '<div class="sp-section-title">印刷・出力</div><div class="sp-print">'
