@@ -154,7 +154,7 @@ ok(Devices::find('dev-1')['battery'] == 80, 'chargestatus');
 $r = call([['action' => 'lang', 'device' => 'dev-1']]);
 ok(count($r['responses'][0]['languageList']) >= 2, 'lang 一覧');
 $r = call([['action' => 'lang', 'device' => 'dev-1', 'lang' => 'ja']]);
-ok($r['responses'][0]['translations']['AppTitle'] === 'スコアキーパーNG', 'lang ja');
+ok($r['responses'][0]['translations']['AppTitle'] === 'Scorekeeper NG' && $r['responses'][0]['translations']['SettingsConnectionCompCode'] === '競技会コード', 'lang ja(独自の日本語訳)');
 $r = call([['action' => 'gettargetimages', 'device' => 'dev-1', 'imgCodes' => [5, 1]]]);
 ok(count($r['responses'][0]['images']) === 2, 'gettargetimages');
 $r = call([['action' => 'ping', 'device' => 'dev-1']]);
