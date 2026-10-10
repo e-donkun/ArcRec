@@ -483,7 +483,9 @@ class Pdf extends \TCPDF
             }
             $this->SetX(10);
             $this->n(10);
-            $this->Cell($c['rank'], $h, $r['rank'] === null ? '' : (string)$r['rank'], 1, 0, 'C');
+            // 順位。まだ点数が無い人は的番号(1A など)
+            $rank = $r['rank'] !== null ? (string)$r['rank'] : ($r['target'] ? $r['target'] . $r['letter'] : '');
+            $this->Cell($c['rank'], $h, $rank, 1, 0, 'C');
             $this->f(10.5);
             $this->Cell($c['name'], $h, Entries::fullName($r), 1, 0, 'C', false, '', 1);
             $this->Cell($c['aff'], $h, (string)$r['affiliation'], 1, 0, 'C', false, '', 1);
