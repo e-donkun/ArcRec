@@ -553,3 +553,5 @@ input.sp-readonly { background: #f2f4f7 !important; color: var(--sp-muted); font
 .sp-rsc td { border-bottom: 0; }
 .sp-rsc td.end { border-right: 3px solid var(--sp-text); }
 .sp-pad-row.nav button { font-size: 13px; white-space: nowrap; padding: 0 4px; }
+.sp-stats.sp-stats2 { grid-template-columns: 1fr 1fr; }
+.sp-print { grid-template-columns: 1fr; }
