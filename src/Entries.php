@@ -228,6 +228,96 @@ class Entries
         Db::pdo()->exec("UPDATE devices SET setup = '', setup_confirmed = 0");
     }
 
+    /**
+     * 未割当の(点数のない)選手を、空いている枠に入れる。部門順 → 登録順に、1的から A, B, … の空きを埋める。
+     * すでに割り当てた選手は動かさない。
+     * @return array ['count' => 入れた人数, 'maxTarget' => 使ったいちばん大きい的番号]
+     */
+    public static function assignUnassigned($perTarget)
+    {
+        $letters = array_slice(['A', 'B', 'C', 'D', 'E', 'F'], 0, max(1, min(Settings::MAX_PER_TARGET, (int)$perTarget)));
+        return Db::immediate(function (\PDO $pdo) use ($letters) {
+            $used = [];
+            $todo = [];
+            $maxT = 0;
+            foreach (self::all(false) as $r) {
+                if ($r['status']) {
+                    continue;
+                }
+                if ($r['target']) {
+                    $used[$r['target'] . $r['letter']] = true;
+                    $maxT = max($maxT, (int)$r['target']);
+                } elseif (!self::hasScore($r)) {
+                    $todo[] = $r;
+                }
+            }
+            $up = $pdo->prepare('UPDATE entries SET target = ?, letter = ? WHERE id = ?');
+            $t = 1;
+            $i = 0;
+            foreach ($todo as $r) {
+                while (isset($used[$t . $letters[$i]])) {
+                    if (++$i >= count($letters)) {
+                        $i = 0;
+                        $t++;
+                    }
+                }
+                $up->execute([$t, $letters[$i], $r['id']]);
+                $used[$t . $letters[$i]] = true;
+                $maxT = max($maxT, $t);
+            }
+            if ($todo) {
+                $pdo->exec("UPDATE devices SET setup = '', setup_confirmed = 0");
+            }
+            return ['count' => count($todo), 'maxTarget' => $maxT];
+        });
+    }
+
+    /**
+     * 同じ部門どうしで、点数のない選手の立順をシャッフルする(部門ごとに、その部門の選手がいる枠の中で入れ替える)。
+     * 点数のある選手・未割当の選手は動かさない。
+     * @return int 動かした人数
+     */
+    public static function shuffleWithinCategory()
+    {
+        return Db::immediate(function (\PDO $pdo) {
+            $groups = [];
+            foreach (self::all(false) as $r) {
+                if (!$r['status'] && $r['target'] && !self::hasScore($r)) {
+                    $groups[(int)$r['category_id']][] = $r;
+                }
+            }
+            $plan = [];
+            foreach ($groups as $rows) {
+                if (count($rows) < 2) {
+                    continue;
+                }
+                $slots = array_map(function ($r) {
+                    return [(int)$r['target'], $r['letter']];
+                }, $rows);
+                // Fisher-Yates(random_int)
+                for ($i = count($slots) - 1; $i > 0; $i--) {
+                    $j = random_int(0, $i);
+                    [$slots[$i], $slots[$j]] = [$slots[$j], $slots[$i]];
+                }
+                foreach ($rows as $k => $r) {
+                    $plan[(int)$r['id']] = $slots[$k];
+                }
+            }
+            if (!$plan) {
+                return 0;
+            }
+            $up = $pdo->prepare('UPDATE entries SET target = ?, letter = ? WHERE id = ?');
+            foreach (array_keys($plan) as $id) {
+                $up->execute([0, '', $id]);   // 一意制約(的+位置)に当たらないよう、先にどかす
+            }
+            foreach ($plan as $id => $pos) {
+                $up->execute([$pos[0], $pos[1], $id]);
+            }
+            $pdo->exec("UPDATE devices SET setup = '', setup_confirmed = 0");
+            return count($plan);
+        });
+    }
+
     /** 得点がまだ1本も無い選手の条件(SQL) */
     const NO_SCORE = "TRIM(arrowstring) = '' AND TRIM(arrowstring2) = ''";
 

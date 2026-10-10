@@ -456,7 +456,7 @@ details.sp-manage form { border-top: 1px solid var(--sp-border); padding-top: 4p
 details.sp-manage h3 { font-size: 15px; margin: 10px 0 4px; }
 
 /* 端末設定: QR とカルーセル(左右で的を切り替え) */
-.sp-qr { display: block; width: 100%; max-width: 220px; aspect-ratio: 1; background: #fff; padding: 8px; border-radius: 8px; box-sizing: border-box; }
+.sp-qr { display: block; margin: 0 auto; width: 100%; max-width: 220px; aspect-ratio: 1; background: #fff; padding: 8px; border-radius: 8px; box-sizing: border-box; }
 .sp-qr svg { display: block; width: 100%; height: 100%; }
 .sp-qr-carousel { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 10px 0; }
 .sp-qr-main { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; }
@@ -477,7 +477,17 @@ details.sp-manage h3 { font-size: 15px; margin: 10px 0 4px; }
 .sp-sc-keypad button { height: 46px; font-size: 22px; border: 1px solid rgba(0,0,0,.15); }
 .sp-sc-keypad button.fn { font-size: 14px; background: #eef0f3; color: var(--sp-text); }
 .sp-sc-keypad button.save { background: var(--sp-primary); color: #fff; font-weight: bold; }
-body.sp-score-edit .sp-main { padding-bottom: calc(var(--sp-tabbar-h) + 320px + env(safe-area-inset-bottom)); }
+body.sp-score-edit .sp-main { padding-bottom: calc(340px + env(safe-area-inset-bottom)); }
+/* 素点の編集は下部タブを出さないので、キーパッドは画面のいちばん下に */
+body.sp-score-edit .sp-sc-keypad { bottom: env(safe-area-inset-bottom); padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+.sp-pad-row { grid-column: 1 / -1; display: flex; gap: 6px; }
+.sp-pad-row button { flex: 1; }
+.sp-pad-row.nav button { height: 44px; }
+.sp-sc-keypad button.back { background: #fff; color: var(--sp-primary); border-color: var(--sp-primary); }
+.sp-sc-keypad button.save { background: var(--sp-primary); color: #fff; font-weight: bold; border-color: var(--sp-primary); }
+.sp-sc-keypad button.save:disabled { background: #c9ced6; border-color: #c9ced6; color: #fff; }
+.sp-cell.changed { border-color: #e08a00; box-shadow: inset 0 0 0 1px #e08a00; }
+button.sp-appbar-btn { background: none; border: 0; cursor: pointer; font-family: inherit; }
 
 /* 立順: 一覧の立順の直接入力(バッジと同じ見た目) */
 .sp-pos-input { width: 64px; flex: none; text-align: center; font-weight: bold; font-size: 16px; padding: 6px 4px; border: 1px solid var(--sp-border); border-radius: 8px; background: var(--sp-primary-light); color: var(--sp-primary-dark); text-transform: uppercase; }
@@ -490,3 +500,56 @@ body.sp-score-edit .sp-main { padding-bottom: calc(var(--sp-tabbar-h) + 320px + 
 .sp-stepper span { font-size: 13px; color: var(--sp-muted); }
 .sp-stepper b { min-width: 3.2em; text-align: center; font-size: 16px; }
 .sp-stepper .sp-btn { width: 36px; height: 36px; padding: 0; font-size: 20px; line-height: 1; }
+
+/* ホーム: 結果の公開(URL とコピー)、印刷・出力 */
+.sp-public .sp-tag { vertical-align: 2px; margin-left: 4px; }
+.sp-copy { display: flex; gap: 6px; margin-top: 6px; }
+.sp-copy input { flex: 1; min-width: 0; font-size: 13px; padding: 6px 8px; border: 1px solid var(--sp-border); border-radius: 8px; background: #f7f8fa; color: var(--sp-text); }
+.sp-copy .sp-btn { flex: none; width: 38px; height: 34px; padding: 0; display: flex; align-items: center; justify-content: center; }
+.sp-copy .sp-btn .sp-icon { width: 18px; height: 18px; margin: 0; }
+.sp-print { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sp-print .sp-card { display: flex; align-items: flex-start; gap: 10px; margin: 0; }
+.sp-print .sp-card > .sp-icon { width: 28px; height: 28px; color: var(--sp-primary); flex: none; }
+.sp-print .actions { margin: 6px 0 0; gap: 6px; }
+.sp-print .actions .sp-btn { padding: 4px 10px; font-size: 13px; }
+@media (max-width: 360px) { .sp-print { grid-template-columns: 1fr; } }
+input.sp-readonly { background: #f2f4f7 !important; color: var(--sp-muted); font-family: ui-monospace, Menlo, Consolas, monospace; }
+
+/* 点数管理: 最終更新と再読み込み、縦に詰めたカード */
+.sp-updated { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sp-updated .sp-note { margin: 0; }
+.sp-updated .sp-btn { flex: none; width: 40px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; }
+.sp-updated .sp-btn .sp-icon { margin: 0; }
+.sp-score-card { padding-bottom: 8px; }
+.sp-score-card .sp-card-head { align-items: flex-start; }
+.sp-score-card .sp-edit-btn { flex: none; padding: 6px 12px; font-size: 13px; align-self: center; }
+.sp-progress { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 12px; color: var(--sp-muted); }
+.sp-progress span { flex: none; white-space: nowrap; }
+.sp-progress .bar { flex: 1; height: 6px; background: var(--sp-border); border-radius: 3px; overflow: hidden; }
+.sp-progress .bar i { display: block; height: 100%; background: var(--sp-primary); }
+.sp-score-card .sp-dists { margin-top: 4px; justify-content: flex-end; }
+/* 的番号設定: 的番号自動設定(一覧・割り当て表の両方) */
+.sp-auto { margin-top: 12px; }
+.sp-auto form { margin: 6px 0; }
+.sp-btn.block { display: flex; width: 100%; justify-content: center; }
+
+/* 記録会結果のスコアカード: エンド | 素点 | 小計 | 合計 | 総計 | 第1・第2優先 */
+.sp-rsc { width: 100%; border-collapse: separate; border-spacing: 0 3px; table-layout: fixed; font-size: 13px; margin: 4px 0 10px; }
+.sp-rsc col.c-end { width: 22px; }
+.sp-rsc col.c-n { width: 36px; }
+.sp-rsc col.c-t { width: 32px; }
+.sp-rsc th { font-size: 12px; font-weight: bold; text-align: center; padding: 2px 0 4px; border-bottom: 3px solid var(--sp-text); white-space: nowrap; overflow: hidden; }
+.sp-rsc th.dist { text-align: left; font-size: 15px; padding-left: 2px; }
+.sp-rsc th.t { font-size: 11px; }
+.sp-rsc td { text-align: center; padding: 0; height: 26px; }
+.sp-rsc td.end { font-weight: bold; text-align: right; padding-right: 4px; border-right: 3px solid var(--sp-text); }
+.sp-rsc td.a { padding: 0 1px; }
+.sp-rsc td.a span { display: block; line-height: 24px; background: #e4e6ea; border-radius: 2px; font-size: 13px; }
+.sp-rsc td.a:nth-child(2) span { margin-left: 3px; }
+.sp-rsc td.n { font-weight: bold; }
+.sp-rsc tfoot td { font-weight: bold; padding-top: 2px; }
+.sp-rsc th, .sp-rsc td { background: transparent; border-top: 0; border-left: 0; border-right: 0; }
+.sp-rsc th { border-bottom: 3px solid var(--sp-text); }
+.sp-rsc td { border-bottom: 0; }
+.sp-rsc td.end { border-right: 3px solid var(--sp-text); }
+.sp-pad-row.nav button { font-size: 13px; white-space: nowrap; padding: 0 4px; }

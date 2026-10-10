@@ -1,6 +1,7 @@
 <?php
-// 得点の訂正。ScorekeeperNG と同じく、矢の枠をタップして下のボタン(的面の色)で点を入れる。
-//   2距離なら 前半/後半 を切り替え。「保存」で全距離をまとめて保存(更新履歴が残る)
+// 素点の編集。ScorekeeperNG と同じく、矢の枠をタップして下のボタン(的面の色)で点を入れる。
+//   2距離なら 前半/後半 を切り替え。「編集内容を保存」で全距離をまとめて保存(更新履歴が残る)。
+//   特別な画面なので、下部タブ・左上の「<」は出さない。戻るときは画面のボタンで(保存していなければ確かめる)
 require __DIR__ . '/_layout.php';
 require_admin();
 
@@ -30,22 +31,51 @@ usort($keys, function ($a, $b) {
 });
 $allowed = implode('', array_column($keys, 'l'));
 
+/** 更新履歴(新しい順)の表 */
+function score_history($e, $nd)
+{
+    $log = Entries::log($e['id'], 60);
+    if (!$log) {
+        return '<div class="sp-empty">更新履歴はありません</div>';
+    }
+    $h = '<div class="tablewrap"><table style="width:auto"><tr><th>日時</th>' . ($nd > 1 ? '<th>距離</th>' : '') . '<th>エンド</th><th>内容</th><th>送信元</th></tr>';
+    foreach ($log as $l) {
+        $disp = [];
+        foreach (str_split($l['arrows']) as $c) {
+            $disp[] = trim($c) === '' ? '-' : Scoring::display($c);
+        }
+        $h .= '<tr><td class="small">' . h($l['at']) . '</td>' . ($nd > 1 ? '<td class="c">' . h(Settings::distanceName((int)$l['distance']) ?: (int)$l['distance']) . '</td>' : '')
+            . '<td class="c">' . (int)$l['end_no'] . '</td><td>' . h(implode(' ', $disp)) . '</td><td class="small">'
+            . h($l['source'] === 'device' ? '端末 ' . substr($l['device'], 0, 8) : ($l['source'] === 'admin' ? '管理画面' : $l['source'])) . '</td></tr>';
+    }
+    return $h . '</table></div>';
+}
+
+if (isset($_GET['history'])) {
+    header('Content-Type: text/html; charset=UTF-8');
+    echo score_history($e, $nd);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // まず全距離を検証して、1つでも不正なら何も保存しない
+    // まず全距離を検証して、1つでも不正なら何も保存しない(画面からは Ajax で送る)
     $new = [];
     for ($d = 1; $d <= $nd; $d++) {
         $s = strtoupper((string)($_POST['arrows'][$d] ?? ''));
         if (strlen($s) > $total || !preg_match('/^[' . preg_quote($allowed, '/') . ' ]*$/', $s)) {
-            flash('入力が正しくありません。何も保存していません。', 'err');
-            redirect('score_edit.php?id=' . $e['id']);
+            json_out(['ok' => false, 'msg' => '入力が正しくありません。何も保存していません。']);
         }
         $new[$d] = Scoring::pad($s, $total);
     }
     foreach ($new as $d => $str) {
         Entries::replaceArrows($e['id'], $str, 'admin', $d);
     }
-    flash('得点を訂正しました');
-    redirect('score_edit.php?id=' . $e['id']);
+    $e = Entries::find($e['id']);
+    $saved = [];
+    for ($d = 1; $d <= $nd; $d++) {
+        $saved[] = Scoring::pad(strtoupper(Entries::arrows($e, $d)), $total);
+    }
+    json_out(['ok' => true, 'msg' => '編集内容を保存しました', 'arrows' => $saved]);
 }
 
 $dists = [];
@@ -54,15 +84,17 @@ for ($d = 1; $d <= $nd; $d++) {
 }
 $pos = $e['target'] ? $e['target'] . $e['letter'] : '';
 
-page_head('得点の訂正', 'scores', ['body' => 'sp-has-keypad sp-score-edit', 'js' => [
-    'LiteSc' => [
-        'per' => $per, 'ends' => $ends, 'dists' => $dists, 'keys' => $keys,
-        'tie1' => Settings::tieChars(1), 'tie2' => Settings::tieChars(2),
-        'tie1Label' => Settings::tieLabel(1), 'tie2Label' => Settings::tieLabel(2),
-    ],
-]]);
+page_head('素点の編集', 'scores', ['body' => 'sp-has-keypad sp-score-edit', 'notabs' => true, 'noback' => true,
+    'right' => '<button type="button" class="sp-appbar-btn" id="ScHistBtn">' . icon('history') . '<span>更新履歴</span></button>',
+    'js' => [
+        'LiteSc' => [
+            'id' => (int)$e['id'], 'per' => $per, 'ends' => $ends, 'dists' => $dists, 'keys' => $keys,
+            'tie1' => Settings::tieChars(1), 'tie2' => Settings::tieChars(2),
+            'tie1Label' => Settings::tieLabel(1), 'tie2Label' => Settings::tieLabel(2),
+        ],
+    ]]);
 if ($e['locked']) {
-    echo '<div class="sp-flash warn">このスコアカードは確定済みです(管理画面からは訂正できます)。</div>';
+    echo '<div class="sp-flash warn">このスコアカードは確定済みです(管理画面からは編集できます)。</div>';
 }
 echo '<div class="sp-card"><div class="sp-card-head"><span class="sp-badge' . ($pos ? '' : ' none') . '">' . h($pos ?: '-') . '</span><div class="sp-card-main">'
     . '<div class="sp-name">' . h(Entries::fullName($e)) . '<span class="sp-tag">' . h($e['category_name']) . '</span></div>'
@@ -76,25 +108,6 @@ if ($nd > 1) {
     echo '</div>';
 }
 echo '<table class="sp-sc sp-sc-edit" id="ScTable"></table>';
-echo '<form method="post" id="ScForm">' . csrf_field() . '<input type="hidden" name="id" value="' . $e['id'] . '">';
-for ($d = 1; $d <= $nd; $d++) {
-    echo '<input type="hidden" name="arrows[' . $d . ']" id="ScArrows' . $d . '">';
-}
-echo '</form>';
-
-$log = Entries::log($e['id'], 40);
-if ($log) {
-    echo '<details class="sp-advanced"><summary>更新履歴(新しい順)</summary><div class="tablewrap"><table style="width:auto"><tr><th>日時</th>' . ($nd > 1 ? '<th>距離</th>' : '') . '<th>エンド</th><th>内容</th><th>送信元</th></tr>';
-    foreach ($log as $l) {
-        $disp = [];
-        foreach (str_split($l['arrows']) as $c) {
-            $disp[] = trim($c) === '' ? '-' : Scoring::display($c);
-        }
-        echo '<tr><td class="small">' . h($l['at']) . '</td>' . ($nd > 1 ? '<td class="c">' . (int)$l['distance'] . '</td>' : '')
-            . '<td class="c">' . (int)$l['end_no'] . '</td><td>' . h(implode(' ', $disp)) . '</td><td class="small">' . h($l['source'] === 'device' ? '端末 ' . substr($l['device'], 0, 8) : $l['source']) . '</td></tr>';
-    }
-    echo '</table></div></details>';
-}
 ?>
 <div class="sp-keypad sp-sc-keypad" id="ScPad"></div>
 <script>
@@ -102,9 +115,11 @@ if ($log) {
 	const C = LiteSc;
 	const pts = {}, disp = {};
 	C.keys.forEach(k => { pts[k.l] = k.n; disp[k.l] = k.p; });
-	const model = C.dists.map(d => d.arrows.split(''));   // 距離ごとの矢(1文字1本、空白は未入力)
-	let dist = 0, sel = 0, dirty = false;
+	let base = C.dists.map(d => d.arrows);                // 保存済みの内容
+	let model = base.map(a => a.split(''));               // 距離ごとの矢(1文字1本、空白は未入力)
+	let dist = 0, sel = 0, leaving = false, saving = false;
 
+	function dirty() { return model.some((a, d) => a.join('') !== base[d]); }
 	function endSum(d, e) {
 		let s = 0, any = false;
 		for (let j = 0; j < C.per; j++) {
@@ -130,7 +145,8 @@ if ($log) {
 			h += '<tr><td class="no">' + (e + 1) + '</td>';
 			for (let j = 0; j < C.per; j++) {
 				const i = e * C.per + j, c = model[dist][i];
-				h += '<td><button type="button" class="sp-cell' + (i === sel ? ' sel' : '') + '" data-i="' + i + '">' + (c && c !== ' ' ? spEsc(disp[c] || c) : '') + '</button></td>';
+				const changed = c !== base[dist][i];
+				h += '<td><button type="button" class="sp-cell' + (i === sel ? ' sel' : '') + (changed ? ' changed' : '') + '" data-i="' + i + '">' + (c && c !== ' ' ? spEsc(disp[c] || c) : '') + '</button></td>';
 			}
 			h += '<td class="tot">' + (s === null ? '' : s) + '</td><td class="run">' + (s === null ? '' : run) + '</td></tr>';
 		}
@@ -146,6 +162,10 @@ if ($log) {
 		const t = document.getElementById('ScTotals');
 		t.innerHTML = tot;
 		t.style.gridTemplateColumns = 'repeat(' + (C.dists.length > 1 ? 5 : 3) + ', 1fr)';
+		// 下のボタン: 編集前は「戻る」「編集内容を保存(押せない)」、編集したら「編集内容を保存せず戻る」「編集内容を保存」
+		const d = dirty();
+		document.getElementById('ScBack').textContent = d ? '編集内容を保存せず戻る' : '戻る';
+		document.getElementById('ScSave').disabled = !d || saving;
 	}
 	function select(i) {
 		const n = C.ends * C.per;
@@ -158,30 +178,42 @@ if ($log) {
 	}
 	function put(c) {
 		model[dist][sel] = c;
-		dirty = true;
 		select(c === ' ' ? sel : sel + 1);
 	}
-	// キーパッド: 的面の色の点ボタン(3列)+ 素点削除・エンド削除・保存
+	async function save() {
+		if (!dirty() || saving) return;
+		saving = true;
+		render();
+		try {
+			const params = {id: C.id};
+			model.forEach((a, d) => { params['arrows[' + (d + 1) + ']'] = a.join(''); });
+			const r = await spPostJson('score_edit.php?id=' + C.id, params);
+			if (!r.ok) throw new Error(r.msg);
+			base = r.arrows;                                  // 保存した内容を反映して、編集前の状態に戻る
+			model = base.map(a => a.split(''));
+			spToast(r.msg);
+		} catch (e) {
+			spToast('保存できませんでした: ' + e.message, true);
+		}
+		saving = false;
+		render();
+	}
+	// キーパッド: 的面の色の点ボタン(3列)、素点削除・エンド削除、その下に 戻る・編集内容を保存
 	const pad = document.getElementById('ScPad');
 	pad.innerHTML = C.keys.map(k => '<button type="button" data-k="' + k.l + '" style="background:' + k.bg + ';color:' + k.fg + '">' + spEsc(k.p) + '</button>').join('')
-		+ '<button type="button" class="fn" data-fn="del">素点削除</button>'
-		+ '<button type="button" class="fn" data-fn="end">エンド削除</button>'
-		+ '<button type="button" class="fn save" data-fn="save">保存</button>';
+		+ '<div class="sp-pad-row"><button type="button" class="fn" data-fn="del">素点削除</button><button type="button" class="fn" data-fn="end">エンド削除</button></div>'
+		+ '<div class="sp-pad-row nav"><button type="button" class="fn back" id="ScBack" data-fn="back">戻る</button><button type="button" class="fn save" id="ScSave" data-fn="save" disabled>編集内容を保存</button></div>';
 	pad.addEventListener('click', ev => {
 		const b = ev.target.closest('button');
-		if (!b) return;
+		if (!b || b.disabled) return;
 		if (b.dataset.k) put(b.dataset.k);
 		else if (b.dataset.fn === 'del') put(' ');
 		else if (b.dataset.fn === 'end') {
 			const e0 = Math.floor(sel / C.per) * C.per;
 			for (let j = 0; j < C.per; j++) model[dist][e0 + j] = ' ';
-			dirty = true;
 			select(e0);
-		} else if (b.dataset.fn === 'save') {
-			model.forEach((a, d) => { document.getElementById('ScArrows' + (d + 1)).value = a.join(''); });
-			dirty = false;
-			document.getElementById('ScForm').submit();
-		}
+		} else if (b.dataset.fn === 'save') save();
+		else if (b.dataset.fn === 'back') { leaving = true; location.href = 'scores.php'; }
 	});
 	document.getElementById('ScTable').addEventListener('click', ev => {
 		const b = ev.target.closest('.sp-cell');
@@ -196,8 +228,20 @@ if ($log) {
 		const first = model[dist].findIndex(c => c === ' ');
 		select(first >= 0 ? first : 0);
 	});
-	// 保存していない変更があれば、画面を離れる前に確かめる
-	window.addEventListener('beforeunload', ev => { if (dirty) { ev.preventDefault(); ev.returnValue = ''; } });
+	// 更新履歴(右上のボタン)
+	document.getElementById('ScHistBtn').addEventListener('click', async () => {
+		const el = spSheet.open('<h2>更新履歴(新しい順)</h2><div id="ScHist" class="sp-sub">読み込み中…</div>'
+			+ '<div class="sp-sheet-actions"><button type="button" class="sp-btn sub" onclick="spSheet.close()">閉じる</button></div>');
+		try {
+			el.querySelector('#ScHist').innerHTML = await spGetText('score_edit.php', {id: C.id, history: 1});
+		} catch (e) {
+			el.querySelector('#ScHist').textContent = '読み込めませんでした: ' + e.message;
+		}
+	});
+	// 画面のボタン以外で離れようとしたら、保存していない編集があれば確かめる
+	window.addEventListener('beforeunload', ev => {
+		if (!leaving && dirty()) { ev.preventDefault(); ev.returnValue = '編集した内容が保存されていませんが、よろしいですか?'; }
+	});
 	const first = model[0].findIndex(c => c === ' ');
 	sel = first >= 0 ? first : 0;
 	render();

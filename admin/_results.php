@@ -92,6 +92,7 @@ function results_page($code, $public)
 	<a class="sp-btn sub" href="<?php echo $adm; ?>pdf.php?type=results&c=<?php echo h($code); ?>" target="_blank"><?php echo icon('print'); ?>結果PDF</a>
 <?php if (!$public) { ?>
 	<a class="sp-btn sub" href="export.php?what=results">結果CSV</a>
+	<a class="sp-btn sub" href="export.php?what=arrows">全矢CSV</a>
 <?php } ?>
 </div>
 <?php if (!$public) { ?>
@@ -102,16 +103,23 @@ function results_page($code, $public)
 const SpLv = {order: spStore('res_order') || 'rank', open: new Set(), timer: null};
 
 function spResCard(it, showCat) {
-	let detail = '';
+	// スコアカード: エンド | 素点 | 小計 | 合計 | 総計 | 第1優先 | 第2優先。見出しの左(エンド〜素点)は結合して距離の名前
+	let detail = '', grand = 0;
+	const blank0 = v => v ? v : '';
 	it.sc.forEach(d => {
 		if (!d.ends.length) return;
-		detail += '<table class="sp-sc"><thead><tr><th colspan="' + (LiteRes.per + 5) + '">' + spEsc(d.name) + '</th></tr><tr><th>E</th>';
-		for (let i = 1; i <= LiteRes.per; i++) detail += '<th>' + i + '</th>';
-		detail += '<th>計</th><th>' + spEsc(LiteRes.goldLabel) + '</th><th>' + spEsc(LiteRes.xLabel) + '</th><th>累計</th></tr></thead><tbody>';
+		detail += '<table class="sp-rsc"><colgroup><col class="c-end">' + '<col class="c-a">'.repeat(LiteRes.per)
+			+ '<col class="c-n"><col class="c-n"><col class="c-n"><col class="c-t"><col class="c-t"></colgroup>'
+			+ '<thead><tr><th class="dist" colspan="' + (LiteRes.per + 1) + '">' + spEsc(d.name) + '</th>'
+			+ '<th>小計</th><th>合計</th><th>総計</th><th class="t">' + spEsc(LiteRes.goldLabel) + '</th><th class="t">' + spEsc(LiteRes.xLabel) + '</th></tr></thead><tbody>';
 		d.ends.forEach(e => {
-			detail += '<tr><td>' + e.n + '</td>' + e.a.map(a => '<td>' + spEsc(a) + '</td>').join('') + '<td class="tot">' + e.t + '</td><td>' + e.g + '</td><td>' + e.x + '</td><td>' + e.r + '</td></tr>';
+			grand += e.t;
+			detail += '<tr><td class="end">' + e.n + '</td>' + e.a.map(a => '<td class="a"><span>' + spEsc(a) + '</span></td>').join('')
+				+ '<td class="n">' + e.t + '</td><td class="n">' + e.r + '</td><td class="n">' + grand + '</td>'
+				+ '<td class="n">' + blank0(e.g) + '</td><td class="n">' + blank0(e.x) + '</td></tr>';
 		});
-		detail += '</tbody><tfoot><tr><td colspan="' + (LiteRes.per + 1) + '">小計</td><td class="tot">' + d.t + '</td><td class="tot">' + d.g + '</td><td class="tot">' + d.x + '</td><td></td></tr></tfoot></table>';
+		detail += '</tbody><tfoot><tr><td colspan="' + (LiteRes.per + 2) + '"></td><td class="n">' + d.t + '</td><td class="n">' + grand + '</td>'
+			+ '<td class="n">' + d.g + '</td><td class="n">' + d.x + '</td></tr></tfoot></table>';
 	});
 	if (!detail) detail = '<div class="sp-sub">スコアカードはまだありません</div>';
 	const pos = it.t ? it.t + it.l : '-';

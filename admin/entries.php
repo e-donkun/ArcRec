@@ -148,7 +148,7 @@ $cats = [];
 foreach (Categories::all() as $c) {
     $cats[] = ['id' => (int)$c['id'], 'name' => $c['name']];
 }
-page_head('選手登録', 'entries', ['js' => ['LiteRows' => entry_rows(), 'LiteCats' => $cats, 'LiteAffs' => Past::affiliations()]]);
+page_head('参加者登録', 'entries', ['js' => ['LiteRows' => entry_rows(), 'LiteCats' => $cats, 'LiteAffs' => Past::affiliations()]]);
 ?>
 <div class="sp-toolbar">
 	<label class="sp-search"><?php echo icon('search'); ?><input type="search" id="SpSearch" placeholder="名前・所属で検索"></label>
@@ -166,6 +166,7 @@ page_head('選手登録', 'entries', ['js' => ['LiteRows' => entry_rows(), 'Lite
 	<label class="sp-field"><span>ファイルから</span><input type="file" name="file" accept=".csv,.tsv,.txt"></label>
 	<label class="sp-field"><span>または貼り付け</span><textarea name="csv" rows="5" style="width:100%" placeholder="山田,太郎,京都大学,男子&#10;佐藤,花子,同志社大学,女子"></textarea></label>
 	<button class="sp-btn">取り込む</button></form>
+	<p><a class="sp-btn sub" href="export.php?what=entries">名簿をCSVで出力</a></p>
 </details>
 <datalist id="SpAffs"></datalist>
 

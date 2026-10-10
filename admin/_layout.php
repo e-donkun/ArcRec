@@ -110,6 +110,8 @@ function icon($name)
         'logout' => '<path d="M10 3h9a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-9v-2h9V5h-9zm-1 5l1.4 1.4L8.8 11H16v2H8.8l1.6 1.6L9 16l-4-4z"/>',
         'list' => '<path d="M4 5h2v2H4zm4 0h12v2H8zM4 11h2v2H4zm4 0h12v2H8zm-4 6h2v2H4zm4 0h12v2H8z"/>',
         'plus' => '<path d="M11 4h2v7h7v2h-7v7h-2v-7H4v-2h7z"/>',
+        'copy' => '<path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11z"/>',
+        'history' => '<path d="M13 3a9 9 0 0 0-9 9H1l4 4 4-4H6a7 7 0 1 1 2 4.9l-1.4 1.4A9 9 0 1 0 13 3zm-1 5v5l4.3 2.5.7-1.2-3.5-2.1V8z"/>',
     ];
     return '<svg class="sp-icon" viewBox="0 0 24 24" aria-hidden="true">' . ($paths[$name] ?? '') . '</svg>';
 }
@@ -119,10 +121,10 @@ function tabs()
 {
     return [
         'home' => ['home.php', 'ホーム', 'home'],
-        'entries' => ['entries.php', '選手', 'users'],
-        'targets' => ['targets.php', '立順', 'target'],
+        'entries' => ['entries.php', '参加者', 'users'],
+        'targets' => ['targets.php', '的番号', 'target'],
         'qr' => ['qr.php', '端末設定', 'qr'],
-        'scores' => ['scores.php', '入力', 'edit'],
+        'scores' => ['scores.php', '点数管理', 'edit'],
         'results' => ['results.php', '結果', 'chart'],
     ];
 }
@@ -138,6 +140,7 @@ function page_head($title, $tab = '', array $opts = [])
     $inComp = Lite\Db::hasSelection();
     $admin = Auth::check() && $inComp && empty($opts['public']);
     $GLOBALS['LITE_PUBLIC_PAGE'] = !empty($opts['public']);
+    $GLOBALS['LITE_NO_TABS'] = !empty($opts['notabs']);   // 下部タブを出さない(素点の編集など)
     $name = $inComp ? (Settings::get('name') ?: Settings::code()) : 'ianseo-lite';
     $js = array_merge(['LITE_CSRF' => Auth::csrf()], $opts['js'] ?? []);
     $base = $opts['base'] ?? '';
@@ -152,16 +155,19 @@ function page_head($title, $tab = '', array $opts = [])
     echo '</script><script src="' . $base . 'app.js' . $ver . '"></script></head>'
         . '<body class="' . h($opts['body'] ?? '') . '"><header class="sp-appbar">';
     // ホーム以外の管理画面は、左上に「<」(ホームに戻る)
-    if ($admin && basename($_SERVER['SCRIPT_NAME']) !== 'home.php') {
+    if ($admin && basename($_SERVER['SCRIPT_NAME']) !== 'home.php' && empty($opts['noback'])) {
         echo '<a class="sp-appbar-back" href="home.php" title="ホームに戻る" aria-label="ホームに戻る">'
             . '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.4 4.6 8 12l7.4 7.4-1.4 1.4L5.2 12l8.8-8.8z"/></svg></a>';
     }
     echo '<div class="sp-appbar-title">';
-    // 記録会名は表示だけ(ここから記録会は切り替えない。切り替えはログアウトして記録会の選択で)
-    echo '<span class="sp-tour">' . h($name) . '</span>';
+    // 記録会名は表示だけ(ここから記録会は切り替えない。切り替えはログアウトして記録会の選択で)。管理画面では [記録会コード] も
+    echo '<span class="sp-tour">' . h($name) . ($inComp && empty($opts['public']) && Auth::check() ? ' [' . h(Settings::code()) . ']' : '') . '</span>';
     echo '<h1>' . h($title) . '</h1></div>';
     if (($admin || (Auth::isAdmin() && empty($opts['public']))) && !empty($opts['logout'])) {
         echo '<a class="sp-appbar-btn" href="logout.php" title="ログアウトして、記録会の選択に戻る">' . icon('logout') . '<span>ログアウト</span></a>';
+    }
+    if (!empty($opts['right'])) {
+        echo $opts['right'];   // ページ固有の右上のボタン
     }
     if (!empty($opts['gear'])) {
         echo '<a class="sp-appbar-btn" href="' . h($opts['gear']) . '" title="管理者設定">' . icon('gear') . '<span>管理者設定</span></a>';
@@ -176,7 +182,7 @@ function page_head($title, $tab = '', array $opts = [])
 function page_foot($tab = '')
 {
     echo '</main>';
-    if (Auth::check() && Lite\Db::hasSelection() && empty($GLOBALS['LITE_PUBLIC_PAGE'])) {
+    if (Auth::check() && Lite\Db::hasSelection() && empty($GLOBALS['LITE_PUBLIC_PAGE']) && empty($GLOBALS['LITE_NO_TABS'])) {
         echo '<nav class="sp-tabbar">';
         foreach (tabs() as $k => $t) {
             echo '<a href="' . $t[0] . '" class="' . ($k === $tab ? 'active' : '') . '">' . icon($t[2]) . '<span>' . $t[1] . '</span></a>';

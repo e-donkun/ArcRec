@@ -1,5 +1,5 @@
 <?php
-// ホーム: 記録会の状況と、メニュー(記録会設定・端末設定・印刷)。ログアウトは上部バーの右上(ホームだけ)。記録会の切り替え・新しい記録会は、ログアウトして「記録会の選択」(index.php)で
+// 管理者画面ホーム: 記録会の状況、結果の公開、メニュー(下部タブと同じ)、印刷・出力。ログアウトは上部バーの右上(ホームだけ)。記録会の切り替え・新しい記録会は、ログアウトして「記録会の選択」(index.php)で
 require __DIR__ . '/_layout.php';
 require_admin();
 
@@ -29,40 +29,53 @@ foreach (Entries::all() as $e) {
     }
 }
 $code = Settings::code();
-page_head('ホーム', 'home', ['logout' => true]);
+page_head('管理者画面ホーム', 'home', ['logout' => true]);
 if (!Settings::get('name')) {
     echo '<div class="sp-flash warn">記録会名がまだありません。<a href="setup.php">記録会設定</a> で入れてください。</div>';
 }
 echo '<div class="sp-stats">'
-    . '<div><small>選手(的に配置)</small><b>' . $p['archers'] . '</b> <span class="sp-sub">(' . $placed . ')</span></div>'
+    . '<div><small>参加者(的に配置)</small><b>' . $p['archers'] . '</b> <span class="sp-sub">(' . $placed . ')</span></div>'
     . '<div><small>全射終了</small><b>' . $p['finished'] . '</b> / ' . $p['archers'] . '</div>'
     . '<div><small>入力済みの矢</small><b>' . $pct . '%</b><div class="bar"><i style="width:' . $pct . '%"></i></div></div>'
     . '<div><small>端末(直近2分)</small><b>' . $online . '</b> / ' . count($devices) . '</div>'
     . '</div>';
 echo '<p class="sp-note">スコア最終更新: <b>' . h(Results::lastUpdateText()) . '</b></p>';
 
-// 結果の公開(トグル)
+// 結果の公開(トグル)。状態はバッジ(公開中 / 非公開)、URL はコピーできる欄に
 $pubUrl = server_base_url() . '?c=' . $code;
-echo '<div class="sp-card sp-public">' . icon('chart') . '<div class="sp-card-main"><div class="sp-name">結果の公開</div>'
-    . '<div class="sp-sub" id="PubState">' . (Settings::resultsPublic() ? '公開中: ログインなしで見られます' : '非公開: この記録会を開いている管理者だけが見られます') . '</div>'
-    . '<div class="sp-sub"><a href="' . h($pubUrl) . '" target="_blank">' . h($pubUrl) . '</a></div></div>'
-    . '<label class="sp-toggle" title="結果を公開する"><input type="checkbox" id="PubToggle"' . (Settings::resultsPublic() ? ' checked' : '') . '><span></span></label></div>';
+$pub = Settings::resultsPublic();
+echo '<div class="sp-card sp-public">' . icon('chart') . '<div class="sp-card-main">'
+    . '<div class="sp-name">結果の公開 <span class="sp-tag ' . ($pub ? 'ok' : 'danger') . '" id="PubBadge">' . ($pub ? '公開中' : '非公開') . '</span></div>'
+    . '<div class="sp-copy"><input type="text" readonly id="PubUrl" value="' . h($pubUrl) . '" aria-label="公開用のURL">'
+    . '<button type="button" class="sp-btn sub" id="PubCopy" title="URLをコピー">' . icon('copy') . '</button></div></div>'
+    . '<label class="sp-toggle" title="結果を公開する"><input type="checkbox" id="PubToggle"' . ($pub ? ' checked' : '') . '><span></span></label></div>';
 ?>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-	const t = document.getElementById('PubToggle');
+	const t = document.getElementById('PubToggle'), badge = document.getElementById('PubBadge');
 	t.addEventListener('change', async () => {
 		t.disabled = true;
 		try {
 			const r = await spPostJson('home.php', {act: 'public', value: t.checked ? 1 : 0});
 			t.checked = r.public;
-			document.getElementById('PubState').textContent = r.public ? '公開中: ログインなしで見られます' : '非公開: この記録会を開いている管理者だけが見られます';
+			badge.textContent = r.public ? '公開中' : '非公開';
+			badge.className = 'sp-tag ' + (r.public ? 'ok' : 'danger');
 			spToast(r.public ? '結果を公開しました' : '結果を非公開にしました');
 		} catch (e) {
 			t.checked = !t.checked;
 			spToast('切り替えできませんでした: ' + e.message, true);
 		}
 		t.disabled = false;
+	});
+	document.getElementById('PubCopy').addEventListener('click', async () => {
+		const inp = document.getElementById('PubUrl');
+		try {
+			await navigator.clipboard.writeText(inp.value);
+		} catch (e) {
+			inp.select();
+			document.execCommand('copy');   // 古いブラウザ・http のとき
+		}
+		spToast('URLをコピーしました');
 	});
 });
 </script>
@@ -72,20 +85,21 @@ $item = function ($href, $icon, $title, $sub = '', $attr = '') {
     return '<a class="sp-card tap" href="' . $href . '"' . $attr . '>' . icon($icon) . '<div class="sp-card-main"><div class="sp-name">' . $title . '</div>'
         . ($sub !== '' ? '<div class="sp-sub">' . $sub . '</div>' : '') . '</div></a>';
 };
+// 記録会の準備: 下部のボタン(タブ)と同じ内容
 echo '<div class="sp-section-title">記録会の準備</div><div class="sp-menu">'
     . $item('setup.php', 'gear', '記録会設定')
-    . $item('entries.php', 'users', '選手登録')
-    . $item('targets.php', 'target', '立順')
+    . $item('entries.php', 'users', '参加者登録')
+    . $item('targets.php', 'target', '的番号設定')
     . $item('qr.php', 'qr', '端末設定')
+    . $item('scores.php', 'edit', '点数管理')
+    . $item('results.php', 'chart', '結果出力')
     . '</div>';
-echo '<div class="sp-section-title">印刷・出力</div><div class="sp-menu">'
-    . $item('pdf.php?type=scorecard_blank', 'print', 'スコアカード(白紙)PDF', '記入用。各カードに的のQR付き', ' target="_blank"')
-    . $item('pdf.php?type=scorecard_filled', 'print', 'スコアカード(得点入り)PDF', '入力済みの得点を印字', ' target="_blank"')
-    . $item('pdf.php?type=results&c=' . h($code), 'print', '結果PDF', '部門別の順位', ' target="_blank"')
-    . $item('pdf.php?type=qr', 'qr', '的QR一覧PDF', '的に貼って端末で読み取る', ' target="_blank"')
-    . '<div class="sp-card">' . icon('list') . '<div class="sp-card-main"><div class="sp-name">CSV</div><div class="actions" style="margin:4px 0 0">'
-    . '<a class="btn sub sm" href="export.php?what=results&c=' . h($code) . '">結果</a><a class="btn sub sm" href="export.php?what=arrows">全矢</a>'
-    . '<a class="btn sub sm" href="export.php?what=entries">名簿</a></div></div></div>'
+// 印刷・出力: スコアカード(白紙 / 素点入力済)と結果PDF
+echo '<div class="sp-section-title">印刷・出力</div><div class="sp-print">'
+    . '<div class="sp-card">' . icon('print') . '<div class="sp-card-main"><div class="sp-name">スコアカードPDF</div><div class="actions">'
+    . '<a class="sp-btn sub" href="pdf.php?type=scorecard_blank" target="_blank">白紙</a>'
+    . '<a class="sp-btn sub" href="pdf.php?type=scorecard_filled" target="_blank">素点入力済</a></div></div></div>'
+    . '<a class="sp-card tap" href="pdf.php?type=results&amp;c=' . h($code) . '" target="_blank">' . icon('print') . '<div class="sp-card-main"><div class="sp-name">結果PDF</div><div class="sp-sub">部門別の順位</div></div></a>'
     . '</div>';
 
 page_foot('home');

@@ -1,8 +1,10 @@
 <?php
 // 立順(的番号と位置)の設定(ianseo 本体のスマホモード「的番号設定」と同じ画面構成)。登録した選手を、的番号と位置(A〜F)に割り当てる。
 // 表示は「一覧」と「割り当て表」を切り替えられる(どちらも同じ処理 Entries::place を呼ぶ):
-//   ・一覧: 選手のカードの立順(1A など)を直接入力する(001a → 1A。位置を省くと空いている最初の位置)
-//   ・割り当て表: 的の数と立ち数(1的あたりの人数、A〜F)を ＋/− で変える
+//   ・一覧: 選手のカードの的番号(1A など)を直接入力する(001a → 1A。位置を省くと空いている最初の位置)。
+//     的数・選手数より大きい番号を入れると、的数・選手数を自動で広げる(選手数は 6 = F まで)
+//   ・割り当て表: 的数と選手数(1的あたりの人数、A〜F)を ＋/− で変える
+//   ・的番号自動設定(両方に表示): 未割当の参加者に自動割当 / 割当をすべて解除 / 同じ部門でシャッフル
 //   ・割り当て表: 下の未割当の選手(または枠の選手)をタップしてから、空いている枠をタップする。選手のいる枠なら入れ替え
 // 点数が入っている選手は動かせない(端末は「的+位置」で選手を見分けるため)。
 require __DIR__ . '/_layout.php';
@@ -32,6 +34,7 @@ function targets_state()
             'name' => Entries::fullName($e),
             'aff' => $e['affiliation'],
             'cat' => (string)$e['category_name'],
+            'code' => (string)($e['category_code'] ?: $e['category_name']),
             'catId' => (int)$e['category_id'],
             't' => (int)$e['target'],
             'l' => $e['letter'],
@@ -55,9 +58,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['pos'])) {
             // 一覧で直接入力した立順(1A など)
             $p = Settings::parsePosition($_POST['pos']);
-            $r = $p === null
-                ? ['ok' => false, 'msg' => '立順は「1A」のように、的番号と位置(A〜' . implode('', array_slice(Settings::letters(), -1)) . ')で入力してください']
-                : Entries::place((int)($_POST['id'] ?? 0), $p[0], $p[1]);
+            if ($p === null) {
+                $r = ['ok' => false, 'msg' => '的番号は「1A」のように、的の番号と位置(A〜F)で入力してください'];
+            } else {
+                // 的数・選手数より大きい番号なら、的数・選手数を広げる(選手数は 6 = F まで)
+                $st = targets_state();
+                if ($p[0] > $st['n']) {
+                    Settings::set('target_count', $p[0]);
+                }
+                if ($p[1] !== '' && ord($p[1]) - 64 > $st['per']) {
+                    Settings::set('archers_per_target', ord($p[1]) - 64);
+                }
+                $r = Entries::place((int)($_POST['id'] ?? 0), $p[0], $p[1]);
+            }
         } else {
             $r = Entries::place((int)($_POST['id'] ?? 0), (int)($_POST['target'] ?? 0), (string)($_POST['letter'] ?? ''));
         }
@@ -70,31 +83,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($do === 'targets') {
             $n = $st['n'] + $delta;
             if ($n < $st['minN']) {
-                json_out(['ok' => false, 'msg' => $st['minN'] . '的に選手がいるため、' . $st['minN'] . '的より少なくはできません', 'state' => $st]);
+                json_out(['ok' => false, 'msg' => $st['minN'] . '的に参加者がいるため、' . $st['minN'] . '的より少なくはできません', 'state' => $st]);
             }
             Settings::set('target_count', $n);
-            json_out(['ok' => true, 'msg' => '的の数: ' . $n, 'state' => targets_state()]);
+            json_out(['ok' => true, 'msg' => '的数: ' . $n, 'state' => targets_state()]);
         }
         $per = $st['per'] + $delta;
         if ($per > Settings::MAX_PER_TARGET) {
-            json_out(['ok' => false, 'msg' => '立ち数は ' . Settings::MAX_PER_TARGET . '(A〜F)までです', 'state' => $st]);
+            json_out(['ok' => false, 'msg' => '選手数は ' . Settings::MAX_PER_TARGET . '(A〜F)までです', 'state' => $st]);
         }
         if ($per < $st['minPer']) {
-            json_out(['ok' => false, 'msg' => chr(64 + $st['minPer']) . ' の位置に選手がいるため、立ち数は ' . $st['minPer'] . ' より少なくはできません', 'state' => $st]);
+            json_out(['ok' => false, 'msg' => chr(64 + $st['minPer']) . ' の位置に参加者がいるため、選手数は ' . $st['minPer'] . ' より少なくはできません', 'state' => $st]);
         }
         Settings::set('archers_per_target', $per);
         Lite\Db::pdo()->exec("UPDATE devices SET setup = '', setup_confirmed = 0");
-        json_out(['ok' => true, 'msg' => '立ち数: ' . $per, 'state' => targets_state()]);
+        json_out(['ok' => true, 'msg' => '選手数: ' . $per, 'state' => targets_state()]);
     }
     try {
         if ($do === 'auto') {
-            Entries::autoAssign((int)($_POST['per_target'] ?? 4), (int)($_POST['first'] ?? 1));
-            Settings::set('archers_per_target', max(1, min(Settings::MAX_PER_TARGET, (int)($_POST['per_target'] ?? 4))));
-            Settings::set('target_count', 0);   // 的の数は、割り当てた結果から決め直す
-            flash('的番号を割り当てました(点数のある選手は動かしていません)');
+            // 未割当の参加者だけを空いている枠へ。足りなければ的数を広げる
+            $r = Entries::assignUnassigned(Settings::perTarget());
+            if ($r['maxTarget'] > targets_state()['n']) {
+                Settings::set('target_count', $r['maxTarget']);
+            }
+            flash($r['count'] ? '未割当の参加者 ' . $r['count'] . '人に的番号を割り当てました' : '未割当の参加者はいません');
         } elseif ($do === 'clear') {
             Entries::unassignAll();
-            flash('点数のない選手を、すべて未割当に戻しました');
+            flash('点数のない参加者の割当を、すべて解除しました');
+        } elseif ($do === 'shuffle') {
+            $n = Entries::shuffleWithinCategory();
+            flash($n ? '同じ部門どうしで ' . $n . '人の的番号をシャッフルしました(点数のある参加者は動かしていません)' : 'シャッフルできる参加者がいません');
         }
     } catch (InvalidArgumentException $e) {
         flash($e->getMessage(), 'err');
@@ -107,7 +125,7 @@ $cats = [];
 foreach (Categories::all() as $c) {
     $cats[] = ['id' => (int)$c['id'], 'name' => $c['name']];
 }
-page_head('立順', 'targets', ['js' => ['LiteState' => $state, 'LiteCats' => $cats]]);
+page_head('的番号設定', 'targets', ['js' => ['LiteState' => $state, 'LiteCats' => $cats]]);
 if (!$state['entries']) {
     echo '<div class="sp-empty">選手がいません。先に <a href="entries.php">選手登録</a> をしてください。</div>';
 }
@@ -126,28 +144,28 @@ if (!$state['entries']) {
 	<div class="sp-count" id="SpCount"></div>
 	<div class="sp-list" id="SpList"></div>
 	<p class="sp-note">点数が入っている選手(🔒)は動かせません。</p>
-	<details class="card noprint">
-		<summary>自動で割り当てる</summary>
-		<form method="post" class="inline-form" style="margin-top:8px" onsubmit="return window.confirm('点数のない選手の的番号を、部門順・登録順に付け直します。よろしいですか?')">
-			<?php echo csrf_field(); ?><input type="hidden" name="do" value="auto">
-			<label class="inline-label">1的あたり <input type="number" name="per_target" min="1" max="<?php echo Settings::MAX_PER_TARGET; ?>" value="<?php echo (int)$state['per']; ?>" style="width:4.5rem"> 人</label>
-			<label class="inline-label">開始の的 <input type="number" name="first" min="1" value="1" style="width:5rem"></label>
-			<button class="sp-btn sub">自動で割り当てる</button>
-		</form>
-		<form method="post" class="inline-form" onsubmit="return window.confirm('点数のない選手を、すべて未割当に戻します。よろしいですか?')">
-			<?php echo csrf_field(); ?><input type="hidden" name="do" value="clear"><button class="sp-btn sub">割り当てをすべて外す</button>
-		</form>
-		<p class="sp-note">点数のある選手は動かしません。</p>
-	</details>
 </div>
 <div id="SpGridView" class="sp-hide">
 	<div class="sp-steppers">
-		<div class="sp-stepper"><span>的の数</span><button type="button" class="sp-btn sub" data-step="targets" data-delta="-1" aria-label="的を減らす">−</button><b id="SpNumTargets"></b><button type="button" class="sp-btn sub" data-step="targets" data-delta="1" aria-label="的を増やす">＋</button></div>
-		<div class="sp-stepper"><span>立ち数</span><button type="button" class="sp-btn sub" data-step="per" data-delta="-1" aria-label="立ち数を減らす">−</button><b id="SpNumPer"></b><button type="button" class="sp-btn sub" data-step="per" data-delta="1" aria-label="立ち数を増やす">＋</button></div>
+		<div class="sp-stepper"><span>的数</span><button type="button" class="sp-btn sub" data-step="targets" data-delta="-1" aria-label="的を減らす">−</button><b id="SpNumTargets"></b><button type="button" class="sp-btn sub" data-step="targets" data-delta="1" aria-label="的を増やす">＋</button></div>
+		<div class="sp-stepper"><span>選手数</span><button type="button" class="sp-btn sub" data-step="per" data-delta="-1" aria-label="選手数を減らす">−</button><b id="SpNumPer"></b><button type="button" class="sp-btn sub" data-step="per" data-delta="1" aria-label="選手数を増やす">＋</button></div>
 	</div>
 	<div id="SpGrid"></div>
 	<p class="sp-note">下の未割当の選手をタップしてから、空いている枠をタップすると割り当てます。枠の選手をタップすると、別の空き枠へ移したり、割り当てを外したりできます(選手のいる枠をタップすると入れ替え)。🔒の選手(点数が入っている)は動かせません。</p>
 </div>
+<details class="card noprint sp-auto">
+	<summary>的番号自動設定</summary>
+	<p class="sp-note">点数のある参加者は動かしません。</p>
+	<form method="post" onsubmit="return window.confirm('未割当の参加者を、空いている枠に部門順・登録順で割り当てます。よろしいですか?')">
+		<?php echo csrf_field(); ?><input type="hidden" name="do" value="auto"><button class="sp-btn sub block">未割当の参加者に自動割当</button>
+	</form>
+	<form method="post" onsubmit="return window.confirm('点数のない参加者の割当を、すべて解除します。よろしいですか?')">
+		<?php echo csrf_field(); ?><input type="hidden" name="do" value="clear"><button class="sp-btn sub block">割当をすべて解除する</button>
+	</form>
+	<form method="post" onsubmit="return window.confirm('点数のない参加者の的番号を、同じ部門どうしでシャッフルします。よろしいですか?')">
+		<?php echo csrf_field(); ?><input type="hidden" name="do" value="shuffle"><button class="sp-btn sub block">同じ部門でシャッフルする</button>
+	</form>
+</details>
 <div id="SpTray" class="sp-tray sp-hide">
 	<div class="sp-tray-head">
 		<span id="SpTrayInfo"></span>
@@ -215,7 +233,7 @@ function spTgtCard(e) {
 	return '<div class="sp-card" data-id="' + e.id + '" data-search="' + spEsc(search) + '" data-empty="' + (e.t ? 0 : 1) + '">'
 		+ '<div class="sp-card-head">'
 		+ '<input type="text" class="sp-pos-input' + (e.t ? '' : ' none') + '" value="' + spEsc(spPos(e)) + '" placeholder="-" maxlength="8" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false"'
-		+ (e.lock ? ' readonly title="点数が入っているため変更できません"' : '') + ' aria-label="立順">'
+		+ (e.lock ? ' readonly title="点数が入っているため変更できません"' : '') + ' aria-label="的番号">'
 		+ '<div class="sp-card-main">'
 		+ '<div class="sp-name">' + spEsc(e.name) + '</div>'
 		+ '<div class="sp-sub">' + spEsc([e.aff, e.cat].filter(x => x).join(' / ')) + '</div>'
@@ -250,7 +268,7 @@ function spGridRender() {
 			}
 			const cls = (r.lock ? ' locked' : '') + (sel && sel.id === r.id ? ' sel' : '');
 			html += '<button type="button" class="sp-slot' + cls + '" data-t="' + t + '" data-l="' + l + '" data-id="' + r.id + '"><small>' + l + (r.lock ? ' 🔒' : '') + '</small>'
-				+ '<b>' + spEsc(r.name) + '</b><i>' + spEsc([r.cat, r.aff].filter(x => x).join('　')) + '</i></button>';
+				+ '<b>' + spEsc(r.name) + '</b><i>' + spEsc([r.code, r.aff].filter(x => x).join('　')) + '</i></button>';
 		});
 		html += '</div></div>';
 	}
@@ -269,7 +287,7 @@ function spTrayRender() {
 	const items = all.filter(e => !SpGrid.filter || e.cat === SpGrid.filter);
 	document.getElementById('SpTrayInfo').textContent = '未割当 ' + all.length + '人';
 	document.getElementById('SpTrayList').innerHTML = items.length
-		? items.map(e => '<button type="button" class="sp-tray-chip' + (SpGrid.sel == e.id ? ' sel' : '') + '" data-id="' + e.id + '"><b>' + spEsc(e.name) + '</b><i>' + spEsc(e.cat + (e.aff ? '　' + e.aff : '')) + '</i></button>').join('')
+		? items.map(e => '<button type="button" class="sp-tray-chip' + (SpGrid.sel == e.id ? ' sel' : '') + '" data-id="' + e.id + '"><b>' + spEsc(e.name) + '</b><i>' + spEsc(e.code + (e.aff ? '　' + e.aff : '')) + '</i></button>').join('')
 		: '<span class="sp-sub">未割当の選手はいません</span>';
 	const sel = SpGrid.sel ? spRow(SpGrid.sel) : null;
 	document.getElementById('SpTraySel').classList.toggle('sp-hide', !sel);

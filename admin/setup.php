@@ -85,6 +85,7 @@ $cat = Settings::category();
 $nd = Settings::distances();
 page_head('記録会設定', 'home');
 echo '<form method="post" class="card wideform">' . csrf_field() . '<input type="hidden" name="do" value="settings">';
+echo '<label>記録会コード</label><input type="text" value="' . h(Settings::code()) . '" readonly class="sp-readonly" aria-readonly="true">';
 echo '<label>記録会名</label><input type="text" name="name" value="' . h($s['name']) . '">';
 
 // 競技形式と的の種類(前半・後半とも同じ的)を横に並べる。結果の公開はホームのトグルで切り替える
