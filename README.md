@@ -49,7 +49,7 @@ php -S 0.0.0.0:8080 -t .
 # → http://<このPCのIP>:8080/admin/  管理画面(管理者メニュー)
 ```
 
-管理画面は「管理者メニュー」から始まります。同梱の**サンプル記録会**(屋外 Outdoor 36射×2 と 屋内 Indoor 30射×2 の2つ。パスワードはどちらも `sample`)で動きを確認できます。
+管理画面は「管理者メニュー」から始まります。同梱の**サンプル記録会**(屋外 Outdoor 72射(36射×2・122cm 10リング)と 屋内 Indoor 60射(30射×2・40cm 三つ目)の2つ。名前・所属は架空で、全員の点数が入力済み。パスワードはどちらも `sample`)で動きを確認できます。
 新しい記録会を作るには、まず画面下の「管理者パスワードを設定」で**管理者パスワード**を決め、管理者としてログインします(すべての記録会に共通。下の「セキュリティ」も参照)。
 
 記録会のデータは記録会ごとに1つの SQLite ファイルで、`data/competitions/<記録会コード>.sqlite` に作られます。
@@ -195,7 +195,7 @@ Modules/Custom/ianseo-lite/
 ├─ lib/tcpdf/             PDF 生成(TCPDF 同梱。LGPL)。日本語は小塚ゴシック(kozgopromedium。PDF に埋め込まない CID フォント)
 ├─ assets/                的面画像、アプリ用言語ファイル(ja/en)
 ├─ tools/                 的面定義の生成(gen_targets.php)とサンプル記録会の作成(make_sample.php)。実行時は不要
-├─ samples/               サンプル記録会の DB 2つ(5A4D0001 屋外 / 5A4D0002 屋内。初回に data/competitions/ へコピー。パスワード sample)
+├─ samples/               サンプル記録会の DB 2つ(5A4D0001 屋外 / 5A4D0002 屋内。初回に data/competitions/ へコピー、版が変わると置き換え。パスワード sample)
 ├─ tests/                 run.php(全部を実行)、two_distances.php、multi.php
 └─ data/competitions/     記録会ごとの SQLite DB(Git 管理外)
 ```

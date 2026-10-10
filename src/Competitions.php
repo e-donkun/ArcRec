@@ -9,10 +9,12 @@ use PDO;
  */
 class Competitions
 {
-    /** 同梱のサンプル記録会(samples/ からコピーして使う): 屋外(Outdoor 36射×2)と屋内(Indoor 30射×2)。パスワードはどちらも sample */
+    /** 同梱のサンプル記録会(samples/ からコピーして使う): 屋外(Outdoor 72射)と屋内(Indoor 60射・三つ目)。パスワードはどちらも sample */
     const SAMPLE_CODE = '5A4D0001';
     const SAMPLE_CODES = ['5A4D0001', '5A4D0002'];
     const SAMPLE_PASSWORD = 'sample';
+    /** 同梱サンプルの版。上げると、サーバーにある古いサンプル記録会を samples/ の新しいものに置き換える */
+    const SAMPLE_VERSION = '2';
 
     public static function isSample($code)
     {
@@ -274,7 +276,20 @@ class Competitions
         }
     }
 
-    /** 同梱のサンプル記録会を、まだ無ければコピーする */
+    /** サンプル記録会の DB に書いてある版(無ければ '') */
+    private static function sampleVersion($path)
+    {
+        try {
+            $pdo = new \PDO('sqlite:' . $path);
+            $v = $pdo->query("SELECT v FROM settings WHERE k = 'sample_version'")->fetchColumn();
+            $pdo = null;
+            return $v === false ? '' : (string)$v;
+        } catch (\Throwable $e) {
+            return '';
+        }
+    }
+
+    /** 同梱のサンプル記録会を、まだ無ければコピーする(古い版なら置き換える) */
     private static function seedSample()
     {
         foreach (self::SAMPLE_CODES as $code) {
@@ -282,6 +297,13 @@ class Competitions
             $dest = Db::competitionsDir() . '/' . $code . '.sqlite';
             if (is_file($src) && !is_file($dest)) {
                 @copy($src, $dest);
+            } elseif (is_file($src) && self::sampleVersion($dest) !== self::SAMPLE_VERSION) {
+                // 古い版のサンプルは、新しいサンプルに置き換える(サンプルでの変更は消える)
+                @unlink($dest . '-wal');
+                @unlink($dest . '-shm');
+                if (@copy($src, $dest . '.tmp')) {
+                    @rename($dest . '.tmp', $dest);
+                }
             } elseif (strpos((string)self::readSetting($code, 'name'), 'サンプル大会') === 0) {
                 // 以前の版の「サンプル大会」という名前を「サンプル記録会」に直す
                 $pdo = Db::connect($dest);
