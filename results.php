@@ -23,11 +23,11 @@ foreach (Competitions::all() as $c) {
 if (count($list) === 1) {
     redirect('./?c=' . rawurlencode($list[0]['code']));
 }
-page_head('記録会結果', '', ['public' => true, 'base' => 'admin/', 'gear' => 'admin/index.php']);
+page_head('記録会一覧', '', ['public' => true, 'base' => 'admin/', 'gear' => 'admin/index.php']);
 if (!$list) {
     echo '<div class="sp-empty">公開している結果はありません</div>';
 } else {
-    echo '<p class="sp-note">記録会を選んでください。</p><div class="sp-list">';
+    echo '<p class="sp-note">結果を閲覧する記録会を選んでください。</p><div class="sp-list">';
     foreach ($list as $c) {
         echo '<a class="sp-card tap" href="./?c=' . h(rawurlencode($c['code'])) . '">'
             . '<div class="sp-name">' . h($c['name'] ?: $c['code']) . ($c['sample'] ? '<span class="sp-tag">サンプル</span>' : '') . '</div>'
