@@ -577,3 +577,4 @@ input.sp-readonly { background: #f2f4f7 !important; color: var(--sp-muted); font
 .sp-cat-table.map td:nth-child(1) { width: 60%; }
 .sp-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; }
 .sp-icon-btn .sp-icon { width: 22px; height: 22px; margin: 0; }
+.sp-icon-btn.del { color: var(--sp-danger); border-color: var(--sp-danger); }

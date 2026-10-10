@@ -155,7 +155,7 @@ foreach ($catsAll as $c) {
         . '<td><input type="text" name="cname[' . $id . ']" value="' . h($c['name']) . '" required></td>'
         . '<td><input type="text" inputmode="numeric" pattern="-?[0-9]*" name="sort[' . $id . ']" value="' . (int)$c['sort'] . '"></td>'
         . '<td>' . (count($catsAll) > 1
-            ? '<button class="sub sp-icon-btn" name="del" value="' . $id . '" formnovalidate title="削除" aria-label="部門「' . h($c['name']) . '」を削除" onclick="return window.confirm(\'部門「' . h(addslashes($c['name'])) . '」を削除しますか?\')">' . icon('trash') . '</button>'
+            ? '<button class="sub sp-icon-btn del" name="del" value="' . $id . '" formnovalidate title="削除" aria-label="部門「' . h($c['name']) . '」を削除" onclick="return window.confirm(\'部門「' . h(addslashes($c['name'])) . '」を削除しますか?\')">' . icon('trash') . '</button>'
             : '') . '</td></tr>';
 }
 echo '</tbody><tfoot><tr><td><input type="text" name="new_code" maxlength="8" autocapitalize="characters" placeholder="例 RX"></td>'
