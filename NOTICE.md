@@ -15,7 +15,7 @@ ArcRec は、ianseo 2023-04-01 版(GNU GPL v3)のファイルを含む派生物�
 
 ## ianseo
 
-ianseo(`https://www.ianseo.net`)の 2023-04-01 版(`Ianseo_20230401.zip`)は GNU GPL v3 で配布されていました。
+ianseo(<https://www.ianseo.net>)の 2023-04-01 版(`Ianseo_20230401.zip`)は GNU GPL v3 で配布されていました。
 ArcRec には、その版の次のファイルを含みます(本家の作者・著作権者に帰属します)。
 
 | ArcRec | ianseo 2023-04-01 版の元 | 変更 |
@@ -28,7 +28,7 @@ ArcRec には、その版の次のファイルを含みます(本家の作者・
 
 ## TCPDF
 
-`lib/tcpdf/` は TCPDF 6.11.2(https://tcpdf.org/)です。
+`lib/tcpdf/` は TCPDF 6.11.2(<https://tcpdf.org/>)です。
 Copyright (C) 2002-2026 Nicola Asuni - Tecnick.com LTD
 **GNU Lesser General Public License version 3**(GNU GPL v3 を含む全文は `lib/tcpdf/LICENSE.TXT`)で配布されています。
 
