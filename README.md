@@ -26,7 +26,7 @@ git clone https://github.com/e-donkun/arcrec
 - 記録会データは `data/competitions/` に保存される。
 - `data/` が Web から直接見えないように設定すること。
   - Apache は同梱の設定でアクセスを拒否する。
-  - nginx の場合は `/arcrec/data/` へのアクセスを拒否する設定が必要。
+  - nginx の場合は `data/` へのアクセスを拒否する設定が必要。
 - データ保存先の変更や管理者パスワードの事前設定には、任意の `config.local.php` を配置できる。
 
 ```php
