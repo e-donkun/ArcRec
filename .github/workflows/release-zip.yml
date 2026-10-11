@@ -1,0 +1,21 @@
+name: Release ZIP
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build distribution ZIP
+        run: |
+          archive="ArcRec-${GITHUB_REF_NAME}.zip"
+          git archive --format=zip --prefix=ArcRec/ HEAD --output="$archive"
+          gh release upload "$GITHUB_REF_NAME" "$archive" --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
