@@ -2,7 +2,7 @@
 
 ## ArcRec
 
-Copyright (C) 2026 e-donkun
+Copyright (C) 2026 e-donkun(Jun Suzuki)
 
 ArcRec is free software: you can redistribute it and/or modify it under the terms of the
 GNU General Public License as published by the Free Software Foundation, version 3.
@@ -11,9 +11,9 @@ without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 See the GNU General Public License (`LICENSE.txt`) for more details.
 
 ArcRec は、ianseo 2023-04-01 版(GNU GPL v3)のファイルを含む派生物として、**GNU GPL v3** で配布します。
-全文は `LICENSE.txt` です(ianseo 2023-04-01 版に同梱のものと同一)。
+全文は `LICENSE.txt` です。
 
-## ianseo 2023-04-01 版(GNU GPL v3)から取り込んだもの
+## ianseo
 
 ianseo(https://www.ianseo.net/)の 2023-04-01 版(`Ianseo_20230401.zip`)は GNU GPL v3 で配布されていました。
 ArcRec には、その版の次のファイルを含みます(本家の作者・著作権者に帰属します)。
@@ -25,10 +25,6 @@ ArcRec には、その版の次のファイルを含みます(本家の作者・
 | `src/TargetFaces.data.php` | `Install/install.sql` の Targets 表 | `tools/gen_targets.php` で必要な的面だけを変換(2026-10-10) |
 
 端末アプリ(ScorekeeperNG)用の言語ファイル(`ISK-App.php`)は持っていません(端末からの言語の要求には空で返し、アプリ内蔵の文言を使います)。
-
-ianseo の 2023-04-01 版より後の版(FSL-1.1-ALv2 で配布)のファイルは含めていません。
-
-「ianseo」は本家の名称です。ArcRec は本家 ianseo の公式なものではなく、本家とは関係なく作られています。
 
 ## TCPDF
 
