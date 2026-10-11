@@ -1,7 +1,7 @@
 # ArcRec
 
 - **アーチェリー記録会管理システム**です。
-- Ianseo（<https://www.ianseo.net>）互換のバックエンドで学校内やチーム内の記録会を想定したシステム。
+- Ianseo（<https://www.ianseo.net>）互換の学校内やチーム内の記録会を想定したシステム。
 - Ianseoと同じようにScorekeeperNG（ISK-NG）の Lite モードで得点入力できる。
 - WA 形式の予選（1セッション、1〜2距離）に対応する。
 - Outdoor は1距離36射、Indoor は1距離30射。
