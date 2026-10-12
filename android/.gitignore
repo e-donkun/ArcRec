@@ -1,0 +1,11 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+captures/
+# 静的ビルドの PHP は scripts/fetch-php.sh で取得する(コミットしない)
+app/src/main/jniLibs/
+# 署名鍵はコミットしない
+*.jks
+*.keystore

@@ -6,3 +6,8 @@ CHANGELOG.md export-ignore
 tests/ export-ignore
 tools/ export-ignore
 data/.gitkeep export-ignore
+android/ export-ignore
+android/gradlew text eol=lf
+android/**/*.sh text eol=lf
+android/gradlew.bat text eol=crlf
+*.jar binary

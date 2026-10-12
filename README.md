@@ -21,6 +21,12 @@
 - 必要に応じて [`config.sample.php`](config.sample.php) を `config.php` にリネームし、`data_dir` と全体管理者パスワードを設定する。
 - 記録会データは既定で `data/` に保存される。公開フォルダ外に保存する場合は、`data_dir` を実際のパスに変更する。
 
+## Androidスマホで動かす
+
+- Androidスマホ1台をサーバーにし、Wi-Fiテザリングで ScorekeeperNG の端末をつないで運営できる（インターネット・パソコン不要）。
+- [リリース一覧](https://github.com/e-donkun/arcrec/releases)の `ArcRec-バージョン.apk` をスマホにインストールする（Android 10以上、64ビット）。
+- 導入・当日の運営手順・注意点は [`android/README.md`](android/README.md) を参照。
+
 ## 記録会設定と使い方
 
 - 管理画面で全体管理者としてログインし、「新しい記録会を作成」から記録会を作成する。
