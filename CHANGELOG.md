@@ -101,7 +101,7 @@ ArcRec(旧名 ianseo-lite)の版ごとの変更です(新しい順)。いまの�
 
 ## 0.8.0 (2026-10-10)
 
-- GitHub の Webhook で main への push をサーバーに自動反映する deploy.php を追加(署名を確認して git pull。config.local.php に deploy_secret を設定したときだけ動く)
+- GitHub の Webhook で main への push をサーバーに自動反映する deploy.php を追加(署名を確認して git pull。config.php に deploy_secret を設定したときだけ動く)
 
 ## 0.7.0 (2026-10-09)
 

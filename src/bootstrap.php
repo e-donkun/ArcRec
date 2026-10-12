@@ -9,11 +9,12 @@ define('LITE_VERSION', '0.17.0');   // 版。変更の履歴は CHANGELOG.md
 date_default_timezone_set('Asia/Tokyo');
 mb_internal_encoding('UTF-8');
 
-// 任意の設定ファイル(config.local.php)で上書きできる。
-//   <?php return ['data_dir' => '/var/lib/arcrec', 'timezone' => 'Asia/Tokyo'];
+// 任意の設定ファイル(config.php)で上書きできる。
+//   <?php return ['data_dir' => '/var/lib/arcrec', 'admin_password' => 'change-this'];
 $GLOBALS['LITE_CONFIG'] = [];
-if (is_file(LITE_ROOT . '/config.local.php')) {
-    $GLOBALS['LITE_CONFIG'] = (array)include LITE_ROOT . '/config.local.php';
+$configFile = LITE_ROOT . '/config.php';
+if (is_file($configFile)) {
+    $GLOBALS['LITE_CONFIG'] = (array)include $configFile;
 }
 if (!empty($GLOBALS['LITE_CONFIG']['timezone'])) {
     date_default_timezone_set($GLOBALS['LITE_CONFIG']['timezone']);

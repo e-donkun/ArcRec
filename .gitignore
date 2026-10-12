@@ -1,5 +1,9 @@
 data/*
 !data/.htaccess
 !data/.gitkeep
-config.local.php
+!data/samples/
+data/samples/*
+!data/samples/5A4D0001.sqlite
+!data/samples/5A4D0002.sqlite
+config.php
 deploy.php
