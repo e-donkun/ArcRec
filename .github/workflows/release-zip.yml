@@ -15,7 +15,7 @@ jobs:
       - name: Build distribution ZIP
         run: |
           archive="ArcRec-${GITHUB_REF_NAME}.zip"
-          git archive --format=zip --prefix=ArcRec/ HEAD --output="$archive"
+          git archive --format=zip HEAD --output="$archive"
           gh release upload "$GITHUB_REF_NAME" "$archive" --clobber
         env:
           GH_TOKEN: ${{ github.token }}
