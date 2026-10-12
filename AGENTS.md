@@ -6,7 +6,7 @@
 
 - PHP 7.4 以上を対象とする PHP アプリケーションです。データベースは SQLite（PDO）で、主な必要拡張は `pdo_sqlite`、`mbstring`、`zlib` です。
 - `index.php` がブラウザー向け公開ページと ScorekeeperNG API の入口です。`Api/ISK-NG/index.php` も API の入口として使われます。
-- `admin/` は管理画面、`src/` はアプリケーションロジック、`assets/targets/` は的面画像、`lib/tcpdf/` は同梱の PDF ライブラリです。
+- `admin/` は管理画面、`src/` はアプリケーションロジック、`src/targets/` は端末へ送る的面画像、`lib/tcpdf/` は同梱の PDF ライブラリです。
 - `data/` は実行時データ用で、通常は Git 管理外です。記録会ごとに SQLite DB を分けます。テストは `LITE_DB` または `LITE_DATA_DIR` を設定して一時領域を利用します。
 - `tools/` は的面データやサンプル記録会の生成に使う開発用ツールです。`samples/` には配布用サンプル記録会の DB があります。
 

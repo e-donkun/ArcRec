@@ -74,9 +74,9 @@ class TargetFaces
 
     public static function imageBase64($id)
     {
-        $file = LITE_ROOT . '/assets/targets/' . (int)$id . '.svgz';
+        $file = __DIR__ . '/targets/' . (int)$id . '.svgz';
         if (!is_file($file)) {
-            $file = LITE_ROOT . '/assets/targets/5.svgz';
+            $file = __DIR__ . '/targets/5.svgz';
         }
         return base64_encode(file_get_contents($file));
     }

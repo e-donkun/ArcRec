@@ -20,7 +20,7 @@ ArcRec には、その版の次のファイルを含みます(本家の作者・
 
 | ArcRec | ianseo 2023-04-01 版の元 | 変更 |
 |---|---|---|
-| `assets/targets/{1,2,3,4,5,9,10}.svgz` | `Common/Images/Targets/{1,2,3,4,5,9,10}.svg` | gzip で圧縮(2026-10-10) |
+| `src/targets/{1,2,3,4,5,9,10}.svgz` | `Common/Images/Targets/{1,2,3,4,5,9,10}.svg` | gzip で圧縮(2026-10-10) |
 | `src/LetterPoint.php` | `Common/Lib/ArrTargets.inc.php` の `$LetterPoint`(A〜L) | 必要な文字だけを抜き出し、書式を変更(2026-10-10) |
 | `src/TargetFaces.data.php` | `Install/install.sql` の Targets 表 | `tools/gen_targets.php` で必要な的面だけを変換(2026-10-10) |
 
