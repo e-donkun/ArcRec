@@ -27,9 +27,9 @@ val webIncludes = listOf(
     "README.md",
 )
 
-// 静的ビルドの PHP(scripts/fetch-php.sh が置く)。Android 10 以降はアプリのデータ領域から実行できないため、
-// ネイティブライブラリ(lib*.so)として同梱し、インストール先の nativeLibraryDir から実行する。
-val phpBinary = file("src/main/jniLibs/arm64-v8a/libphp.so")
+// Android向けPHP。実行ファイルはネイティブライブラリとして、共有ライブラリはassetsに同梱する。
+val phpAndroidBinary = file("src/main/jniLibs/arm64-v8a/libphpandroid.so")
+val phpRuntimeArchive = file("src/main/assets/php-android-runtime.zip")
 
 // 署名鍵(環境変数で渡す)。無ければデバッグ鍵で署名する(更新インストールができないので配布には使わない)
 val keystorePath: String? = System.getenv("ARCREC_KEYSTORE")
@@ -74,7 +74,8 @@ android {
         jniLibs {
             // インストール時に lib*.so をファイルとして展開させる(実行するため)
             useLegacyPackaging = true
-            keepDebugSymbols += "**/libphp.so"
+            keepDebugSymbols += "**/libphpandroid.so"
+            excludes += "**/libphp.so"
         }
     }
 
@@ -134,10 +135,10 @@ androidComponents {
 
 tasks.named("preBuild") {
     doFirst {
-        if (!phpBinary.isFile) {
+        if (!phpAndroidBinary.isFile || !phpRuntimeArchive.isFile) {
             throw GradleException(
-                "PHP がありません: ${phpBinary.path}\n" +
-                    "android/scripts/fetch-php.sh を実行して、静的ビルドの PHP を取得してください。"
+                "Android向けPHPがありません。\n" +
+                    "android/scripts/fetch-php-android.sh を実行して PHP と共有ライブラリを取得してください。"
             )
         }
     }

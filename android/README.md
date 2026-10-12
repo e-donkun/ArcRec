@@ -93,8 +93,8 @@ ArcRec 本体の機能(記録会の作成、参加者、的番号、点数管理
 ### 仕組み
 
 - ArcRec 本体(PHP)を APK に `assets/arcrec.zip` として入れ、初回起動時とアプリ更新後に `files/www/` に展開する。記録会データは `files/arcrec-data/`(環境変数 `LITE_DATA_DIR`)に置き、更新しても残す。
-- PHP は [static-php-cli](https://github.com/crazywhalecc/static-php-cli) の静的ビルド(Linux aarch64、common セット)を使う。Android 10 以降はアプリのデータ領域にあるファイルを実行できないため、`lib/arm64-v8a/libphp.so` というネイティブライブラリとして同梱し、インストール先(`nativeLibraryDir`)から実行する。
-- `ServerService`(フォアグラウンドサービス)が `libphp.so -n -d … -S 0.0.0.0:8080 -t files/www files/router.php` を起動する。ワーカーは 4(`PHP_CLI_SERVER_WORKERS`)。PHP が落ちたら起動し直す。
+- APK には Termux の Android arm64 PHP を `lib/arm64-v8a/libphpandroid.so` として同梱する。Android 10 以降はアプリのデータ領域から実行できないため、インストール先(`nativeLibraryDir`)から起動し、PHP の共有ライブラリは `files/php-runtime/lib/` に展開する。
+- `ServerService`(フォアグラウンドサービス)が `libphpandroid.so -n -d … -S 0.0.0.0:8080 -t files/www files/router.php` を起動する。ワーカーは 4(`PHP_CLI_SERVER_WORKERS`)。PHP が落ちたら起動し直す。
 - `router.php` は Apache の `.htaccess` の代わりに、`src/` `lib/` `data/` `config.php` などを 404 にする。
 - 管理画面はテザリングのアドレス(`http://192.168.x.x:8080/admin/`)で WebView に開く。ArcRec は開いている URL から端末用 QR のアドレスを作るため。
 
@@ -107,8 +107,9 @@ ArcRec 本体の機能(記録会の作成、参加者、的番号、点数管理
 | `AdminActivity.java` | 管理画面の WebView(PDF・CSV の保存、印刷、ファイル選択) |
 | `AppFiles.java` / `DataBackup.java` | 展開・データの置き場所 / バックアップと復元 |
 | `NetAddresses.java` | テザリングのアドレスを探す |
-| `scripts/fetch-php.sh` | 静的ビルドの PHP を取得して `jniLibs/arm64-v8a/libphp.so` に置く |
-| `scripts/check-php.sh` | その PHP で拡張・ArcRec のテスト・組み込みサーバーを確認する(qemu で x86_64 でも動く) |
+| `scripts/fetch-php.sh` | Linux arm64 PHP を取得し、QEMU を使ったテストに使う |
+| `scripts/fetch-php-android.sh` | Termux の Android arm64 PHP と必要な共有ライブラリを取得する |
+| `scripts/check-php.sh` | Linux arm64 PHP で拡張・ArcRec のテスト・組み込みサーバーを確認する(QEMU で x86_64 でも動く) |
 
 ### ビルド
 
@@ -119,6 +120,7 @@ GitHub Actions の「Android APK」(`.github/workflows/android-apk.yml`)が、�
 ```sh
 bash android/scripts/fetch-php.sh       # PHP を取得(最初に 1 回)
 bash android/scripts/check-php.sh       # 任意: qemu-user があれば PHP を確認
+bash android/scripts/fetch-php-android.sh # APKに同梱するAndroid向けPHPを取得
 cd android && ./gradlew assembleRelease
 # → android/app/build/outputs/apk/release/app-release.apk
 ```
@@ -148,4 +150,4 @@ base64 -w0 arcrec-release.jks > arcrec-release.jks.b64
 
 ### PHP の版を変える
 
-既定は PHP 8.3 系の最新版。リポジトリの Variables に `PHP_TARBALL_URL`(tar.gz の URL)と `PHP_SHA256` を設定すると、その版に固定できる。手元では `PHP_SERIES=8.4 bash android/scripts/fetch-php.sh` のように指定する。
+Linux 上のテスト用 PHP は従来どおり PHP 8.3 系を取得する。Android APK には Termux の Android ネイティブ arm64 PHP を同梱する(既定は 8.5.1)。取得版は `TERMUX_PHP_VERSION` で指定できる。Termux の PHP と各共有ライブラリの著作権表示は APK 内の `files/php-runtime/licenses/` に展開される。

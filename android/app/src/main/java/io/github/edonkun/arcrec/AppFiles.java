@@ -25,6 +25,7 @@ import java.util.zip.ZipInputStream;
  * files/arcrec-data/  記録会データ(LITE_DATA_DIR。更新しても残る)
  * files/tmp/          PHP の一時ファイル
  * files/logs/         サーバーのログ
+ * files/php-runtime/  Android PHP の共有ライブラリ
  * </pre>
  */
 final class AppFiles {
@@ -51,9 +52,13 @@ final class AppFiles {
         return new File(c.getFilesDir(), "logs");
     }
 
-    /** 静的ビルドの PHP。インストール時に展開されたネイティブライブラリの場所から実行する。 */
+    /** Android向け PHP。インストール時に展開されたネイティブライブラリから実行する。 */
     static File php(Context c) {
-        return new File(c.getApplicationInfo().nativeLibraryDir, "libphp.so");
+        return new File(c.getApplicationInfo().nativeLibraryDir, "libphpandroid.so");
+    }
+
+    static File phpLibDir(Context c) {
+        return new File(new File(c.getFilesDir(), "php-runtime"), "lib");
     }
 
     /** ArcRec 本体を展開する。展開済みで、アプリが更新されていなければ何もしない。 */
@@ -83,6 +88,30 @@ final class AppFiles {
         mkdirs(dataDir(c));
         mkdirs(tmpDir(c));
         mkdirs(logDir(c));
+        writeText(stampFile, stamp);
+    }
+
+    static synchronized void ensurePhpRuntime(Context c) throws IOException {
+        File runtime = new File(c.getFilesDir(), "php-runtime");
+        File stampFile = new File(c.getFilesDir(), "php-runtime.stamp");
+        String stamp = installStamp(c);
+        if (phpLibDir(c).isDirectory() && stampFile.isFile()
+                && stamp.equals(readText(stampFile).trim())) {
+            return;
+        }
+
+        File fresh = new File(c.getFilesDir(), "php-runtime.new");
+        deleteRecursively(fresh);
+        try (InputStream in = c.getAssets().open("php-android-runtime.zip")) {
+            unzip(in, fresh);
+        }
+        if (!new File(fresh, "lib/libandroid-support.so").isFile()) {
+            throw new IOException("Android PHP の共有ライブラリを展開できません");
+        }
+        deleteRecursively(runtime);
+        if (!fresh.renameTo(runtime)) {
+            throw new IOException("Android PHP の共有ライブラリを配置できません");
+        }
         writeText(stampFile, stamp);
     }
 

@@ -131,6 +131,7 @@ public class ServerService extends Service {
         ServerState.set(ServerState.Status.STARTING, "", port);
         try {
             AppFiles.ensureInstalled(this);
+            AppFiles.ensurePhpRuntime(this);
         } catch (IOException e) {
             fail("ArcRec 本体を準備できませんでした: " + e.getMessage());
             return;
@@ -159,6 +160,7 @@ public class ServerService extends Service {
         addIni(cmd, "sys_temp_dir", tmp.getAbsolutePath());
         addIni(cmd, "upload_tmp_dir", tmp.getAbsolutePath());
         addIni(cmd, "session.save_path", tmp.getAbsolutePath());
+        addIni(cmd, "opcache.lockfile_path", tmp.getAbsolutePath());
         cmd.add("-S");
         cmd.add("0.0.0.0:" + port);
         cmd.add("-t");
@@ -172,6 +174,7 @@ public class ServerService extends Service {
         env.put("LITE_DATA_DIR", AppFiles.dataDir(this).getAbsolutePath());
         env.put("TMPDIR", tmp.getAbsolutePath());
         env.put("HOME", getFilesDir().getAbsolutePath());
+        env.put("LD_LIBRARY_PATH", AppFiles.phpLibDir(this).getAbsolutePath());
         env.put("PHP_CLI_SERVER_WORKERS", String.valueOf(WORKERS));
 
         log("---- サーバーを起動します(ポート " + port + "、Android " + Build.VERSION.RELEASE

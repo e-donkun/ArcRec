@@ -47,6 +47,9 @@ jobs:
       - name: Check PHP (extensions, ArcRec tests, built-in server)
         run: bash android/scripts/check-php.sh
 
+      - name: Fetch Android-native PHP (arm64)
+        run: bash android/scripts/fetch-php-android.sh
+
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Prepare signing key
