@@ -1,8 +1,8 @@
 <?php
-// 同梱のサンプル記録会(samples/5A4D0001.sqlite 屋外、samples/5A4D0002.sqlite 屋内)を作る開発用スクリプト。結果は毎回同じ内容になる。
+// 同梱のサンプル記録会(data/samples/5A4D0001.sqlite 屋外、data/samples/5A4D0002.sqlite 屋内)を作る開発用スクリプト。結果は毎回同じ内容になる。
 //   php tools/make_sample.php            … 2つとも作る
 //   php tools/make_sample.php 5A4D0002   … 1つだけ作る
-// アプリは、記録会のフォルダにサンプルが無いときだけ、samples/ からコピーして使う。パスワードは sample。
+// アプリは、記録会のフォルダにサンプルが無いときだけ、data/samples/ からコピーして使う。パスワードは sample。
 // 1つの PHP プロセスでは1つの DB しか扱わないので、2つ作るときは自分を記録会ごとに呼び直す。
 $samples = [
     '5A4D0001' => ['name' => 'サンプル記録会（Outdoor 72射）', 'preset' => 'outdoor72', 'faces' => ['5', '5'], 'seed' => 20261010,
@@ -27,7 +27,7 @@ if (!isset($samples[$only])) {
     exit(1);
 }
 $cfg = $samples[$only];
-$out = dirname(__DIR__) . '/samples/' . $only . '.sqlite';
+$out = dirname(__DIR__) . '/data/samples/' . $only . '.sqlite';
 @unlink($out);
 @unlink($out . '-wal');
 @unlink($out . '-shm');

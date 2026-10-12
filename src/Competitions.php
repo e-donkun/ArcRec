@@ -9,11 +9,11 @@ use PDO;
  */
 class Competitions
 {
-    /** 同梱のサンプル記録会(samples/ からコピーして使う): 屋外(Outdoor 72射)と屋内(Indoor 60射・三つ目)。パスワードはどちらも sample */
+    /** 同梱のサンプル記録会(data/samples/ からコピーして使う): 屋外(Outdoor 72射)と屋内(Indoor 60射・三つ目)。パスワードはどちらも sample */
     const SAMPLE_CODE = '5A4D0001';
     const SAMPLE_CODES = ['5A4D0001', '5A4D0002'];
     const SAMPLE_PASSWORD = 'sample';
-    /** 同梱サンプルの版。上げると、サーバーにある古いサンプル記録会を samples/ の新しいものに置き換える */
+    /** 同梱サンプルの版。上げると、サーバーにある古いサンプル記録会を data/samples/ の新しいものに置き換える */
     const SAMPLE_VERSION = '2';
 
     public static function isSample($code)
@@ -206,13 +206,16 @@ class Competitions
 
     /**
      * 記録会の DB ファイルを削除する(-wal / -shm も)。元に戻せない。
-     * 同梱のサンプルを消した場合は、次のアクセスで samples/ から作り直される。
+     * 同梱のサンプルを消した場合は削除マーカーを残し、次のアクセスでも再作成しない。
      */
     public static function delete($code)
     {
         $f = self::find($code);
         if (!$f) {
             throw new \InvalidArgumentException('記録会が見つかりません');
+        }
+        if (self::isSample($f['code']) && file_put_contents(self::sampleDeletionMarker($f['code']), '') === false) {
+            throw new \RuntimeException('サンプル記録会の削除状態を保存できません');
         }
         Db::unselect();   // 開いている接続を閉じてから消す
         foreach (['', '-wal', '-shm'] as $ext) {
@@ -251,11 +254,14 @@ class Competitions
         }
     }
 
-    /** 同梱のサンプル記録会を、まだ無ければコピーする(古い版なら置き換える) */
+    /** 同梱のサンプル記録会を、まだ無ければコピーする(古い版なら置き換える)。削除済みのものは再作成しない */
     private static function seedSample()
     {
         foreach (self::SAMPLE_CODES as $code) {
-            $src = LITE_ROOT . '/samples/' . $code . '.sqlite';
+            if (is_file(self::sampleDeletionMarker($code))) {
+                continue;
+            }
+            $src = LITE_ROOT . '/data/samples/' . $code . '.sqlite';
             $dest = Db::competitionsDir() . '/' . $code . '.sqlite';
             if (is_file($src) && !is_file($dest)) {
                 @copy($src, $dest);
@@ -268,5 +274,10 @@ class Competitions
                 }
             }
         }
+    }
+
+    private static function sampleDeletionMarker($code)
+    {
+        return Db::competitionsDir() . '/.' . $code . '.deleted';
     }
 }

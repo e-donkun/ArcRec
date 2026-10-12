@@ -270,6 +270,12 @@ $kob = array_values(array_filter(Entries::all(), function ($e) { return $e['fami
 ok($kob['affiliation'] === 'みずうみ大学' && $kob['category_code'] === 'RW' && (int)$kob['target'] === 0, '姓名・所属・部門が入り、的は未割当');
 ok(Past::find($a . ':' . $a1) === null, 'いまの記録会の選手は「過去」として読まない');
 
+echo "# サンプル記録会の削除\n";
+Competitions::delete('5A4D0002');
+Competitions::bootstrap(true);
+ok(!Competitions::exists('5A4D0002') && is_file("$dataDir/competitions/.5A4D0002.deleted") && Competitions::exists('5A4D0001'),
+    'サンプルを削除すると自動で復活せず、もう一方のサンプルは残る');
+
 foreach ([$dataDir] as $d) {
     rrmdir($d);
 }
