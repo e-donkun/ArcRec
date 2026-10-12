@@ -2,7 +2,7 @@ name: Android APK
 
 # Android アプリ(android/)の APK を作る。
 #   リリースを公開したとき: ArcRec-<タグ>.apk をリリースに添付する
-#   手動実行・main への android/ の変更: Actions の成果物(Artifacts)に置く
+#   手動実行・main への android/ の変更・プルリクエスト: Actions の成果物(Artifacts)に置く
 # 署名鍵はリポジトリの Secrets に入れる(android/README.md の「APK の署名鍵」)。
 
 on:
@@ -11,6 +11,10 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-apk.yml'
+  pull_request:
     paths:
       - 'android/**'
       - '.github/workflows/android-apk.yml'
