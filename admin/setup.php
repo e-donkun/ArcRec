@@ -177,7 +177,8 @@ echo '<form method="post" onsubmit="return window.confirm(\'この記録会の�
     . '<h3>この記録会の点数を全消去</h3><p class="muted small">リハーサル後などに、参加者名簿はそのままで点数だけを消します。</p>'
     . '<label style="font-weight:400"><input type="checkbox" name="confirm" value="yes"> 本当に消す</label><p><button class="danger">点数を全消去</button></p></form>';
 echo '<form method="post" onsubmit="return window.confirm(\'この記録会を削除します。参加者名簿・点数・設定がすべて消え、元に戻せません。よろしいですか?\')">' . csrf_field() . '<input type="hidden" name="do" value="delete">'
-    . '<h3>この記録会を削除</h3><p class="muted small">この記録会のデータベースファイルを削除します。参加者名簿・点数・設定がすべて消え、元に戻せません。削除すると記録会の一覧に戻ります。</p>'
+    . '<h3>この記録会を削除</h3><p class="muted small">この記録会のデータベースファイルを削除します。参加者名簿・点数・設定がすべて消え、元に戻せません。削除すると記録会の一覧に戻ります。'
+    . (Lite\Competitions::isSample(Settings::code()) ? 'サンプル記録会も削除でき、削除後に自動では復活しません。' : '') . '</p>'
     . '<label style="font-weight:400"><input type="checkbox" name="confirm" value="yes"> 本当に削除する</label><p><button class="danger">この記録会を削除</button></p></form>';
 echo '</details>';
 echo '<script>(function(){'
