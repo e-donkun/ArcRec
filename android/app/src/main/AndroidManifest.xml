@@ -41,6 +41,12 @@
             android:label="サーバーのログ"
             android:parentActivityName=".MainActivity" />
 
+        <activity
+            android:name=".LicenseActivity"
+            android:exported="false"
+            android:label="オープンソースライセンス"
+            android:parentActivityName=".MainActivity" />
+
         <service
             android:name=".ServerService"
             android:exported="false"

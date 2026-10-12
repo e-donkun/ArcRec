@@ -9,7 +9,7 @@
 - `admin/` は管理画面、`src/` はアプリケーションロジック、`src/targets/` は端末へ送る的面画像、`lib/tcpdf/` は同梱の PDF ライブラリです。
 - `data/` は実行時データ用で、通常は Git 管理外です。記録会ごとに SQLite DB を分けます。テストは `LITE_DB` または `LITE_DATA_DIR` を設定して一時領域を利用します。
 - `tools/` は的面データやサンプル記録会の生成に使う開発用ツールです。`data/samples/` には配布用サンプル記録会の DB があり、起動時に設定されたデータ保存先の `competitions/` へコピーされます。管理画面でサンプルを削除した場合は同じデータ保存先に削除マーカーを残し、自動で再作成しないようにします。
-- `android/` は ArcRec をスマホ上で動かす Android アプリ（Java、AndroidX なし）です。APK には Termux の Android arm64 PHP と共有ライブラリを同梱し、PHP 組み込みサーバー（`android/app/src/main/assets/router.php` をルーターに使う）で本体をそのまま動かします。static-php-cli の Linux arm64 PHP はテスト用です。本体の PHP コードはアプリ用に分岐させません。詳しくは `android/README.md` の「開発者向け」を参照してください。
+- `android/` は ArcRec をスマホ上で動かす Android アプリ（Java、AndroidX なし）です。固定した Termux revision から GNU Readline を無効にして Android arm64 PHP をビルドし、共有ライブラリとライセンス文書を APK に同梱します。static-php-cli の Linux arm64 PHP は本体テスト用です。本体の PHP コードはアプリ用に分岐させません。詳しくは `android/README.md` の「開発者向け」を参照してください。
 
 ## ロジックの目安
 
@@ -36,6 +36,8 @@ bash android/scripts/fetch-php.sh
 bash android/scripts/check-php.sh
 bash android/scripts/fetch-php-android.sh
 ```
+
+Android 用 PHP の更新・再ビルドでは、生成された PHP ELF に `libreadline` がないこと、package manifest とライセンス文書が runtime ZIP に入り、APK の runtime ZIP SHA-256 検証が通ることを確認します。
 
 ## 実装時に守ること
 

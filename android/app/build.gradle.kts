@@ -1,3 +1,4 @@
+import java.security.MessageDigest
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -30,6 +31,7 @@ val webIncludes = listOf(
 // Android向けPHP。実行ファイルはネイティブライブラリとして、共有ライブラリはassetsに同梱する。
 val phpAndroidBinary = file("src/main/jniLibs/arm64-v8a/libphpandroid.so")
 val phpRuntimeArchive = file("src/main/assets/php-android-runtime.zip")
+val phpRuntimeHashFile = file("src/main/assets/php-android-runtime.zip.sha256")
 
 // 署名鍵(環境変数で渡す)。無ければデバッグ鍵で署名する(更新インストールができないので配布には使わない)
 val keystorePath: String? = System.getenv("ARCREC_KEYSTORE")
@@ -85,10 +87,6 @@ android {
     }
 }
 
-dependencies {
-    implementation("com.google.zxing:core:3.5.3")
-}
-
 /** ArcRec 本体を assets/arcrec.zip にまとめる。アプリは初回起動時・更新後にこれを展開する。 */
 abstract class BundleArcRecTask : DefaultTask() {
     @get:InputFiles
@@ -135,11 +133,18 @@ androidComponents {
 
 tasks.named("preBuild") {
     doFirst {
-        if (!phpAndroidBinary.isFile || !phpRuntimeArchive.isFile) {
+        if (!phpAndroidBinary.isFile || !phpRuntimeArchive.isFile || !phpRuntimeHashFile.isFile) {
             throw GradleException(
                 "Android向けPHPがありません。\n" +
                     "android/scripts/fetch-php-android.sh を実行して PHP と共有ライブラリを取得してください。"
             )
+        }
+        val expectedHash = phpRuntimeHashFile.readText().trim().split(Regex("\\s+")).first()
+        val actualHash = MessageDigest.getInstance("SHA-256")
+            .digest(phpRuntimeArchive.readBytes())
+            .joinToString("") { "%02x".format(it.toInt() and 0xff) }
+        if (!expectedHash.equals(actualHash, ignoreCase = true)) {
+            throw GradleException("Android PHP runtime ZIP の SHA-256 が一致しません。取得スクリプトを再実行してください。")
         }
     }
 }

@@ -7,6 +7,7 @@ captures/
 # 静的ビルドの PHP は scripts/fetch-php.sh で取得する(コミットしない)
 app/src/main/jniLibs/
 app/src/main/assets/php-android-runtime.zip
+app/src/main/assets/php-android-runtime.zip.sha256
 # 署名鍵はコミットしない
 *.jks
 *.keystore

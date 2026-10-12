@@ -50,6 +50,13 @@ jobs:
       - name: Fetch Android-native PHP (arm64)
         run: bash android/scripts/fetch-php-android.sh
 
+      - name: Verify Android PHP has no Readline dependency
+        run: |
+          if readelf -d android/app/src/main/jniLibs/arm64-v8a/libphpandroid.so | grep -q 'libreadline'; then
+            echo "Android PHP unexpectedly depends on GNU Readline" >&2
+            exit 1
+          fi
+
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Prepare signing key
@@ -85,13 +92,22 @@ jobs:
           cp android/app/build/outputs/apk/release/app-release.apk "$name"
           echo "name=$name" >> "$GITHUB_OUTPUT"
 
+      - name: Extract Android PHP source manifest
+        id: php-source
+        run: |
+          name="Android-PHP-sources-${GITHUB_SHA::12}.tsv"
+          unzip -p android/app/src/main/assets/php-android-runtime.zip PACKAGE-MANIFEST.tsv > "$name"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.apk.outputs.name }}
-          path: ${{ steps.apk.outputs.name }}
+          path: |
+            ${{ steps.apk.outputs.name }}
+            ${{ steps.php-source.outputs.name }}
 
       - name: Attach to release
         if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$GITHUB_REF_NAME" "${{ steps.apk.outputs.name }}" --clobber
+        run: gh release upload "$GITHUB_REF_NAME" "${{ steps.apk.outputs.name }}" "${{ steps.php-source.outputs.name }}" --clobber

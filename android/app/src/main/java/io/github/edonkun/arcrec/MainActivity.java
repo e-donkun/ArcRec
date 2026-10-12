@@ -7,7 +7,6 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.net.Uri;
@@ -23,7 +22,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -36,7 +34,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** ホーム画面: サーバーの起動・停止、接続先アドレスと QR、管理画面、バックアップ */
+/** ホーム画面: サーバーの起動・停止、接続先アドレス、管理画面、バックアップ */
 public class MainActivity extends Activity implements ServerState.Listener {
     private static final int REQ_RESTORE = 10;
     private static final int REQ_NOTIFICATIONS = 11;
@@ -60,7 +58,6 @@ public class MainActivity extends Activity implements ServerState.Listener {
     private LinearLayout addressBox;
     private RadioGroup addressGroup;
     private TextView urlText;
-    private ImageView qrImage;
     private Button batteryButton;
     private Button portButton;
     private TextView versionText;
@@ -154,16 +151,8 @@ public class MainActivity extends Activity implements ServerState.Listener {
         urlText.setTextIsSelectable(true);
         addressBox.addView(urlText, Ui.matchWidth(this, 8));
 
-        FrameLayout qrFrame = new FrameLayout(this);
-        qrImage = new ImageView(this);
-        qrImage.setBackgroundColor(Color.WHITE);
-        int qrSize = Ui.dp(this, 200);
-        FrameLayout.LayoutParams qlp = new FrameLayout.LayoutParams(qrSize, qrSize, Gravity.CENTER_HORIZONTAL);
-        qrFrame.addView(qrImage, qlp);
-        addressBox.addView(qrFrame, Ui.matchWidth(this, 12));
         addressBox.addView(Ui.note(this,
-                "このスマホのテザリングにつないだ端末で読み取ると、記録会一覧(公開ページ)が開きます。"
-                        + "ScorekeeperNG の接続用 QR は、管理画面の「端末設定」に出ます。"), Ui.matchWidth(this, 8));
+            "このスマホのテザリングにつないだ端末で開くと、記録会一覧(公開ページ)が表示されます。"), Ui.matchWidth(this, 8));
         LinearLayout urlButtons = Ui.row(this);
         Button copy = Ui.button(this, "URLをコピー", v -> copyUrl());
         Button browser = Ui.button(this, "ブラウザで開く", v -> openInBrowser());
@@ -201,6 +190,8 @@ public class MainActivity extends Activity implements ServerState.Listener {
         versionText = Ui.note(this, versionLine(null));
         versionText.setGravity(Gravity.CENTER_HORIZONTAL);
         root.addView(versionText, Ui.matchWidth(this, 16));
+        root.addView(Ui.button(this, "オープンソースライセンス",
+            v -> startActivity(new Intent(this, LicenseActivity.class))), Ui.matchWidth());
 
         ScrollView scroll = new ScrollView(this);
         scroll.addView(root);
@@ -302,8 +293,6 @@ public class MainActivity extends Activity implements ServerState.Listener {
         if (!url.equals(shownUrl)) {
             shownUrl = url;
             urlText.setText(url);
-            Bitmap qr = Qr.make(url, Ui.dp(this, 200));
-            qrImage.setImageBitmap(qr);
         }
     }
 
@@ -348,7 +337,7 @@ public class MainActivity extends Activity implements ServerState.Listener {
         String base = currentBaseUrl;
         if (base == null) {
             base = NetAddresses.baseUrl("127.0.0.1", Prefs.port(this));
-            Toast.makeText(this, "テザリングがオフのため、端末用の QR コードは使えません", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "テザリングがオフのため、このスマホ内で管理画面を開きます", Toast.LENGTH_LONG).show();
         }
         startActivity(new Intent(this, AdminActivity.class)
                 .putExtra(AdminActivity.EXTRA_BASE, base)

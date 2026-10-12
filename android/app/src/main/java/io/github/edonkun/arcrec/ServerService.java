@@ -27,8 +27,11 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -141,6 +144,10 @@ public class ServerService extends Service {
             fail("PHP が見つかりません(" + php + ")。このアプリは 64 ビット(arm64)の端末で動きます。");
             return;
         }
+        if (!probePhpRuntime(php)) {
+            fail("Android PHP の必須拡張または依存関係を確認できません。ログを確認してください。");
+            return;
+        }
         killStray();
 
         File www = AppFiles.webRoot(this);
@@ -207,6 +214,66 @@ public class ServerService extends Service {
     private static void addIni(List<String> cmd, String key, String value) {
         cmd.add("-d");
         cmd.add(key + "=" + value);
+    }
+
+    private boolean probePhpRuntime(File php) {
+        log("---- Android PHP runtime check(-n -m) ----");
+        Process p;
+        try {
+            ProcessBuilder pb = new ProcessBuilder(php.getAbsolutePath(), "-n", "-m")
+                    .redirectErrorStream(true);
+            pb.environment().put("LD_LIBRARY_PATH", AppFiles.phpLibDir(this).getAbsolutePath());
+            p = pb.start();
+        } catch (IOException e) {
+            log("PHP runtime checkを開始できません: " + e.getMessage());
+            return false;
+        }
+
+        try {
+            if (!p.waitFor(10, TimeUnit.SECONDS)) {
+                p.destroyForcibly();
+                log("PHP runtime checkがタイムアウトしました");
+                return false;
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            p.destroyForcibly();
+            log("PHP runtime checkが中断されました");
+            return false;
+        }
+
+        Set<String> modules = new HashSet<>();
+        try (BufferedReader r = new BufferedReader(
+                new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = r.readLine()) != null) {
+                String module = line.trim().toLowerCase(Locale.ROOT);
+                if (!module.isEmpty() && !module.startsWith("[")) {
+                    modules.add(module);
+                }
+            }
+        } catch (IOException e) {
+            log("PHP runtime checkの出力を読めません: " + e.getMessage());
+            return false;
+        }
+
+        int code = p.exitValue();
+        log("PHP runtime check終了コード " + code);
+        for (String module : modules) {
+            log("PHP module: " + module);
+        }
+        boolean ok = code == 0;
+        for (String required : new String[]{"pdo", "pdo_sqlite", "mbstring", "zlib", "session", "json", "pcre"}) {
+            if (!modules.contains(required)) {
+                log("PHP必須拡張がありません: " + required);
+                ok = false;
+            }
+        }
+        if (modules.contains("readline")) {
+            log("GNU Readline extensionが残っています");
+            ok = false;
+        }
+        return ok;
     }
 
     private static boolean waitForPort(Process p, int port, long timeoutMs) {

@@ -15,11 +15,12 @@ Android スマホ 1 台を ArcRec のサーバーにするアプリです。ス�
 ## アプリでできること
 
 - ボタン 1 つで ArcRec のサーバーを起動・停止する(画面を消しても動き続ける。通知から停止もできる)
-- テザリングのアドレス(接続先 URL)と QR コードを表示する
+- テザリングの接続先 URL を表示し、コピーする
 - 管理画面をアプリの中で開く。テザリングのアドレスで開くので、「端末設定」の ScorekeeperNG 用 QR コードはそのまま読み取れる
 - スコアカード・結果の PDF と CSV を「ダウンロード/ArcRec」に保存し、印刷・共有する
 - 記録会データのバックアップ(ZIP)と復元
 - サーバーのログを見る・共有する
+- APK に含まれるオープンソースライセンスをアプリ内で確認する
 
 ArcRec 本体の機能(記録会の作成、参加者、的番号、点数管理、結果)は、パソコンで動かす場合と同じです。
 
@@ -103,24 +104,25 @@ ArcRec 本体の機能(記録会の作成、参加者、的番号、点数管理
 | `app/build.gradle.kts` | 版(`LITE_VERSION` から)、ArcRec 本体の同梱、署名 |
 | `app/src/main/assets/router.php` | 組み込みサーバーのルーター |
 | `app/src/main/java/…/ServerService.java` | PHP の起動・停止・再起動、通知、スリープ対策、ログ |
-| `MainActivity.java` | ホーム画面(状態、接続先と QR、バックアップ) |
+| `MainActivity.java` | ホーム画面(状態、接続先、バックアップ) |
 | `AdminActivity.java` | 管理画面の WebView(PDF・CSV の保存、印刷、ファイル選択) |
+| `LicenseActivity.java` | APK に含めたライセンス文書の表示 |
 | `AppFiles.java` / `DataBackup.java` | 展開・データの置き場所 / バックアップと復元 |
 | `NetAddresses.java` | テザリングのアドレスを探す |
 | `scripts/fetch-php.sh` | Linux arm64 PHP を取得し、QEMU を使ったテストに使う |
-| `scripts/fetch-php-android.sh` | Termux の Android arm64 PHP と必要な共有ライブラリを取得する |
+| `scripts/fetch-php-android.sh` | 固定した Termux revision から Readline 無効版の Android arm64 PHP をビルドし、必要なライブラリ・ライセンス・一覧を取得する |
 | `scripts/check-php.sh` | Linux arm64 PHP で拡張・ArcRec のテスト・組み込みサーバーを確認する(QEMU で x86_64 でも動く) |
 
 ### ビルド
 
-GitHub Actions の「Android APK」(`.github/workflows/android-apk.yml`)が、リリースを公開したときに APK を作ってリリースに添付する。手動実行(Run workflow)すると、Actions の成果物として APK を取得できる。
+GitHub Actions の「Android APK」(`.github/workflows/android-apk.yml`)が、リリースを公開したときに APK と `Android-PHP-sources-<commit>.tsv`(対応ソース・依存 manifest)をリリースに添付する。手動実行(Run workflow)でも Actions の成果物から両方取得できる。
 
 手元でビルドする場合(JDK 17 と Android SDK が必要。Android Studio でこのフォルダを開いてもよい):
 
 ```sh
 bash android/scripts/fetch-php.sh       # PHP を取得(最初に 1 回)
 bash android/scripts/check-php.sh       # 任意: qemu-user があれば PHP を確認
-bash android/scripts/fetch-php-android.sh # APKに同梱するAndroid向けPHPを取得
+bash android/scripts/fetch-php-android.sh # 固定ソースからAndroid向けPHPをビルド
 cd android && ./gradlew assembleRelease
 # → android/app/build/outputs/apk/release/app-release.apk
 ```
@@ -150,4 +152,6 @@ base64 -w0 arcrec-release.jks > arcrec-release.jks.b64
 
 ### PHP の版を変える
 
-Linux 上のテスト用 PHP は従来どおり PHP 8.3 系を取得する。Android APK には Termux の Android ネイティブ arm64 PHP を同梱する(既定は 8.5.1)。取得版は `TERMUX_PHP_VERSION` で指定できる。Termux の PHP と各共有ライブラリの著作権表示は APK 内の `files/php-runtime/licenses/` に展開される。
+Linux 上のテスト用 PHP は従来どおり PHP 8.3 系を取得する。Android APK 用 PHP は `android/patches/termux-php-without-readline.patch` を固定した Termux revision に適用してビルドし、Readline 依存が ELF にないことを検証する。依存パッケージの版・SHA-256 とソース revision を記録した `PACKAGE-MANIFEST.tsv`、PHP License、依存パッケージの著作権・ライセンス文書を APK 内に同梱し、ホームの「オープンソースライセンス」から閲覧できる。
+
+APK に含まれる `PACKAGE-MANIFEST.tsv` には ArcRec のソース revision、Termux のソース revision、各ランタイム依存の版・ライセンス・ビルド recipe・上流ソース URL・SHA-256 を記録する。配布した APK と同じ ArcRec revision のソース一式、および manifest に記録された Termux recipe と PHP/依存ソースを対応ソースとして提供する。
