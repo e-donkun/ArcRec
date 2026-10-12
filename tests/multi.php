@@ -24,7 +24,7 @@ function call(array $reqs)
     }
     $api = new IskApi();
     $res = $api->process(json_decode(json_encode($reqs)));
-    ApiLog::write($reqs, $res, $api->usedCodes());
+    ApiLog::writeRequest($reqs, $res, $api->usedCodes());
     return $res;
 }
 function rrmdir($d)
@@ -249,6 +249,15 @@ $fb = ApiLog::file($b);
 ok(is_file($fa) && !is_file($fb), 'ログをオンにした記録会Aにだけ記録される');
 Competitions::open($a);
 ok(count(ApiLog::recent()) === 1, '記録会Aのログ画面には記録会Aの分だけ');
+// 記録会が決まらなかった返事も残す(以前はどの記録会のログにも書かれず、端末が何を送ったか分からなかった)
+call([['action' => 'handshake', 'uuid' => 'tabA', 'version' => '1.10.0', 'iskType' => 11, 'tournament' => $a]]);
+call([['action' => 'nosuchaction', 'device' => 'tabA']]);
+Competitions::open($a);
+ok(ApiLog::recent(1)[0]['request'][0]['action'] === 'nosuchaction', '対応していないアクションも、端末が最後に通信した記録会(A)のログに残る');
+call([['action' => 'comp', 'device' => 'stranger', 'tocode' => 'FFFFFFFF']]);
+Competitions::open($a);
+ok(ApiLog::recent(1)[0]['request'][0]['device'] === 'stranger', '未登録の端末・無い記録会コードは、ログがオンの記録会すべてに残る');
+ok(!is_file($fb), 'ログがオフの記録会Bには書かない');
 ApiLog::clear();
 ok(!is_file($fa), '記録会Aのログを消せる');
 
