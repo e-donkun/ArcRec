@@ -2,6 +2,11 @@
 
 ArcRec(旧名 ianseo-lite)の版ごとの変更です(新しい順)。いまの版は `src/bootstrap.php` の `LITE_VERSION`。
 
+## 未リリース
+
+- Android アプリを追加(`android/`)。スマホ 1 台をサーバーにし、Wi-Fi テザリングで ScorekeeperNG をつないで運営できる。静的ビルドの PHP を同梱し、サーバーの起動・停止、接続先アドレスと QR の表示、管理画面(PDF・CSV の保存・印刷)、データのバックアップ・復元ができる。リリース時に GitHub Actions が `ArcRec-<版>.apk` を作って添付する
+- リリース ZIP に `android/` を入れない
+
 ## 0.17.0 (2026-10-10)
 
 - 名称を ianseo-lite から **ArcRec**(アーチェリー記録会管理)に変更。画面のタイトル・PDF の作成者・README・NOTICE の表記を変更(内部のコード名 `Lite` / `LITE_*` はそのまま)

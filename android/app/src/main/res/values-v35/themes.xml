@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 15 の全画面表示(edge-to-edge)の強制を外し、アクションバーの下から表示する -->
+    <style name="Theme.ArcRec" parent="android:Theme.DeviceDefault.DayNight">
+        <item name="android:colorAccent">@color/arcrec_accent</item>
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+    </style>
+</resources>
