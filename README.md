@@ -11,13 +11,14 @@
 
 - PHP 7.4以上（PHP 8.3で動作確認済み。セキュリティ更新が提供されているPHPを推奨）
 - PHP拡張: `pdo_sqlite`、`mbstring`、`zlib`
-- ScorekeeperNGを使う場合、タブレットからサーバーへ接続できるネットワーク
+- ScorekeeperNGを使う場合、ScorekeeperNGが動作する端末からサーバーへ接続できるネットワーク
 - Webサーバーから `data/`（または設定したデータ保存先）へ書き込めること
 
 ## ダウンロードと共通の設置手順
 
- - [リリース一覧](https://github.com/e-donkun/arcrec/releases)から `ArcRec-バージョン.zip` をダウンロードする。
- - 記録会データは既定で `data/` に保存される。公開フォルダ外に保存する場合は、ArcRecの配置先に `config.local.php` を作成し、実際のパスに書き換える。
+- [リリース一覧](https://github.com/e-donkun/arcrec/releases)から `ArcRec-バージョン.zip` をダウンロードし、ZIPを展開する。
+- 展開したファイル一式（`index.php` を含む）を、Webサーバーの公開ディレクトリまたはその配下のフォルダーに配置する。
+- 記録会データは既定で `data/` に保存される。公開フォルダ外に保存する場合は、ArcRecの配置先に `config.local.php` を作成し、実際のパスに書き換える。
 
 ```php
 <?php
