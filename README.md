@@ -18,8 +18,8 @@
 
 - [リリース一覧](https://github.com/e-donkun/arcrec/releases)から `ArcRec-バージョン.zip` をダウンロードし、ZIPを展開する。
 - 展開したファイル一式（`index.php` を含む）を、Webサーバーの公開ディレクトリまたはその配下のフォルダーに配置する。
-- 必要に応じて [`config.sample.php`](config.sample.php) を `config.php` にコピーし、`data_dir` と全体管理者パスワードを設定する。`config.php` は秘密情報を含むため、Git管理外で保管する。
-- 既定では記録会データは `data/` に保存される。公開フォルダ外に保存する場合は、`data_dir` を実際のパスに変更する。全体管理者パスワードを空欄にすると、管理画面で初回設定できる。
+- 必要に応じて [`config.sample.php`](config.sample.php) を `config.php` にリネームし、`data_dir` と全体管理者パスワードを設定する。
+- 記録会データは既定で `data/` に保存される。公開フォルダ外に保存する場合は、`data_dir` を実際のパスに変更する。
 
 ## 記録会設定と使い方
 
