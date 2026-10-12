@@ -55,7 +55,7 @@ class IskApi
         }
         $api = new self();
         $res = $api->process($data);
-        ApiLog::write($data, $res, $api->usedCodes());
+        ApiLog::writeRequest($data, $res, $api->usedCodes());
         self::out($res);
     }
 

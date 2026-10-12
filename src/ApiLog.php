@@ -65,7 +65,44 @@ class ApiLog
         }
     }
 
-    /** どの記録会への通信か分からないもの(OPTIONS・読めないリクエスト)を、ログがオンの記録会すべてに残す */
+    /**
+     * 端末とのやりとり 1 回分を記録する。
+     * 記録会が決まらなかった返事(未登録の端末・存在しない記録会コード・対応していないアクション・項目の不足など)も残す:
+     * 端末が登録されている記録会があればそこ(最後に通信した記録会)へ、無ければログがオンの記録会すべてへ書く
+     *
+     * @param string[] $codes このやりとりで使った記録会のコード
+     */
+    public static function writeRequest($requests, array $response, array $codes)
+    {
+        if (!$codes) {
+            $codes = self::deviceCodes($requests);
+        }
+        if ($codes) {
+            self::write($requests, $response, $codes);
+        } else {
+            self::writeUnbound($requests, $response);
+        }
+    }
+
+    /** リクエストに含まれる端末が登録されている記録会のコード */
+    private static function deviceCodes($requests)
+    {
+        $codes = [];
+        try {
+            foreach (is_array($requests) ? $requests : [$requests] as $req) {
+                $req = (array)$req;
+                $dev = (string)($req['device'] ?? $req['uuid'] ?? '');
+                if ($dev !== '' && ($c = Competitions::byDevice($dev)) !== null) {
+                    $codes[$c] = true;
+                }
+            }
+        } catch (\Throwable $e) {
+            // ログの失敗で端末の通信を止めない
+        }
+        return array_map('strval', array_keys($codes));
+    }
+
+    /** どの記録会への通信か分からないもの(OPTIONS・読めないリクエスト・記録会が決まらなかった返事)を、ログがオンの記録会すべてに残す */
     public static function writeUnbound($request, array $response)
     {
         try {
