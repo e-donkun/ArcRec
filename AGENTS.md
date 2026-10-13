@@ -9,7 +9,6 @@
 - `admin/` は管理画面、`src/` はアプリケーションロジック、`src/targets/` は端末へ送る的面画像、`lib/tcpdf/` は同梱の PDF ライブラリです。
 - `data/` は実行時データ用で、通常は Git 管理外です。記録会ごとに SQLite DB を分けます。テストは `LITE_DB` または `LITE_DATA_DIR` を設定して一時領域を利用します。
 - `tools/` は的面データやサンプル記録会の生成に使う開発用ツールです。`data/samples/` には配布用サンプル記録会の DB があり、起動時に設定されたデータ保存先の `competitions/` へコピーされます。管理画面でサンプルを削除した場合は同じデータ保存先に削除マーカーを残し、自動で再作成しないようにします。
-- `android/` は ArcRec をスマホ上で動かす Android アプリ（Java、AndroidX なし）です。固定した Termux revision から GNU Readline を無効にして Android arm64 PHP をビルドし、共有ライブラリとライセンス文書を APK に同梱します。static-php-cli の Linux arm64 PHP は本体テスト用です。本体の PHP コードはアプリ用に分岐させません。詳しくは `android/README.md` の「開発者向け」を参照してください。
 
 ## ロジックの目安
 
@@ -29,16 +28,6 @@ php tests/run.php
 
 `tests/run.php` は通信・参加者・採点・順位・PDF などを確認し、`two_distances.php` と `multi.php` も別プロセスで実行します。テストは一時 SQLite DB を使います。テストを追加・変更した場合は、既存の実行方法に合わせてください。
 
-Android アプリに関わる変更（`android/` や、組み込みサーバーでの動作に影響する本体の変更）では、静的ビルドの PHP で次も確認します（x86_64 では qemu-user が必要。GitHub Actions の「Android APK」でも実行されます）。
-
-```sh
-bash android/scripts/fetch-php.sh
-bash android/scripts/check-php.sh
-bash android/scripts/fetch-php-android.sh
-```
-
-Android 用 PHP の更新・再ビルドでは、生成された PHP ELF に `libreadline` がないこと、package manifest とライセンス文書が runtime ZIP に入り、APK の runtime ZIP SHA-256 検証が通ることを確認します。
-
 ## 実装時に守ること
 
 - 既存の PHP 構文・ライブラリを使い、不要な依存パッケージや新しいビルド・テスト基盤を追加しないでください。
@@ -47,6 +36,5 @@ Android 用 PHP の更新・再ビルドでは、生成された PHP ELF に `li
 - 得点は距離ごとの `arrowstring` に保存されます。エンド更新、確定済みスコア、的番号の移動に関わる変更では、既存の整合性と履歴記録を維持してください。
 - DB の変更は `src/Db.php` のスキーマ作成・更新処理と既存データへの影響を確認してください。
 - `data/` の実データ、`config.php`、秘密情報をコミットしないでください。変更ファイルに秘密情報がないことを確認してください。
-- 利用者向けの設置や操作に影響する場合は `README.md` も更新してください。Android アプリの操作・運営手順に影響する場合は `android/README.md` も更新してください。開発・テスト手順はこのファイルに記載してください。
-- 新しく PHP 拡張を使う場合は、`android/scripts/check-php.sh` の拡張の確認にも加え、static-php-cli の common セットに含まれるか確かめてください。
-- 本体のファイルを増やしたフォルダーがアプリに入るかは `android/app/build.gradle.kts` の `webIncludes` で決まります（`check-php.sh` の tar の対象も同じにします）。
+- 利用者向けの設置や操作に影響する場合は `README.md` も更新してください。開発・テスト手順はこのファイルに記載してください。
+- 新しく PHP 拡張を使う場合は、`README.md` の動作環境にある必要拡張の一覧も更新してください。

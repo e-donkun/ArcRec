@@ -44,12 +44,6 @@
 - マッチ戦、3距離以上、部門ごとに異なる的面には対応しない。正式な競技会では Ianseoを用いること。
 - ScorekeeperNGの実機接続を含め、本番前にリハーサルで一連の操作を確認すること。
 
-## Androidスマホで動かす
-
-- Androidスマホ1台をサーバーにし、Wi-Fiテザリングで ScorekeeperNG の端末をつないで運営できる（インターネット・パソコン不要）。
-- [リリース一覧](https://github.com/e-donkun/arcrec/releases)の `ArcRec-バージョン.apk` をスマホにインストールする（Android 10以上、64ビット）。
-- 導入・当日の運営手順・注意点は [`android/README.md`](android/README.md) を参照。
-
 -----
 Copyright (c) Jun SUZUKI(e-donkun)
 
